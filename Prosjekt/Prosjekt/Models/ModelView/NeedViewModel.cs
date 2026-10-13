@@ -1,3 +1,4 @@
+using Prosjekt.Models.Entities;
 using System.ComponentModel.DataAnnotations;
 
 namespace Prosjekt.Models.ModelView
