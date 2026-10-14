@@ -64,6 +64,69 @@ namespace Prosjekt.Migrations
 
                     b.ToTable("GeoChanges");
                 });
+
+            modelBuilder.Entity("Prosjekt.Models.Entities.Resource", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AvailableFrom")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("AvailableTo")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("varchar(4000)");
+
+                    b.Property<bool>("IsAvailable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.Resource.Coords#Coordinates", b1 =>
+                        {
+                            b1.Property<double>("Latitude")
+                                .HasColumnType("double")
+                                .HasColumnName("Latitude");
+
+                            b1.Property<double>("Longitude")
+                                .HasColumnType("double")
+                                .HasColumnName("Longitude");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Resources");
+                });
 #pragma warning restore 612, 618
         }
     }
