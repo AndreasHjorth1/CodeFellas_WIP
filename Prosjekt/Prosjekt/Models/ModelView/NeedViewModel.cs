@@ -33,5 +33,15 @@ namespace Prosjekt.Models.ModelView
         [Display(Name = "Lengdegrad")]
         [Required(ErrorMessage = "Du må legge inn lengdegrad")]
         public double? Longitude { get; set; }
+
+        [Display(Name = "Antall dekket")]
+        [Range(0, int.MaxValue, ErrorMessage = "Dekket kan ikke være negativ.")]
+        public int Covered { get; set; } = 0;
+        public int Remaining => Math.Max(0, Total - Covered);
+
+        public string Status =>
+            Covered <= 0 ? "Ikke dekket" :
+            Covered >= Total ? "Dekket" :
+            "Delvis dekket";
     }
 }

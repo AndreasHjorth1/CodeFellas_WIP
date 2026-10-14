@@ -19,8 +19,11 @@
             <div class="form-group mb-3"><label asp-for="Name">Navn</label><input asp-for="Name" class="form-control" /></div>
             <div class="form-group mb-3"><label asp-for="Description">Beskrivelse</label><input asp-for="Description" class="form-control" /></div>
             <div class="form-group mb-3"><label asp-for="Total">Antall</label><input asp-for="Total" type="number" class="form-control" /></div>
+            <div class="form-group mb-3">
+                <label asp-for="Covered">Antall dekket</label>
+                <input asp-for="Covered" type="number" min="0" class="form-control" />
+            </div>
             <div class="form-group mb-3"><label asp-for="Importance">Viktighet</label><select id="viktighetSelect" asp-for="Importance" asp-items="Html.GetEnumSelectList<Importance>()" class="form-select"></select></div>
-            
             <button type="submit" class="btn btn-primary">Lagre endringer</button>
             <a asp-action="Overview" class="btn btn-secondary">Avbryt</a>
         </form>
