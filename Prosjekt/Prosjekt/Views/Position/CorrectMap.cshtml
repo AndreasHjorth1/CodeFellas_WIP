@@ -6,6 +6,7 @@
     <!-- Skjema på venstre side -->
     <div class="col-md-4">
         <form asp-action="CorrectMap" method="post">
+            @Html.AntiForgeryToken()
             <div class="form-group">
                 <label for="latitude">Breddegrader</label>
                 <input type="text" id="latitude" name="Latitude" class="form-control" readonly required />

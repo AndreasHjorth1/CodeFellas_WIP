@@ -8,6 +8,7 @@
 <h1>@ViewData["Title"]</h1>
 
 <form asp-controller="Ressurs" asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
     <div class="form-group">
         <label asp-for="Navn"></label>
         <input asp-for="Navn" class="form-control" />
