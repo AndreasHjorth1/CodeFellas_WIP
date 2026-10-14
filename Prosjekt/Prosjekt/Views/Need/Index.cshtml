@@ -1,6 +1,6 @@
 @using Prosjekt.Models.ModelView
 @using Prosjekt.Models
-@model NeedViewModel
+@model NeedCreatorViewModel
 
 @{
     ViewData["Title"] = "Opprett et nytt behov";
@@ -23,19 +23,23 @@
 
             <div class="border p-3 mb-4 rounded bg-light">
                 <div class="form-group mb-3">
-                    <label asp-for="Name" class="fw-bold">Navn</label>
-                    <input asp-for="Name" class="form-control" placeholder="F.eks. Rullestoler, Førstehjelpsskrin" />
+                    <label class="fw-bold">Navn</label>
+                    <input id="inputName" class="form-control" placeholder="F.eks. Rullestoler, Førstehjelpsskrin" />
                 </div>
                 
                 <div class="form-group mb-3">
-                    <label asp-for="Description" class="fw-bold">Beskrivelse</label>
-                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Utdypende informasjon..."></textarea>
+                    <label class="fw-bold">Beskrivelse</label>
+                    <textarea id="inputDescription" class="form-control" rows="3" placeholder="Utdypende informasjon..."></textarea>
                 </div>
                 
                 <div class="form-group mb-3">
-                    <label asp-for="Total" class="fw-bold">Antall</label>
-                    <input asp-for="Total" type="number" class="form-control" />
+                    <label class="fw-bold">Antall</label>
+                    <input id="inputTotal" type="number" class="form-control" min="1" value="1"/>
                 </div>
+
+                <button type="button" class="btn btn-outline-primary w-100" onclick="leggTilIListe()">
+                    Legg til i listen
+                </button>
                 
                 <div class="form-group mb-4">
                     <label asp-for="Importance" class="fw-bold">Viktighet</label>
@@ -52,6 +56,11 @@
                         <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
                     </div>
                 </div>
+                <h6 class="fw-bold">Behov i denne registreringen</h6>
+                <table class="table table-sm table-bordered">
+                    <tbody id="behovTabell"></tbody>
+                </table>
+                <div id="skjulteInputFelter"></div>
             </div>
             <button type="submit" class="btn btn-primary w-100">Lagre behov</button>
         </form>
@@ -117,5 +126,50 @@
         });
 
         setTimeout(function () { map.invalidateSize(); }, 200);
+
+        var behovListe = [];
+
+        function leggTilIListe() {
+            var navn = document.getElementById('inputName').value.trim();
+            if (!navn) { alert('Behovet må ha et navn.'); return; }
+
+            behovListe.push({
+                name: navn,
+                description: document.getElementById('inputDescription').value,
+                total: document.getElementById('inputTotal').value
+            });
+
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputDescription').value = '';
+            document.getElementById('inputTotal').value = 1;
+
+            oppdaterTabell();
+        }
+        
+        function oppdaterTabell() {
+            var rader = '', felter = '';
+
+            behovListe.forEach(function(item, i) {
+                rader += `<tr>
+                    <td>${item.name}</td>
+                    <td>${item.total}</td>
+                    <td><button type="button" class="btn btn-sm btn-danger" onclick="fjernFraListe(${i})">x</button></td>
+                </tr>`;
+
+                felter += `
+                <input type="hidden" name="NeedList[${i}].Name" value="${item.name}" />
+                <input type="hidden" name="NeedList[${i}].Description" value="${item.description}" />
+                <input type="hidden" name="NeedList[${i}].Total" value="${item.total}" />`;
+                
+            });
+            document.getElementById('behovTabell').innerHTML = rader;
+            document.getElementById('skjulteInputFelter').innerHTML = felter;
+        }
+
+        function fjernFraListe(i) 
+        {
+            behovListe.splice(i, 1);
+            oppdaterTabell();
+        }
     </script>
 }

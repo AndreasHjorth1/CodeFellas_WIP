@@ -19,24 +19,29 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            return View(new NeedViewModel());
+            return View(new NeedCreatorViewModel());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(NeedViewModel model)
+        public IActionResult Create(NeedCreatorViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Description) || model.Total <= 0)
+            if (model.Latitude.HasValue && model.Longitude.HasValue && model.NeedList != null)
             {
-                return View("Index", model);
-            }
+                foreach (var item in model.NeedList)
+                {
+                    item.Latitude = model.Latitude;
+                    item.Longitude = model.Longitude;
+                    item.Importance = model.Importance;
+                }
 
-            var coords = new Coordinates(model.Latitude!.Value, model.Longitude!.Value);
-
-            if (!coords.IsValid())
-            {
-                ModelState.AddModelError("", "De oppgitte koordinatene er ugyldige.");
-                return View("Index", model);
+                foreach (var key in ModelState.Keys
+                    .Where(k => k.EndsWith(".Latitude")
+                    || k.EndsWith(".Longitude") || k.EndsWith(".Importance"))
+                    .ToList())
+                {
+                    ModelState.Remove(key);
+                }
             }
 
             if (!ModelState.IsValid)
@@ -44,9 +49,25 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            _needDatabase[model.Name] = model;
+            if (model.NeedList == null || !model.NeedList.Any())
+            {
+                ModelState.AddModelError("", "Du må legge til minst ett behov i listen.");
+                return View("Index", model);
+            }
 
-            return View("Create", model);
+            var coords = new Coordinates(model.Latitude!.Value, model.Longitude!.Value);
+            if (!coords.IsValid())
+            {
+                ModelState.AddModelError("", "De oppgitte koordinatene er ugyldige.");
+                return View("Index", model);
+            }
+
+            foreach (var need in model.NeedList)
+            {
+                _needDatabase[need.Name] = need;
+            }
+
+            return RedirectToAction("Overview");
         }
 
         [HttpGet]
@@ -76,7 +97,7 @@ namespace Prosjekt.Controllers
                 return BadRequest();
             }
 
-            var coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
+            var coords = new Coordinates(model.Latitude!.Value, model.Longitude!.Value);
 
             if (!coords.IsValid())
             {
