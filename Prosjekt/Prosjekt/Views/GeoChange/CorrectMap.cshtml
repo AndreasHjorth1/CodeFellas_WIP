@@ -15,6 +15,7 @@
         <hr />
 
         <form asp-controller="GeoChange" asp-action="CorrectMap" method="post" autocomplete="off">
+            @Html.AntiForgeryToken()
             <div class="border p-3 mb-4 rounded bg-light">
                 <div class="row g-2 mb-3">
                     <div class="col-6">
