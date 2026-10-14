@@ -136,7 +136,10 @@
             behovListe.push({
                 name: navn,
                 description: document.getElementById('inputDescription').value,
-                total: document.getElementById('inputTotal').value
+                total: document.getElementById('inputTotal').value,
+                latitude: document.getElementById('Latitude').value,
+                longitude: document.getElementById('Longitude').value,
+                importance: document.getElementById('viktighetSelect').value
             });
 
             document.getElementById('inputName').value = '';
@@ -159,7 +162,10 @@
                 felter += `
                 <input type="hidden" name="NeedList[${i}].Name" value="${item.name}" />
                 <input type="hidden" name="NeedList[${i}].Description" value="${item.description}" />
-                <input type="hidden" name="NeedList[${i}].Total" value="${item.total}" />`;
+                <input type="hidden" name="NeedList[${i}].Total" value="${item.total}" />
+                <input type="hidden" name="NeedList[${i}].Latitude" value="${item.latitude}" />
+                <input type="hidden" name="NeedList[${i}].Longitude" value="${item.longitude}" />
+                <input type="hidden" name="NeedList[${i}].Importance" value="${item.importance}" />`;
                 
             });
             document.getElementById('behovTabell').innerHTML = rader;

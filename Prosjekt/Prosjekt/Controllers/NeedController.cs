@@ -28,13 +28,6 @@ namespace Prosjekt.Controllers
         {
             if (model.Latitude.HasValue && model.Longitude.HasValue && model.NeedList != null)
             {
-                foreach (var item in model.NeedList)
-                {
-                    item.Latitude = model.Latitude;
-                    item.Longitude = model.Longitude;
-                    item.Importance = model.Importance;
-                }
-
                 foreach (var key in ModelState.Keys
                     .Where(k => k.EndsWith(".Latitude")
                     || k.EndsWith(".Longitude") || k.EndsWith(".Importance"))
@@ -101,6 +94,7 @@ namespace Prosjekt.Controllers
 
             if (!coords.IsValid())
             {
+                ModelState.AddModelError("", "De oppgitte koordinatene er ugyldige.");
                 return View(model);
             }
 
