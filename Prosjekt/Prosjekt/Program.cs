@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+
 // 1. Hent tilkoblingsstreng
 var connectionString = builder.Configuration.GetConnectionString("Mapdb")
     ?? builder.Configuration.GetConnectionString("mariadbcontainer")
@@ -15,6 +16,7 @@ var connectionString = builder.Configuration.GetConnectionString("Mapdb")
 
 // 2. Registrer repository
 builder.Services.AddScoped<IGeoChangeRepository, GeoChangeRepository>();
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
 
 // 3. Registrer DbContext
 var serverVersion = new MariaDbServerVersion(new Version(11, 4, 0));

@@ -8,18 +8,18 @@ namespace Prosjekt.DataAccess
         /// <summary>
         /// Initializes a new ApplicationDbContext with the specified DbContextOptions.
         /// </summary>
-        /// <remarks>Register the context in the service container and supply
-        /// DbContextOptions<ApplicationDbContext>; the options are passed to the base DbContext constructor.</remarks>
-        /// <param name="options">Options for configuring the context, typically provided by dependency injection and forwarded to the base
-        /// DbContext.</param>
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<GeoChange> GeoChanges { get; set; }
+
+        // Her er tabellen for ressurser som manglet
+        public DbSet<Resource> Resources { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            // Konfigurasjon for GeoChange
             modelBuilder.Entity<GeoChange>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -32,6 +32,25 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.ChangeTypes);
                 entity.Property(e => e.Radius);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // Konfigurasjon for Resource
+            modelBuilder.Entity<Resource>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(4000);
+                entity.Property(e => e.Category).HasMaxLength(100);
+                entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+                entity.Property(e => e.IsAvailable).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // Mappet til koordinat-strukturen på samme måte som GeoChange
+                entity.ComplexProperty(e => e.Coords, coord =>
+                {
+                    coord.Property(c => c.Latitude).HasColumnName("Latitude").IsRequired();
+                    coord.Property(c => c.Longitude).HasColumnName("Longitude").IsRequired();
+                });
             });
         }
     }

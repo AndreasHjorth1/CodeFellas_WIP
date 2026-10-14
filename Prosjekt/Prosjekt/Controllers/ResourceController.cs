@@ -1,20 +1,22 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
-using Prosjekt.Models.ModelView.ResourceType;
-using System.Collections.Concurrent;
+using Prosjekt.Utils;
 
 namespace Prosjekt.Controllers
 {
-    /// <summary>
-    /// Provides MVC actions to create, edit, list, and delete resources stored in an in-memory, thread-safe dictionary.
-    /// </summary>
-    /// <remarks>Validates model state and coordinates, maps posted form fields to specialized view models
-    /// (Vehicle, Tool, Clothing, Provision, Materials), and protects POST actions with anti-forgery validation.
-    /// Resources are keyed by name using a case-insensitive, concurrent dictionary as the in-memory store.</remarks>
     public class ResourceController : Controller
     {
-        private static readonly ConcurrentDictionary<string, ResourceViewModel> _resourceDatabase = new(StringComparer.OrdinalIgnoreCase);
+        private readonly IResourceRepository _repo;
+
+        public ResourceController(IResourceRepository repo)
+        {
+            _repo = repo;
+        }
 
         [HttpGet]
         public IActionResult Index()
@@ -24,7 +26,7 @@ namespace Prosjekt.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(ResourceCreatorViewModel model)
+        public async Task<IActionResult> Create(ResourceCreatorViewModel model)
         {
             if (model.Latitude.HasValue && model.Longitude.HasValue && model.ResourceList != null)
             {
@@ -58,239 +60,103 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            ResourceViewModel? lastSavedResource = null;
-
             for (int i = 0; i < model.ResourceList.Count; i++)
             {
                 var baseResource = model.ResourceList[i];
-                baseResource.Latitude = model.Latitude;
-                baseResource.Longitude = model.Longitude;
 
-                ResourceViewModel resourceToSave = baseResource;
-
+                string extraInfo = "";
                 switch (baseResource.Category)
                 {
                     case ResourceViewModel.ResourceType.Vehicle:
                         string licensePlate = Request.Form[$"ResourceList[{i}].LicensePlate"].ToString();
-                        string vehicleTypeStr = Request.Form[$"ResourceList[{i}].VehicleType"].ToString();
-                        Enum.TryParse<VehicleViewModel.VehicleType>(vehicleTypeStr, out var vehicleType);
-                        resourceToSave = new VehicleViewModel
-                        {
-                            Name = baseResource.Name,
-                            Description = baseResource.Description,
-                            Quantity = baseResource.Quantity,
-                            Latitude = baseResource.Latitude,
-                            Longitude = baseResource.Longitude,
-                            Category = baseResource.Category,
-                            LicensePlate = licensePlate,
-                            Type = vehicleType
-                        };
+                        if (!string.IsNullOrEmpty(licensePlate)) extraInfo = $"[Reg.nr: {licensePlate}]";
                         break;
-
-                    case ResourceViewModel.ResourceType.Tool:
-                        resourceToSave = new ToolViewModel
-                        {
-                            Name = baseResource.Name,
-                            Description = baseResource.Description,
-                            Quantity = baseResource.Quantity,
-                            Latitude = baseResource.Latitude,
-                            Longitude = baseResource.Longitude,
-                            Category = baseResource.Category,
-                        };
-                        break;
-
                     case ResourceViewModel.ResourceType.Clothing:
                         string sizeStr = Request.Form[$"ResourceList[{i}].Size"].ToString();
-                        Enum.TryParse<ClothingViewModel.ClothingSize>(sizeStr, out var size);
-                        resourceToSave = new ClothingViewModel
-                        {
-                            Name = baseResource.Name,
-                            Description = baseResource.Description,
-                            Quantity = baseResource.Quantity,
-                            Latitude = baseResource.Latitude,
-                            Longitude = baseResource.Longitude,
-                            Category = baseResource.Category,
-                            Size = size
-                        };
-                        break;
-
-                    case ResourceViewModel.ResourceType.Provision:
-                        string provisionTypeStr = Request.Form[$"ResourceList[{i}].ProvisionType"].ToString();
-                        Enum.TryParse<ProvisionViewModel.ProvisionType>(provisionTypeStr, out var provisionType);
-                        resourceToSave = new ProvisionViewModel
-                        {
-                            Name = baseResource.Name,
-                            Description = baseResource.Description,
-                            Quantity = baseResource.Quantity,
-                            Latitude = baseResource.Latitude,
-                            Longitude = baseResource.Longitude,
-                            Category = baseResource.Category,
-                            Type = provisionType
-                        };
-                        break;
-
-                    case ResourceViewModel.ResourceType.Materials:
-                        string materialTypeStr = Request.Form[$"ResourceList[{i}].MaterialType"].ToString();
-                        Enum.TryParse<MaterialsViewModel.MaterialType>(materialTypeStr, out var materialType);
-                        resourceToSave = new MaterialsViewModel
-                        {
-                            Name = baseResource.Name,
-                            Description = baseResource.Description,
-                            Quantity = baseResource.Quantity,
-                            Latitude = baseResource.Latitude,
-                            Longitude = baseResource.Longitude,
-                            Category = baseResource.Category,
-                            Type = materialType
-                        };
+                        if (!string.IsNullOrEmpty(sizeStr)) extraInfo = $"[Størrelse: {sizeStr}]";
                         break;
                 }
 
-                _resourceDatabase[resourceToSave.Name] = resourceToSave;
-                lastSavedResource = resourceToSave;
+                var resourceEntity = new Resource
+                {
+                    Name = baseResource.Name ?? "Ukjent ressurs",
+                    Description = string.IsNullOrWhiteSpace(extraInfo)
+                        ? baseResource.Description ?? ""
+                        : $"{baseResource.Description} {extraInfo}".Trim(),
+                    Category = baseResource.Category.ToString(),
+                    IsAvailable = baseResource.Availability,
+                    PhoneNumber = baseResource.PhoneNumber,
+                    Quantity = baseResource.Quantity,
+                    AvailableFrom = baseResource.AvailableFrom,
+                    AvailableTo = baseResource.AvailableTo,
+                    Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
+                    CreatedAt = NorwegianTime.Now,
+                }
+            ;
+
+                await _repo.AddAsync(resourceEntity);
             }
 
-            // Siden vi har bekreftet at ResourceList ikke er tom, vil lastSavedResource alltid ha en verdi her
-            return View("Create", lastSavedResource);
+            return RedirectToAction(nameof(Overview));
         }
 
         [HttpGet]
-        public IActionResult Overview()
+        public async Task<IActionResult> Overview()
         {
-            var allResources = _resourceDatabase.Values.ToList();
-            return View(allResources);
-        }
+            var resourceEntities = await _repo.GetAllAsync();
 
-        [HttpGet]
-        public IActionResult Edit(string name)
-        {
-            if (string.IsNullOrEmpty(name) || !_resourceDatabase.TryGetValue(name, out var resource))
+            // Mapper fra Database-entitet til ViewModel for visning
+            var resourceViewModels = resourceEntities.Select(r => new ResourceViewModel
             {
-                return NotFound();
-            }
+                Name = r.Name,
+                Description = r.Description,
+                PhoneNumber = r.PhoneNumber,
+                Quantity = r.Quantity,
+                Availability = r.IsAvailable,
+                Latitude = r.Coords.Latitude,
+                Longitude = r.Coords.Longitude,
+                Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat) ? cat : ResourceViewModel.ResourceType.Other,
+                AvailableFrom = r.AvailableFrom,
+                AvailableTo = r.AvailableTo
+            }).ToList();
+
+            return View(resourceViewModels);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var resource = await _repo.GetByIdAsync(id);
+            if (resource == null) return NotFound();
 
             return View(resource);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(string originalName, ResourceViewModel model)
+        public async Task<IActionResult> Edit(int id, Resource model)
         {
-            if (string.IsNullOrEmpty(originalName))
+            if (id != model.Id) return BadRequest();
+
+            if (ModelState.IsValid)
             {
-                return BadRequest();
+                if (!model.Coords.IsValid())
+                {
+                    ModelState.AddModelError("", "Du må velge en gyldig posisjon.");
+                    return View(model);
+                }
+
+                await _repo.UpdateAsync(model);
+                return RedirectToAction(nameof(Overview));
             }
-
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            var coords = new Coordinates(model.Latitude!.Value, model.Longitude!.Value);
-            if (!coords.IsValid())
-            {
-                ModelState.AddModelError("", "Du må velge en gyldig posisjon.");
-                return View(model);
-            }
-
-            if (!originalName.Equals(model.Name, StringComparison.OrdinalIgnoreCase))
-            {
-                _resourceDatabase.TryRemove(originalName, out _);
-            }
-
-            ResourceViewModel resourceToSave = model;
-
-            switch (model.Category)
-            {
-                case ResourceViewModel.ResourceType.Vehicle:
-                    string licensePlate = Request.Form["LicensePlate"].ToString();
-                    string vehicleTypeStr = Request.Form["VehicleType"].ToString();
-                    Enum.TryParse<VehicleViewModel.VehicleType>(vehicleTypeStr, out var vehicleType);
-
-                    resourceToSave = new VehicleViewModel
-                    {
-                        Name = model.Name,
-                        Description = model.Description,
-                        Quantity = model.Quantity,
-                        Latitude = model.Latitude,
-                        Longitude = model.Longitude,
-                        Category = model.Category,
-                        LicensePlate = licensePlate,
-                        Type = vehicleType
-                    };
-                    break;
-
-                case ResourceViewModel.ResourceType.Tool:
-                    resourceToSave = new ToolViewModel
-                    {
-                        Name = model.Name,
-                        Description = model.Description,
-                        Quantity = model.Quantity,
-                        Latitude = model.Latitude,
-                        Longitude = model.Longitude,
-                        Category = model.Category,
-                    };
-                    break;
-
-                case ResourceViewModel.ResourceType.Clothing:
-                    string sizeStr = Request.Form["Size"].ToString();
-                    Enum.TryParse<ClothingViewModel.ClothingSize>(sizeStr, out var size);
-                    resourceToSave = new ClothingViewModel
-                    {
-                        Name = model.Name,
-                        Description = model.Description,
-                        Quantity = model.Quantity,
-                        Latitude = model.Latitude,
-                        Longitude = model.Longitude,
-                        Category = model.Category,
-                        Size = size
-                    };
-                    break;
-
-                case ResourceViewModel.ResourceType.Provision:
-                    string provisionTypeStr = Request.Form["ProvisionType"].ToString();
-                    Enum.TryParse<ProvisionViewModel.ProvisionType>(provisionTypeStr, out var provisionType);
-                    resourceToSave = new ProvisionViewModel
-                    {
-                        Name = model.Name,
-                        Description = model.Description,
-                        Quantity = model.Quantity,
-                        Latitude = model.Latitude,
-                        Longitude = model.Longitude,
-                        Category = model.Category,
-                        Type = provisionType
-                    };
-                    break;
-
-                case ResourceViewModel.ResourceType.Materials:
-                    string materialTypeStr = Request.Form["MaterialType"].ToString();
-                    Enum.TryParse<MaterialsViewModel.MaterialType>(materialTypeStr, out var materialType);
-                    resourceToSave = new MaterialsViewModel
-                    {
-                        Name = model.Name,
-                        Description = model.Description,
-                        Quantity = model.Quantity,
-                        Latitude = model.Latitude,
-                        Longitude = model.Longitude,
-                        Category = model.Category,
-                        Type = materialType
-                    };
-                    break;
-            }
-
-            _resourceDatabase[resourceToSave.Name] = resourceToSave;
-
-            return RedirectToAction(nameof(Overview));
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(string name)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (!string.IsNullOrEmpty(name))
-            {
-                _resourceDatabase.TryRemove(name, out _);
-            }
-
+            await _repo.DeleteAsync(id);
             return RedirectToAction(nameof(Overview));
         }
     }
