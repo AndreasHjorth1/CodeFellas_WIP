@@ -36,10 +36,6 @@
                     <label class="fw-bold">Antall</label>
                     <input id="inputTotal" type="number" class="form-control" min="1" value="1"/>
                 </div>
-
-                <button type="button" class="btn btn-outline-primary w-100" onclick="leggTilIListe()">
-                    Legg til i listen
-                </button>
                 
                 <div class="form-group mb-4">
                     <label asp-for="Importance" class="fw-bold">Viktighet</label>
@@ -56,6 +52,11 @@
                         <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
                     </div>
                 </div>
+
+                <button type="button" class="btn btn-outline-primary w-100" onclick="leggTilIListe()">
+                    Legg til i listen
+                </button>
+
                 <h6 class="fw-bold">Behov i denne registreringen</h6>
                 <table class="table table-sm table-bordered">
                     <tbody id="behovTabell"></tbody>
