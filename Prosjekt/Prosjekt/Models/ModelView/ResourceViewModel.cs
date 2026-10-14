@@ -5,6 +5,8 @@ namespace Prosjekt.Models.ModelView
 {
     public class ResourceViewModel
     {
+        public int Id { get; set; }
+
         public enum ResourceType
         {
             [Display(Name = "Provisjon")] Provision,

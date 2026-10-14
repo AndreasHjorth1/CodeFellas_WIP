@@ -69,8 +69,8 @@
                                     }
                                 </td>
                                 <td class="text-end text-nowrap">
-                                    <a asp-controller="Resource" asp-action="Edit" asp-route-id="@item.Name" class="btn btn-sm btn-warning">Rediger</a>
-                                    <form asp-controller="Resource" asp-action="Delete" asp-route-id="@item.Name" method="post" style="display:inline;" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
+                                    <a asp-controller="Resource" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Rediger</a>
+                                    <form asp-controller="Resource" asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
                                         <button type="submit" class="btn btn-sm btn-danger">Slett</button>
                                     </form>
                                 </td>
