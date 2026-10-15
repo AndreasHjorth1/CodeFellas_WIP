@@ -1,25 +1,30 @@
 @using Prosjekt.Models.ModelView
-@using Prosjekt.Models
-@model NeedViewModel
+@model NeedCreatorViewModel
 
 @{
-    ViewData["Title"] = "Behov opprettet";
+    ViewData["Title"] = "Behov registrert";
 }
 
-@* Hjelpefunksjoner for farge og norsk oversettelse av prioritet *@
 @functions {
-    string GetColor(Importance v) => v switch
+    string OversettImportance(ImportanceLevel v) => v switch
     {
-        Importance.High => "#dc3545",
-        Importance.Medium => "#ffc107",
-        _ => "#198754"
+        ImportanceLevel.Acute => "Akutt behov",
+        _ => "Planlagt behov"
     };
 
-    string GetImportanceText(Importance v) => v switch
+    string OversettNeedType(NeedViewModel.NeedType type) => type switch
     {
-        Importance.High => "Høy",
-        Importance.Medium => "Middels",
-        _ => "Lav"
+        NeedViewModel.NeedType.Food => "Mat/Vann",
+        NeedViewModel.NeedType.Medicine => "Medisiner",
+        NeedViewModel.NeedType.Transport => "Transport",
+        NeedViewModel.NeedType.PowerGenerator => "Strøm/aggregat",
+        NeedViewModel.NeedType.SnowRemoval => "Snørydding",
+        NeedViewModel.NeedType.SandGravel => "Sand/grus",
+        NeedViewModel.NeedType.Machinery => "Maskiner",
+        NeedViewModel.NeedType.Evacuation => "Evakuering",
+        NeedViewModel.NeedType.Communication => "Samband",
+        NeedViewModel.NeedType.Personnel => "Mannskap",
+        _ => "Annet"
     };
 }
 
@@ -28,23 +33,31 @@
 
 <div class="row mb-3">
     <div class="col-md-6">
-        <div class="card p-3 h-100">
-            <p><strong>Navn:</strong> @Model.Name</p>
-            <p><strong>Beskrivelse:</strong> @Model.Description</p>
-            <p><strong>Totalt behov:</strong> @Model.Total</p>
-            <p>
-                <strong>Prioritet:</strong>
-                <span class="badge" style="@($"background-color: {GetColor(Model.Importance)}")">@GetImportanceText(Model.Importance)</span>
-            </p>
-            <p class="mb-0"><strong>Posisjon:</strong> @Model.Latitude, @Model.Longitude</p>
+        <div class="card p-3 h-100 shadow-sm">
+            <h5>Felles informasjon</h5>
+            <p><strong>Posisjon:</strong> @Model.Latitude, @Model.Longitude</p>
+            <p><strong>Viktighet:</strong> @OversettImportance(Model.Importance)</p>
+            <p><strong>Frist:</strong> @(Model.Deadline.HasValue ? Model.Deadline.Value.ToString("dd.MM.yyyy HH:mm") : "Ingen frist")</p>
+
+            <h5 class="mt-3">Registrerte behov (@Model.NeedList.Count)</h5>
+            <ul class="list-group list-group-flush">
+                @foreach (var need in Model.NeedList)
+                {
+                    <li class="list-group-item px-0">
+                        <strong>@need.Name</strong> (@OversettNeedType(need.Type))<br />
+                        <span class="text-muted small">Tlf: @need.Phone</span><br />
+                        <small>@need.Description</small>
+                    </li>
+                }
+            </ul>
         </div>
     </div>
     <div class="col-md-6">
-        <div id="kvitteringBehovKart" style="height: 280px;"></div>
+        <div id="kvitteringBehovKart" class="shadow-sm rounded" style="height: 350px;"></div>
     </div>
 </div>
 
-<a asp-controller="Need" asp-action="Index" class="btn btn-secondary">Opprett et nytt behov til</a>
+<a asp-controller="Need" asp-action="Index" class="btn btn-secondary">Opprett flere behov</a>
 <a asp-controller="Need" asp-action="Overview" class="btn btn-primary">Gå til oversikt</a>
 
 @section Scripts {
@@ -55,27 +68,19 @@
 
         if (!isNaN(lat) && !isNaN(lng)) {
             var kart = L.map('kvitteringBehovKart').setView([lat, lng], 14);
-
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(kart);
 
             function getIkon(fargeNavn) {
                 return new L.Icon({
                     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
                     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41]
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
                 });
             }
-            var ikoner = {
-                0: getIkon('green'),
-                1: getIkon('gold'),
-                2: getIkon('red')
-            };
 
+            var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
             var valgtIkon = ikoner[importanceNumber] || ikoner[0];
 
             L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);

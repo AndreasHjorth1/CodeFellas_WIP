@@ -1,37 +1,73 @@
 ﻿@using Prosjekt.Models.ModelView
-@using Prosjekt.Models
 @model NeedViewModel
 
 @{
     ViewData["Title"] = "Endre Behov";
 }
-@functions {
-    string Farge(Importance v) => v switch { Importance.High => "#dc3545", Importance.Medium => "#ffc107", _ => "#198754" };
-}
+
 <h1>Endre Behov</h1>
+
 <div class="row">
     <div class="col-md-6">
         <form asp-controller="Need" asp-action="Edit" method="post" autocomplete="off">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="originalName" value="@Model.Name" />
-            <input asp-for="Latitude" type="hidden" />
-            <input asp-for="Longitude" type="hidden" />
+            
+            <input asp-for="Latitude" type="hidden" id="Latitude" />
+            <input asp-for="Longitude" type="hidden" id="Longitude" />
 
-            <div class="form-group mb-3"><label asp-for="Name">Navn</label><input asp-for="Name" class="form-control" /></div>
-            <div class="form-group mb-3"><label asp-for="Description">Beskrivelse</label><input asp-for="Description" class="form-control" /></div>
-            <div class="form-group mb-3"><label asp-for="Total">Antall</label><input asp-for="Total" type="number" class="form-control" /></div>
-            <div class="form-group mb-3"><label asp-for="Importance">Viktighet</label><select id="viktighetSelect" asp-for="Importance" asp-items="Html.GetEnumSelectList<Importance>()" class="form-select"></select></div>
+            <div class="form-group mb-3">
+                <label asp-for="Name">Navn</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label asp-for="Phone">Telefonnummer</label>
+                <input asp-for="Phone" class="form-control" />
+                <span asp-validation-for="Phone" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Type">Behovstype</label>
+                <select asp-for="Type" asp-items="Html.GetEnumSelectList<NeedViewModel.NeedType>()" class="form-select"></select>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Deadline">Tidsfrist</label>
+                <input asp-for="Deadline" type="datetime-local" class="form-control" required />
+                <span asp-validation-for="Deadline" class="text-danger small"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Importance">Viktighet</label>
+                <select id="viktighetSelect" asp-for="Importance" asp-items="Html.GetEnumSelectList<ImportanceLevel>()" class="form-select"></select>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="IsFulfilled" class="form-check-input" type="checkbox" />
+                <label asp-for="IsFulfilled" class="form-check-label">Marker som oppfylt</label>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Description">Beskrivelse</label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-danger small"></span>
+            </div>
             
             <button type="submit" class="btn btn-primary">Lagre endringer</button>
             <a asp-action="Overview" class="btn btn-secondary">Avbryt</a>
         </form>
     </div>
-    <div class="col-md-6"><div id="redigerKart" style="height: 250px;"></div></div>
+    <div class="col-md-6">
+        <div id="redigerKart" class="shadow-sm rounded" style="height: 450px;"></div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
-        var lat = parseFloat('@Model.Latitude');
-        var lng = parseFloat('@Model.Longitude');
+        var lat = parseFloat('@Model.Latitude'.replace(',', '.'));
+        var lng = parseFloat('@Model.Longitude'.replace(',', '.'));
         var harPosisjon = !isNaN(lat) && !isNaN(lng);
         var startPunkt = harPosisjon ? [lat, lng] : [58.1467, 7.9956];
 
@@ -49,7 +85,7 @@
                 iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
             });
         }
-        var ikoner = { 0: getIkon('green'), 1: getIkon('gold'), 2: getIkon('red') };
+        var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
 
         function getAktueltIkon() {
             var selectVal = document.getElementById('viktighetSelect').value;
@@ -64,8 +100,6 @@
 
         if (harPosisjon) {
             markor = L.marker(startPunkt, { icon: getAktueltIkon() }).addTo(kart);
-            document.getElementById('Latitude').value = lat;
-            document.getElementById('Longitude').value = lng;
         }
 
         document.getElementById('viktighetSelect').addEventListener('change', function() {
