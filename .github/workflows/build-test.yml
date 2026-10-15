@@ -1,0 +1,40 @@
+name: Build and test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test Prosjekt
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore ./Prosjekt/Prosjekt.slnx
+
+      - name: Build solution
+        run: dotnet build ./Prosjekt/Prosjekt.slnx --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test ./Prosjekt/Prosjekt.slnx --configuration Release --no-build --no-restore --verbosity normal
