@@ -31,10 +31,10 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore ./Prosjekt.slnx
+        run: dotnet restore ./Prosjekt/Prosjekt.slnx
 
       - name: Build solution
-        run: dotnet build ./Prosjekt.slnx --configuration Release --no-restore
+        run: dotnet build ./Prosjekt/Prosjekt.slnx --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test ./Prosjekt.slnx --configuration Release --no-build --no-restore --verbosity normal
+        run: dotnet test ./Prosjekt/Prosjekt.slnx --configuration Release --no-build --no-restore --verbosity normal
