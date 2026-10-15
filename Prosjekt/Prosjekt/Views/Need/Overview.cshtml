@@ -1,27 +1,55 @@
 ﻿@using Prosjekt.Models.ModelView
-@using Prosjekt.Models
 @model List<NeedViewModel>
 
 @{
     ViewData["Title"] = "Oversikt over behov";
 }
-@functions {
-    string Farge(Importance v) => v switch { Importance.High => "#dc3545", Importance.Medium => "#ffc107", _ => "#198754" };
 
-    string OversettViktighet(Importance v) => v switch
+@functions {
+    string Farge(ImportanceLevel v) => v switch 
+    { 
+        ImportanceLevel.Acute => "#dc3545", 
+        _ => "#ffc107" 
+    };
+
+    string OversettViktighet(ImportanceLevel v) => v switch
     {
-        Importance.High => "Høy",
-        Importance.Medium => "Middels",
-        _ => "Lav"
+        ImportanceLevel.Acute => "Akutt behov",
+        _ => "Planlagt behov"
+    };
+
+    string OversettNeedType(NeedViewModel.NeedType type) => type switch
+    {
+        NeedViewModel.NeedType.Food => "Mat/Vann",
+        NeedViewModel.NeedType.Medicine => "Medisiner",
+        NeedViewModel.NeedType.Transport => "Transport",
+        NeedViewModel.NeedType.PowerGenerator => "Strøm/aggregat",
+        NeedViewModel.NeedType.SnowRemoval => "Snørydding",
+        NeedViewModel.NeedType.SandGravel => "Sand/grus",
+        NeedViewModel.NeedType.Machinery => "Maskiner",
+        NeedViewModel.NeedType.Evacuation => "Evakuering",
+        NeedViewModel.NeedType.Communication => "Samband",
+        NeedViewModel.NeedType.Personnel => "Mannskap",
+        _ => "Annet"
     };
 }
+
 <h1 class="mb-4">Oversikt over behov</h1>
+
 <div class="row">
     <div class="col-lg-7 col-md-12 mb-4">
         <div class="table-responsive shadow-sm border rounded">
             <table class="table table-striped table-hover mb-0">
                 <thead class="table-light">
-                    <tr><th>Navn</th><th>Beskrivelse</th><th>Antall som trengs</th><th>Viktighet</th><th>Handlinger</th></tr>
+                    <tr>
+                        <th>Navn</th>
+                        <th>Type</th>
+                        <th>Tlf</th>
+                        <th>Frist</th>
+                        <th>Status</th>
+                        <th>Viktighet</th>
+                        <th>Handlinger</th>
+                    </tr>
                 </thead>
                 <tbody>
                     @if (Model != null && Model.Any())
@@ -30,12 +58,24 @@
                         {
                             <tr>
                                 <td>@item.Name</td>
-                                <td>@item.Description</td>
-                                <td>@item.Total</td>
+                                <td><span class="badge bg-secondary">@OversettNeedType(item.Type)</span></td>
+                                <td>@item.Phone</td>
+                                <td>@(item.Deadline.HasValue ? item.Deadline.Value.ToString("dd.MM.yyyy HH:mm") : "-")</td>
+                                <td>
+                                    @if (item.IsFulfilled)
+                                    {
+                                        <span class="badge bg-success">Oppfylt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-outline-secondary text-dark border">Ikke oppfylt</span>
+                                    }
+                                </td>
                                 <td><span class="badge" style="@($"background-color: {Farge(item.Importance)}")">@OversettViktighet(item.Importance)</span></td>
                                 <td class="text-nowrap">
                                     <a asp-controller="Need" asp-action="Edit" asp-route-name="@item.Name" class="btn btn-sm btn-warning">Rediger</a>
                                     <form asp-controller="Need" asp-action="Delete" asp-route-name="@item.Name" method="post" style="display:inline;" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
+                                        @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-sm btn-danger">Slett</button>
                                     </form>
                                 </td>
@@ -44,7 +84,7 @@
                     }
                     else
                     {
-                        <tr><td colspan="5" class="text-muted text-center py-4">Ingen behov registrert ennå.</td></tr>
+                        <tr><td colspan="7" class="text-muted text-center py-4">Ingen behov registrert ennå.</td></tr>
                     }
                 </tbody>
             </table>
@@ -69,16 +109,21 @@
                 iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
             });
         }
-        var ikoner = { 0: getIkon('green'), 1: getIkon('gold'), 2: getIkon('red') };
+        var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
 
         behov.forEach(function(b) {
             var lat = parseFloat(b.Latitude);
             var lng = parseFloat(b.Longitude);
             if (isNaN(lat) || isNaN(lng)) return;
 
+            var statusTekst = b.IsFulfilled 
+                ? '<span style="color: green; font-weight: bold;">Oppfylt</span>' 
+                : '<span style="color: red; font-weight: bold;">Ikke oppfylt</span>';
+
             var valgtIkon = ikoner[b.Importance] || ikoner[0];
+            
             L.marker([lat, lng], { icon: valgtIkon })
-                .bindTooltip(`<b>${b.Name}</b><br>Antall: ${b.Total}`)
+                .bindTooltip(`<b>${b.Name}</b><br>Tlf: ${b.Phone}<br>Status: ${statusTekst}`)
                 .addTo(kart);
             bounds.push([lat, lng]);
         });

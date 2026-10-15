@@ -9,6 +9,14 @@ using Prosjekt.Utils;
 
 namespace Prosjekt.Controllers
 {
+    /// <summary>
+    /// Provides MVC actions to create, list, edit, and delete resource entities; handles model binding, validation,
+    /// coordinate validation, and mapping between view models and persistent entities.
+    /// </summary>
+    /// <remarks>Uses an injected IResourceRepository for persistence. POST actions are protected with
+    /// anti-forgery and perform server-side model and coordinate validation. The Create action can add multiple
+    /// resources in one request, applies shared coordinates to list items when present, and returns the first created
+    /// resource to the view. Actions that retrieve or modify data are asynchronous.</remarks>
     public class ResourceController : Controller
     {
         private static int Next_Id = 0;
@@ -182,7 +190,7 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
-            if (ModelState.IsValid)
+                if (ModelState.IsValid)
             {
                 var resourceEntity = await _repo.GetByIdAsync(id);
                 if (resourceEntity == null) return NotFound();

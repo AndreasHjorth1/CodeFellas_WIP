@@ -1,46 +1,38 @@
 @using Prosjekt.Models.ModelView
-@using Prosjekt.Models
-@model NeedViewModel
+@model NeedCreatorViewModel
 
 @{
-    ViewData["Title"] = "Opprett et nytt behov";
+    ViewData["Title"] = "Opprett behov";
 }
+
 <div class="position-relative w-100 overflow-hidden" style="height: calc(100vh - 80px); min-height: 500px;">
     <div id="map" class="w-100 h-100"></div>
 
     <div id="sideMeny" class="position-absolute top-0 start-0 h-100 bg-white shadow-lg p-4 rounded-end d-none"
-         style="z-index: 1000; width: 420px; max-width: 100%; overflow-y: auto;">
+         style="z-index: 1000; width: 480px; max-width: 100%; overflow-y: auto;">
 
         <button type="button" class="btn-close float-end mb-2" id="lukkMenyBtn" aria-label="Lukk"></button>
         <div class="clearfix"></div>
 
         <h2 class="mb-1">Registrer Behov</h2>
-        <p class="text-muted small">Fyll inn informasjon om behovet for den valgte posisjonen.</p>
+        <p class="text-muted small">Klikk på kartet for posisjon, og legg til ett eller flere behov.</p>
         <hr />
 
         <form asp-controller="Need" asp-action="Create" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-            <div class="border p-3 mb-4 rounded bg-light">
+            <!-- Felles stedsdata, viktighet og tidsfrist -->
+            <div class="border p-3 mb-3 rounded bg-light">
                 <div class="form-group mb-3">
-                    <label asp-for="Name" class="fw-bold">Navn</label>
-                    <input asp-for="Name" class="form-control" placeholder="F.eks. Rullestoler, Førstehjelpsskrin" />
-                </div>
-                
-                <div class="form-group mb-3">
-                    <label asp-for="Description" class="fw-bold">Beskrivelse</label>
-                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Utdypende informasjon..."></textarea>
-                </div>
-                
-                <div class="form-group mb-3">
-                    <label asp-for="Total" class="fw-bold">Antall</label>
-                    <input asp-for="Total" type="number" class="form-control" />
-                </div>
-                
-                <div class="form-group mb-4">
                     <label asp-for="Importance" class="fw-bold">Viktighet</label>
-                    <select id="viktighetSelect" asp-for="Importance" asp-items="Html.GetEnumSelectList<Importance>()" class="form-select"></select>
+                    <select id="viktighetSelect" asp-for="Importance" asp-items="Html.GetEnumSelectList<ImportanceLevel>()" class="form-select"></select>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Deadline" class="fw-bold">Felles tidsfrist</label>
+                    <input asp-for="Deadline" type="datetime-local" class="form-control" required />
+                    <span asp-validation-for="Deadline" class="text-danger small"></span>
                 </div>
 
                 <div class="row g-2">
@@ -54,16 +46,75 @@
                     </div>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Lagre behov</button>
+
+            <!-- Boks for å fylle inn enkeltbehov -->
+            <div class="border p-3 mb-4 rounded bg-light">
+                <h5 class="mb-3">Legg til behov i listen</h5>
+
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Navn</label>
+                    <input id="inputName" class="form-control" placeholder="F.eks. Snørydding, Førstehjelpsutstyr" />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Telefonnummer</label>
+                    <input id="inputPhone" class="form-control" placeholder="F.eks. 98765432" />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Behovstype</label>
+                    <select id="inputType" class="form-select">
+                        <option value="Food">Mat/Vann</option>
+                        <option value="Medicine">Medisiner</option>
+                        <option value="Transport">Transport</option>
+                        <option value="PowerGenerator">Strøm/aggregat</option>
+                        <option value="SnowRemoval">Snørydding</option>
+                        <option value="SandGravel">Sand/grus</option>
+                        <option value="Machinery">Maskiner</option>
+                        <option value="Evacuation">Evakuering</option>
+                        <option value="Communication">Samband</option>
+                        <option value="Personnel">Mannskap</option>
+                        <option value="Other">Annet</option>
+                    </select>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Beskrivelse</label>
+                    <textarea id="inputDescription" class="form-control" rows="2" placeholder="Utdypende informasjon..."></textarea>
+                </div>
+
+                <button type="button" class="btn btn-secondary w-100" onclick="leggTilIListe()">+ Legg i listen</button>
+            </div>
+
+            <!-- Tabell for oversikt over behov som skal sendes inn -->
+            <h6 class="fw-bold">Behov som blir registrert:</h6>
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-bordered" id="behovTabell">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Navn</th>
+                            <th>Type</th>
+                            <th>Telefon</th>
+                            <th>Handling</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Dynamisk genererte skjulte felter for model binding -->
+            <div id="skjulteInputFelter"></div>
+
+            <button type="submit" class="btn btn-primary w-100">Opprett alle behov</button>
         </form>
     </div>
 </div>
 
 @section Scripts {
     <script>
+        let behovListe = [];
         var currentMarker = null;
         var sideMeny = document.getElementById('sideMeny');
-        var selectedLat, selectedLng;
 
         var map = L.map('map').setView([58.1467, 7.9956], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -78,7 +129,7 @@
             });
         }
 
-        var ikoner = { 0: getIkon('green'), 1: getIkon('gold'), 2: getIkon('red') };
+        var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
 
         function getAktueltIkon() {
             var selectVal = document.getElementById('viktighetSelect').value;
@@ -86,9 +137,11 @@
         }
 
         function updateMarkor() {
-            if (!selectedLat || !selectedLng) return;
+            var lat = document.getElementById('Latitude').value;
+            var lng = document.getElementById('Longitude').value;
+            if (!lat || !lng) return;
             if (currentMarker) map.removeLayer(currentMarker);
-            currentMarker = L.marker([selectedLat, selectedLng], { icon: getAktueltIkon() }).addTo(map);
+            currentMarker = L.marker([lat, lng], { icon: getAktueltIkon() }).addTo(map);
         }
 
         document.getElementById('viktighetSelect').addEventListener('change', function() {
@@ -96,14 +149,14 @@
         });
 
         map.on('click', function(e) {
-            selectedLat = e.latlng.lat.toFixed(6);
-            selectedLng = e.latlng.lng.toFixed(6);
-            document.getElementById('Latitude').value = selectedLat;
-            document.getElementById('Longitude').value = selectedLng;
+            var lat = e.latlng.lat.toFixed(6);
+            var lng = e.latlng.lng.toFixed(6);
+            document.getElementById('Latitude').value = lat;
+            document.getElementById('Longitude').value = lng;
             updateMarkor();
-            if (sideMeny.classList.contains('d-none')) sideMeny.classList.remove('d-none');
-            var menyBredde = sideMeny.offsetWidth || 420;
-            map.flyTo([selectedLat, selectedLng], map.getZoom(), { animate: true, duration: 0.8 });
+            sideMeny.classList.remove('d-none');
+            var menyBredde = sideMeny.offsetWidth || 480;
+            map.flyTo([lat, lng], map.getZoom(), { animate: true, duration: 0.8 });
             setTimeout(function() { map.panBy([-menyBredde / 2, 0], { animate: true, duration: 0.4 }); }, 300);
         });
 
@@ -111,11 +164,57 @@
             sideMeny.classList.add('d-none');
             if (currentMarker) {
                 map.removeLayer(currentMarker);
-                currentMarker = null; selectedLat = null; selectedLng = null;
+                currentMarker = null;
                 document.getElementById('Latitude').value = '';
                 document.getElementById('Longitude').value = '';
             }
         });
+
+        function leggTilIListe() {
+            let name = document.getElementById('inputName').value;
+            let phone = document.getElementById('inputPhone').value;
+            let description = document.getElementById('inputDescription').value;
+
+            let typeSelect = document.getElementById('inputType');
+            let type = typeSelect.value;
+            let typeText = typeSelect.options[typeSelect.selectedIndex].text;
+
+            if (!name || !phone) {
+                alert("Vennligst fyll ut navn og telefonnummer.");
+                return;
+            }
+
+            behovListe.push({ name, phone, type, typeText, description });
+
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputPhone').value = '';
+            document.getElementById('inputDescription').value = '';
+
+            oppdaterTabell();
+        }
+
+        function oppdaterTabell() {
+            let tbody = document.querySelector('#behovTabell tbody');
+            let skjulteInputs = document.getElementById('skjulteInputFelter');
+            tbody.innerHTML = '';
+            skjulteInputs.innerHTML = '';
+
+            behovListe.forEach((item, index) => {
+                tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.typeText}</td><td>${item.phone}</td><td><button type="button" class="btn btn-danger btn-sm" onclick="fjernFraListe(${index})">X</button></td></tr>`;
+
+                skjulteInputs.innerHTML += `
+                    <input type="hidden" name="NeedList[${index}].Name" value="${item.name}" />
+                    <input type="hidden" name="NeedList[${index}].Phone" value="${item.phone}" />
+                    <input type="hidden" name="NeedList[${index}].Type" value="${item.type}" />
+                    <input type="hidden" name="NeedList[${index}].Description" value="${item.description}" />
+                `;
+            });
+        }
+
+        function fjernFraListe(index) {
+            behovListe.splice(index, 1);
+            oppdaterTabell();
+        }
 
         setTimeout(function () { map.invalidateSize(); }, 200);
     </script>

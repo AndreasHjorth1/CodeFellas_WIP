@@ -19,23 +19,55 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            return View(new NeedViewModel());
+            var model = new NeedCreatorViewModel
+            {
+                NeedList = new List<NeedViewModel> { new NeedViewModel() }
+            };
+
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(NeedViewModel model)
+        public IActionResult Create(NeedCreatorViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Description) || model.Total <= 0)
+            if (model.NeedList == null)
             {
+                model.NeedList = new List<NeedViewModel> { new NeedViewModel() };
+            }
+
+            if (!model.Latitude.HasValue || !model.Longitude.HasValue)
+            {
+                ModelState.AddModelError("", "Du må velge et punkt på kartet.");
                 return View("Index", model);
             }
 
-            var coords = new Coordinates(model.Latitude!.Value, model.Longitude!.Value);
-
+            var coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
             if (!coords.IsValid())
             {
                 ModelState.AddModelError("", "De oppgitte koordinatene er ugyldige.");
+                return View("Index", model);
+            }
+
+            foreach (var item in model.NeedList)
+            {
+                item.Latitude = model.Latitude;
+                item.Longitude = model.Longitude;
+                item.Importance = model.Importance;
+                item.Deadline = model.Deadline;
+                item.IsFulfilled = model.IsFulfilled;
+            }
+
+            for (int i = 0; i < model.NeedList.Count; i++)
+            {
+                ModelState.Remove($"NeedList[{i}].Deadline");
+                ModelState.Remove($"NeedList[{i}].Latitude");
+                ModelState.Remove($"NeedList[{i}].Longitude");
+            }
+
+            if (!model.NeedList.Any(n => !string.IsNullOrWhiteSpace(n.Name)))
+            {
+                ModelState.AddModelError("", "Du må fylle ut minst ett behov.");
                 return View("Index", model);
             }
 
@@ -44,7 +76,13 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            _needDatabase[model.Name] = model;
+            foreach (var item in model.NeedList)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Name))
+                {
+                    _needDatabase[item.Name] = item;
+                }
+            }
 
             return View("Create", model);
         }
