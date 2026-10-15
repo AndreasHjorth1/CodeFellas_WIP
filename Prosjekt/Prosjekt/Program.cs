@@ -17,6 +17,7 @@ var connectionString = builder.Configuration.GetConnectionString("Mapdb")
 // 2. Registrer repository
 builder.Services.AddScoped<IGeoChangeRepository, GeoChangeRepository>();
 builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<INeedRepository, NeedRepository>();
 
 // 3. Registrer DbContext
 var serverVersion = new MariaDbServerVersion(new Version(11, 4, 0));
@@ -67,4 +68,11 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.Migrate();
+}
+
 app.Run();
+

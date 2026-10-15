@@ -1,20 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
-using Prosjekt.Models.ModelView;
+using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
-using System.Collections.Concurrent;
+using Prosjekt.Models.ModelView;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 namespace Prosjekt.Controllers
 {
-    /// <summary>
-    /// Provides MVC actions for creating, viewing, editing, and deleting NeedViewModel instances, using an in-memory,
-    /// thread-safe dictionary keyed by name (case-insensitive).
-    /// </summary>
-    /// <remarks>POST actions use anti-forgery validation. Inputs are validated for required fields, positive
-    /// totals, and valid geographic coordinates; invalid submissions return the input view with model-state errors.
-    /// Edit supports renaming by removing the original key when the name changes; Delete removes an entry if
-    /// present.</remarks>
     public class NeedController : Controller
     {
-        private static readonly ConcurrentDictionary<string, NeedViewModel> _needDatabase = new(StringComparer.OrdinalIgnoreCase);
+        private readonly INeedRepository _repo;
+
+        public NeedController(INeedRepository repo)
+        {
+            _repo = repo;
+        }
 
         [HttpGet]
         public IActionResult Index()
@@ -29,7 +31,7 @@ namespace Prosjekt.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(NeedCreatorViewModel model)
+        public async Task<IActionResult> Create(NeedCreatorViewModel model)
         {
             if (model.NeedList == null)
             {
@@ -53,9 +55,6 @@ namespace Prosjekt.Controllers
             {
                 item.Latitude = model.Latitude;
                 item.Longitude = model.Longitude;
-                item.Importance = model.Importance;
-                item.Deadline = model.Deadline;
-                item.IsFulfilled = model.IsFulfilled;
             }
 
             for (int i = 0; i < model.NeedList.Count; i++)
@@ -76,77 +75,130 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            foreach (var item in model.NeedList)
+            foreach (var baseNeed in model.NeedList)
             {
-                if (!string.IsNullOrWhiteSpace(item.Name))
+                if (!string.IsNullOrWhiteSpace(baseNeed.Name))
                 {
-                    _needDatabase[item.Name] = item;
+                    var needEntity = new Need
+                    {
+                        Name = baseNeed.Name,
+                        Description = baseNeed.Description ?? string.Empty,
+                        Category = baseNeed.Type.ToString(), // Mapper Type til Category
+                        PhoneNumber = baseNeed.Phone ?? string.Empty, // Mapper Phone til PhoneNumber
+                        Priority = baseNeed.Importance.ToString(),
+                        NeededBy = baseNeed.Deadline,
+                        IsFulfilled = baseNeed.IsFulfilled,
+                        Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await _repo.AddAsync(needEntity);
                 }
             }
 
-            return View("Create", model);
+            return RedirectToAction(nameof(Overview));
         }
 
         [HttpGet]
-        public IActionResult Overview()
+        public async Task<IActionResult> Overview()
         {
-            var allNeeds = _needDatabase.Values.ToList();
-            return View(allNeeds);
+            var needEntities = await _repo.GetAllAsync();
+
+            var needViewModels = needEntities.Select(n => new NeedViewModel
+            {
+                Id = n.Id,
+                Name = n.Name,
+                Description = n.Description,
+                Phone = n.PhoneNumber,
+                Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
+                Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
+                Deadline = n.NeededBy,
+                IsFulfilled = n.IsFulfilled,
+                Latitude = n.Coords.Latitude,
+                Longitude = n.Coords.Longitude
+            }).ToList();
+
+            return View(needViewModels);
         }
 
         [HttpGet]
-        public IActionResult Edit(string name)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (string.IsNullOrEmpty(name) || !_needDatabase.TryGetValue(name, out var need))
+            var need = await _repo.GetByIdAsync(id);
+            if (need == null)
             {
                 return NotFound();
             }
 
-            return View(need);
+            var viewModel = new NeedViewModel
+            {
+                Id = need.Id,
+                Name = need.Name,
+                Description = need.Description,
+                Phone = need.PhoneNumber,
+                Type = Enum.TryParse<NeedViewModel.NeedType>(need.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
+                Importance = Enum.TryParse<ImportanceLevel>(need.Priority, out var prio) ? prio : default,
+                Deadline = need.NeededBy,
+                IsFulfilled = need.IsFulfilled,
+                Latitude = need.Coords.Latitude,
+                Longitude = need.Coords.Longitude
+            };
+
+            return View(viewModel);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(string originalName, NeedViewModel model)
+        public async Task<IActionResult> Edit(int id, NeedViewModel model)
         {
-            if (string.IsNullOrEmpty(originalName))
+            if (id != model.Id)
             {
                 return BadRequest();
             }
 
-            var coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
-
-            if (!coords.IsValid())
+            if (!model.Latitude.HasValue || !model.Longitude.HasValue)
             {
+                ModelState.AddModelError("", "Du må velge et punkt på kartet.");
                 return View(model);
             }
 
-
-            if (!ModelState.IsValid)
+            var coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
+            if (!coords.IsValid())
             {
                 ModelState.AddModelError("", "De oppgitte koordinatene er ugyldige.");
                 return View(model);
             }
 
-            if (!originalName.Equals(model.Name, StringComparison.OrdinalIgnoreCase))
+            if (!ModelState.IsValid)
             {
-                _needDatabase.TryRemove(originalName, out _);
+                return View(model);
             }
 
-            _needDatabase[model.Name] = model;
+            var existingNeed = await _repo.GetByIdAsync(id);
+            if (existingNeed == null)
+            {
+                return NotFound();
+            }
+
+            existingNeed.Name = model.Name;
+            existingNeed.Description = model.Description;
+            existingNeed.PhoneNumber = model.Phone;
+            existingNeed.Category = model.Type.ToString();
+            existingNeed.Priority = model.Importance.ToString();
+            existingNeed.NeededBy = model.Deadline;
+            existingNeed.IsFulfilled = model.IsFulfilled;
+            existingNeed.Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
+
+            await _repo.UpdateAsync(existingNeed);
 
             return RedirectToAction(nameof(Overview));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(string name)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (!string.IsNullOrEmpty(name))
-            {
-                _needDatabase.TryRemove(name, out _);
-            }
-
+            await _repo.DeleteAsync(id);
             return RedirectToAction(nameof(Overview));
         }
     }

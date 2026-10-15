@@ -12,8 +12,12 @@ namespace Prosjekt.DataAccess
 
         public DbSet<GeoChange> GeoChanges { get; set; }
 
-        // Her er tabellen for ressurser som manglet
+        // Her er tabellen for ressurser 
         public DbSet<Resource> Resources { get; set; }
+
+        // Her er tabellen for need / behov
+        public DbSet<Need> Needs { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,6 +50,25 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Mappet til koordinat-strukturen på samme måte som GeoChange
+                entity.ComplexProperty(e => e.Coords, coord =>
+                {
+                    coord.Property(c => c.Latitude).HasColumnName("Latitude").IsRequired();
+                    coord.Property(c => c.Longitude).HasColumnName("Longitude").IsRequired();
+                });
+            });
+
+
+            // Konfigurasjon for Need
+            modelBuilder.Entity<Need>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(4000);
+                entity.Property(e => e.Category).HasMaxLength(50);
+                entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+                entity.Property(e => e.Priority).HasMaxLength(50);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
                 entity.ComplexProperty(e => e.Coords, coord =>
                 {
                     coord.Property(c => c.Latitude).HasColumnName("Latitude").IsRequired();
