@@ -22,8 +22,6 @@ namespace Prosjekt.Models.Entities
         [StringLength(20)]
         public string PhoneNumber { get; set; } = string.Empty;
 
-        public int Quantity { get; set; } = 1;
-
         [StringLength(50)]
         public string Priority { get; set; } = "Medium";
 
