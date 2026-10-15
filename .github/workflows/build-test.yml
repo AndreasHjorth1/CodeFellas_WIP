@@ -19,10 +19,10 @@ jobs:
   build-and-test:
     name: Build and test Prosjekt
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
-        working-directory: ./Prosjekt
+        working-directory: ./<Prosjekt>
 
     steps:
       - name: Checkout repository
@@ -34,10 +34,10 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore Prosjekt.slnx
 
       - name: Build solution
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build Prosjekt.slnx --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test --configuration Release --no-build --no-restore --verbosity normal
+        run: dotnet test Prosjekt.slnx --configuration Release --no-build --no-restore --verbosity normal
