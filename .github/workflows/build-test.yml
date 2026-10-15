@@ -22,7 +22,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./<Prosjekt>
+        working-directory: ./Prosjekt
 
     steps:
       - name: Checkout repository
@@ -34,10 +34,10 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore Prosjekt.slnx
+        run: dotnet restore
 
       - name: Build solution
-        run: dotnet build Prosjekt.slnx --configuration Release --no-restore
+        run: dotnet build --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test Prosjekt.slnx --configuration Release --no-build --no-restore --verbosity normal
+        run: dotnet test --configuration Release --no-build --no-restore --verbosity normal
