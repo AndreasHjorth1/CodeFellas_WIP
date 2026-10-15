@@ -19,6 +19,10 @@ jobs:
   build-and-test:
     name: Build and test Prosjekt
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./Prosjekt
 
     steps:
       - name: Checkout repository
