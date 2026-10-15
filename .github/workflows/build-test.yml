@@ -25,19 +25,11 @@ jobs:
         working-directory: ./Prosjekt
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore
+      -- name: Restore dependencies
+        run: dotnet restore ./Prosjekt.slnx
 
       - name: Build solution
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build ./Prosjekt.slnx --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test --configuration Release --no-build --no-restore --verbosity normal
+        run: dotnet test ./Prosjekt.slnx --configuration Release --no-build --no-restore --verbosity normal
