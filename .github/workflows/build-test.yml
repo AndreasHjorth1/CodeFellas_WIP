@@ -14,9 +14,10 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   build-and-test:
-    name: Build and test Heimevernet
+    name: Build and test Prosjekt
     runs-on: ubuntu-latest
 
     steps:
@@ -26,13 +27,13 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          global-json-file: global.json
+          dotnet-version: '9.0.x' # Endre til '8.0.x' hvis dere bruker .NET 8
 
       - name: Restore dependencies
-        run: dotnet restore ./Heimevernet.slnx
+        run: dotnet restore ./Prosjekt.slnx
 
       - name: Build solution
-        run: dotnet build ./Heimevernet.slnx --configuration Release --no-restore
+        run: dotnet build ./Prosjekt.slnx --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test ./Heimevernet.slnx --configuration Release --no-build --no-restore --verbosity normal
+        run: dotnet test ./Prosjekt.slnx --configuration Release --no-build --no-restore --verbosity normal
