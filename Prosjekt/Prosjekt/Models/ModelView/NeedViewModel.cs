@@ -4,6 +4,9 @@ namespace Prosjekt.Models.ModelView
 {
     public class NeedViewModel
     {
+
+        public int Id { get; set; }
+
         [Display(Name = "Navn")]
         [Required(ErrorMessage = "Navn må fylles ut.")]
         public string Name { get; set; } = string.Empty;

@@ -11,7 +11,9 @@
     <div class="col-md-6">
         <form asp-controller="Need" asp-action="Edit" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="originalName" value="@Model.Name" />
+            
+            <!-- Denne sender ID-en skjult til kontrolleren, i stedet for navnet -->
+            <input type="hidden" asp-for="Id" />
             
             <input asp-for="Latitude" type="hidden" id="Latitude" />
             <input asp-for="Longitude" type="hidden" id="Longitude" />
@@ -104,6 +106,7 @@
 
         document.getElementById('viktighetSelect').addEventListener('change', function() {
             if (markor) markor.setIcon(getAktueltIkon());
+
         });
 
         kart.on('click', function(e) {
