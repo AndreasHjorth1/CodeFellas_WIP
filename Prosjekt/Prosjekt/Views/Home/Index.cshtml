@@ -22,25 +22,33 @@
         // 1. Definer kartlagene
         // Vanlig gatekart (OpenStreetMap)
         var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+            attribution: '&copy; OpenStreetMap contributors',
+            noWrap: true // Stopper uendelig repetisjon av kartet
         });
 
         // Geonorge: Topografisk kart 
         var geonorgeTopo = L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
-            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+            noWrap: true // Stopper uendelig repetisjon av kartet
         });
 
         // Geonorge: Flybilder (Ortofoto via WMS)
         // TODO: Bytt til wms.geonorge.no/skwms1/wms.nib og legg inn token etter Q&A med Kartverket
         var geonorgeFlybilder = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Midlertidig satellitt (Esri) - Venter på Geonorge-tilgang'
-
+            attribution: '&copy; Midlertidig satellitt (Esri) - Venter på Geonorge-tilgang',
+            noWrap: true // Stopper uendelig repetisjon av kartet
         });
 
         // 2. Start kartet og legg til standardkartet (OSM)
         var map = L.map('homeMap', {
             center: [58.1467, 7.9956], // Sentrert over Agder
             zoom: 11,
+            minZoom: 3, // Hindrer brukeren i å zoome for langt ut
+            maxBounds: [
+                [-90, -180], // Sør-vestligste punkt i verden
+                [90, 180]    // Nord-østligste punkt i verden
+            ],
+            maxBoundsViscosity: 1.0, // Gjør kartkanten "solid" slik at man ikke kan dra kartet utenfor grensene
             layers: [osmKart]
         });
 
