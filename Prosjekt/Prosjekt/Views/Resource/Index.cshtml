@@ -4,46 +4,58 @@
 @{ ViewData["Title"] = "Opprett Ressurser"; }
 
 <div class="position-relative w-100 overflow-hidden" style="height: calc(100vh - 80px); min-height: 500px;">
+    <!-- Kart -->
     <div id="map" class="w-100 h-100"></div>
-    <div id="sideMeny" class="position-absolute top-0 start-0 h-100 bg-white shadow-lg p-4 rounded-end d-none" style="z-index: 1000; width: 420px; max-width: 100%; overflow-y: auto;">
+
+    <!-- Sidemeny -->
+    <div id="sideMeny" class="position-absolute top-0 end-0 h-100 bg-white shadow-lg p-4 rounded-start d-none" style="z-index: 1000; width: 420px; max-width: 100%; overflow-y: auto;">
         <button type="button" class="btn-close float-end mb-2" id="lukkMenyBtn" aria-label="Lukk"></button>
         <div class="clearfix"></div>
         <h2 class="mb-1">Registrer Ressurser</h2>
         <p class="text-muted small">Fyll inn ressurser for den valgte posisjonen på kartet.</p>
         <hr />
 
-        <form asp-controller="Resource" asp-action="Create" method="post" autocomplete="off">
+        <form asp-controller="Resource" asp-action="Create" method="post" autocomplete="off" id="hovedSkjema">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="All" class="text-danger"></div>
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
             <div class="border p-3 mb-4 rounded bg-light">
                 <h5 class="mb-3">Legg til ressurs i listen</h5>
                 
-                <div class="form-group mb-3"><label class="fw-bold">Navn</label><input id="inputName" class="form-control" placeholder="F.eks. Lastebil, Skrutrekker" /></div>
-                <div class="form-group mb-3"><label class="fw-bold">Beskrivelse</label><textarea id="inputDescription" class="form-control" rows="2"></textarea></div>
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Navn *</label>
+                    <input id="inputName" class="form-control" placeholder="F.eks. Lastebil, Skrutrekker" />
+                </div>
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Beskrivelse *</label>
+                    <textarea id="inputDescription" class="form-control" rows="2"></textarea>
+                </div>
 
-                <!-- NYE FELTER: Kontaktpunkt og Tilgjengelighet -->
-                <div class="form-group mb-3"><label class="fw-bold">Telefonnummer (Kontaktpunkt)</label><input id="inputPhoneNumber" class="form-control" placeholder="F.eks. 98765432" /></div>
+                <!-- Kontaktpunkt og Tilgjengelighet -->
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Telefonnummer (Kontaktpunkt) *</label>
+                    <input id="inputPhoneNumber" class="form-control" placeholder="F.eks. 98765432" />
+                </div>
                 
                 <div class="form-check mb-3">
                     <input id="inputAvailability" class="form-check-input" type="checkbox" checked />
                     <label class="form-check-label fw-bold" for="inputAvailability">Er tilgjengelig for oppdrag</label>
                 </div>
 
-                <!-- NYE FELTER: Tidspunkt / Frister -->
+                <!-- Tidspunkt / Frister -->
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label small fw-bold mb-1">Tilgjengelig fra</label>
+                        <label class="form-label small fw-bold mb-1">Tilgjengelig fra *</label>
                         <input id="inputAvailableFrom" type="datetime-local" class="form-control form-control-sm" />
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold mb-1">Tilgjengelig til</label>
+                        <label class="form-label small fw-bold mb-1">Tilgjengelig til *</label>
                         <input id="inputAvailableTo" type="datetime-local" class="form-control form-control-sm" />
                     </div>
                 </div>
 
                 <div class="form-group mb-3">
-                    <label class="fw-bold">Kategori</label>
+                    <label class="fw-bold">Kategori *</label>
                     <select id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
                         <option value="Vehicle">Kjøretøy</option>
                         <option value="Provision">Provisjon</option>
@@ -54,8 +66,9 @@
                     </select>
                 </div>
 
+                <!-- Underkategori: Kjøretøy -->
                 <div id="seksjonKjøretøy" class="kategori-seksjon mb-3">
-                    <label class="fw-bold">Kjøretøytype</label>
+                    <label class="fw-bold">Kjøretøytype *</label>
                     <select id="inputVehicleType" class="form-select mb-2">
                         <option value="Car">Bil</option><option value="Bus">Buss</option>
                         <option value="Bicycle">Sykkel</option><option value="Motorcycle">Motorsykkel</option>
@@ -63,12 +76,13 @@
                         <option value="Dozer">Doser</option><option value="Excavator">Gravemaskin</option>
                         <option value="Other">Annet</option>
                     </select>
-                    <label class="fw-bold">Skiltnummer</label>
+                    <label class="fw-bold">Skiltnummer *</label>
                     <input id="inputLicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
                 </div>
 
+                <!-- Underkategori: Verktøy -->
                 <div id="seksjonVerktøy" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Verktøystype</label>
+                    <label class="fw-bold">Verktøytype *</label>
                     <select id="inputToolType" class="form-select mb-2">
                         <option value="HandTool">Håndverktøy</option><option value="PowerTool">Elektroverktøy</option>
                         <option value="GardenTool">Hageverktøy</option><option value="MeasuringTool">Måleverktøy</option>
@@ -76,8 +90,9 @@
                     </select>
                 </div>
 
+                <!-- Underkategori: Materialer -->
                 <div id="seksjonMaterialer" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Materialtype</label>
+                    <label class="fw-bold">Materialtype *</label>
                     <select id="inputMaterialType" class="form-select">
                         <option value="Wood">Treverk</option><option value="Metal">Metall</option>
                         <option value="Plastic">Plast</option><option value="Glass">Glass</option>
@@ -87,22 +102,27 @@
                     </select>
                 </div>
 
+                <!-- Underkategori: Klær -->
                 <div id="seksjonKlær" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Størrelse</label>
+                    <label class="fw-bold">Størrelse *</label>
                     <select id="inputSize" class="form-select">
                         <option value="XS">XS</option><option value="S">S</option><option value="M">M</option>
                         <option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option>
                     </select>
                 </div>
 
+                <!-- Underkategori: Provisjon -->
                 <div id="seksjonProvisjon" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Provisjonstype</label>
+                    <label class="fw-bold">Provisjonstype *</label>
                     <select id="inputProvisionType" class="form-select">
                         <option value="Water">Vann</option><option value="FoodOnePortion">Mat (1 porsjon)</option>
                     </select>
                 </div>
 
-                <div class="form-group mb-3"><label class="fw-bold">Antall</label><input id="inputQuantity" type="number" min="1" value="1" class="form-control" /></div>
+                <div class="form-group mb-3">
+                    <label class="fw-bold">Antall *</label>
+                    <input id="inputQuantity" type="number" min="1" value="1" class="form-control" />
+                </div>
                 <button type="button" class="btn btn-secondary w-100" onclick="leggTilIListe()">+ Legg i listen</button>
             </div>
 
@@ -114,13 +134,15 @@
                 </table>
             </div>
 
+            <!-- Her blir de skjulte input-feltene fra mekortListe lagt til -->
             <div id="skjulteInputFelter"></div>
 
             <div class="row g-2 mb-4">
-                <div class="col-6"><label asp-for="Latitude" class="form-label small mb-1 fw-bold">Breddegrad</label><input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required /></div>
-                <div class="col-6"><label asp-for="Longitude" class="form-label small mb-1 fw-bold">Lengdegrad</label><input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required /></div>
+                <div class="col-6"><label asp-for="Latitude" class="form-label small mb-1 fw-bold">Breddegrad *</label><input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required /></div>
+                <div class="col-6"><label asp-for="Longitude" class="form-label small mb-1 fw-bold">Lengdegrad *</label><input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required /></div>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Opprett alle ressurser</button>
+            
+            <button type="submit" class="btn btn-primary w-100" onclick="return validerInnsending()">Opprett alle ressurser</button>
         </form>
     </div>
 </div>
@@ -128,33 +150,58 @@
 @section Scripts {
     <script>
         let mekortListe = [];
-        var currentMarker = null;
         var sideMeny = document.getElementById('sideMeny');
 
-        var map = L.map('map').setView([58.1467, 7.9956], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+        var map = L.map('map').setView([58.1467, 7.9956], 11);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' 
+        }).addTo(map);
+
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+            draw: { polygon: false, polyline: false, circle: false, rectangle: false, marker: true },
+            edit: { featureGroup: drawnItems, remove: true }
+        });
+        map.addControl(drawControl);
+
+        function settPosisjonOgVisMeny(lat, lng) {
+            document.getElementById('Latitude').value = lat;
+            document.getElementById('Longitude').value = lng;
+            sideMeny.classList.remove('d-none');
+            
+            var menyBredde = sideMeny.offsetWidth || 420;
+            map.flyTo([lat, lng], map.getZoom(), { animate: true, duration: 0.8 });
+            setTimeout(function() { map.panBy([menyBredde / 2, 0], { animate: true, duration: 0.4 }); }, 300);
+        }
+
+        map.on('draw:created', function(e) {
+            var layer = e.layer;
+            drawnItems.clearLayers();
+            drawnItems.addLayer(layer);
+
+            var latlng = layer.getLatLng();
+            settPosisjonOgVisMeny(latlng.lat.toFixed(6), latlng.lng.toFixed(6));
+        });
 
         map.on('click', function(e) {
             var lat = e.latlng.lat.toFixed(6);
             var lng = e.latlng.lng.toFixed(6);
-            document.getElementById('Latitude').value = lat;
-            document.getElementById('Longitude').value = lng;
-            if (currentMarker) map.removeLayer(currentMarker);
-            currentMarker = L.marker([lat, lng]).addTo(map);
-            sideMeny.classList.remove('d-none');
-            var menyBredde = sideMeny.offsetWidth || 420;
-            map.flyTo([lat, lng], map.getZoom(), { animate: true, duration: 0.8 });
-            setTimeout(function() { map.panBy([-menyBredde / 2, 0], { animate: true, duration: 0.4 }); }, 300);
+            
+            drawnItems.clearLayers();
+            var newMarker = L.marker([lat, lng]);
+            drawnItems.addLayer(newMarker);
+
+            settPosisjonOgVisMeny(lat, lng);
         });
 
         document.getElementById('lukkMenyBtn').addEventListener('click', function() {
             sideMeny.classList.add('d-none');
-            if (currentMarker) {
-                map.removeLayer(currentMarker);
-                currentMarker = null;
-                document.getElementById('Latitude').value = '';
-                document.getElementById('Longitude').value = '';
-            }
+            drawnItems.clearLayers();
+            document.getElementById('Latitude').value = '';
+            document.getElementById('Longitude').value = '';
         });
 
         function oppdaterSkjemavisning() {
@@ -168,9 +215,9 @@
         }
 
         function leggTilIListe() {
-            let name = document.getElementById('inputName').value;
-            let description = document.getElementById('inputDescription').value;
-            let phoneNumber = document.getElementById('inputPhoneNumber').value;
+            let name = document.getElementById('inputName').value.trim();
+            let description = document.getElementById('inputDescription').value.trim();
+            let phoneNumber = document.getElementById('inputPhoneNumber').value.trim();
             let availability = document.getElementById('inputAvailability').checked;
             let availableFrom = document.getElementById('inputAvailableFrom').value;
             let availableTo = document.getElementById('inputAvailableTo').value;
@@ -181,16 +228,20 @@
             let categoryNameNO = categorySelect.options[categorySelect.selectedIndex].text;
 
             let vehicleType = document.getElementById('inputVehicleType') ? document.getElementById('inputVehicleType').value : '';
-            let licensePlate = document.getElementById('inputLicensePlate') ? document.getElementById('inputLicensePlate').value : '';
+            let licensePlate = document.getElementById('inputLicensePlate') ? document.getElementById('inputLicensePlate').value.trim() : '';
             let toolType = document.getElementById('inputToolType') ? document.getElementById('inputToolType').value : '';
             let materialType = document.getElementById('inputMaterialType') ? document.getElementById('inputMaterialType').value : '';
             let size = document.getElementById('inputSize') ? document.getElementById('inputSize').value : '';
             let provisionType = document.getElementById('inputProvisionType') ? document.getElementById('inputProvisionType').value : '';
 
-            if (!name || quantity <= 0 || !phoneNumber) { 
-                alert("Vennligst fyll ut navn, telefonnummer og et gyldig antall."); 
-                return; 
-            }
+            // Sjekk at alle felt for ressursen er fylt ut før den legges til
+            if (!name) { alert("Vennligst fyll ut 'Navn'."); document.getElementById('inputName').focus(); return; }
+            if (!description) { alert("Vennligst fyll ut 'Beskrivelse'."); document.getElementById('inputDescription').focus(); return; }
+            if (!phoneNumber) { alert("Vennligst fyll ut 'Telefonnummer'."); document.getElementById('inputPhoneNumber').focus(); return; }
+            if (!availableFrom) { alert("Vennligst velg 'Tilgjengelig fra'."); document.getElementById('inputAvailableFrom').focus(); return; }
+            if (!availableTo) { alert("Vennligst velg 'Tilgjengelig til'."); document.getElementById('inputAvailableTo').focus(); return; }
+            if (!quantity || quantity <= 0) { alert("Vennligst fyll ut et gyldig 'Antall'."); document.getElementById('inputQuantity').focus(); return; }
+            if (category === "Vehicle" && !licensePlate) { alert("Vennligst fyll ut 'Skiltnummer'."); document.getElementById('inputLicensePlate').focus(); return; }
 
             mekortListe.push({ 
                 name, description, phoneNumber, availability, availableFrom, availableTo, 
@@ -202,6 +253,8 @@
             document.getElementById('inputName').value = '';
             document.getElementById('inputDescription').value = '';
             document.getElementById('inputPhoneNumber').value = '';
+            document.getElementById('inputAvailableFrom').value = '';
+            document.getElementById('inputAvailableTo').value = '';
             document.getElementById('inputQuantity').value = '1';
             if (document.getElementById('inputLicensePlate')) document.getElementById('inputLicensePlate').value = '';
             
@@ -242,7 +295,20 @@
             });
         }
 
+        // Funksjon for å sjekke at det finnes minst 1 ressurs i listen når bruker trykker "Opprett alle ressurser"
+        function validerInnsending() {
+            if (mekortListe.length === 0) {
+                alert("Du må legge til minst én ressurs i listen før du kan opprette!");
+                return false;
+            }
+            return true;
+        }
+
         function fjernFraListe(index) { mekortListe.splice(index, 1); oppdaterTabell(); }
         setTimeout(function () { map.invalidateSize(); }, 200);
     </script>
 }
+
+<style>
+    #sideMeny { box-shadow: -4px 0 15px rgba(0,0,0,0.15) !important; }
+</style>

@@ -1,4 +1,5 @@
 ﻿@using Prosjekt.Models.ModelView
+@using System.Globalization
 @model ResourceViewModel
 
 @{ 
@@ -9,28 +10,28 @@
     <div class="col-lg-5 col-md-6 p-3 d-flex flex-column">
         <h2 class="mb-4">Rediger Ressurs</h2>
         <form asp-controller="Resource" asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off" class="flex-grow-1">
-            <div asp-validation-summary="All" class="text-danger"></div>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
             
-            <!-- Skjult felt for å sende den unike ID-en -->
             <input type="hidden" asp-for="Id" />
 
             <div class="border p-4 mb-3 rounded bg-light shadow-sm">
                 <!-- Navn -->
                 <div class="form-group mb-3">
-                    <label asp-for="Name" class="fw-bold">Navn</label>
+                    <label asp-for="Name" class="fw-bold">Navn *</label>
                     <input asp-for="Name" class="form-control" required />
                 </div>
 
                 <!-- Beskrivelse -->
                 <div class="form-group mb-3">
-                    <label asp-for="Description" class="fw-bold">Beskrivelse</label>
-                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    <label asp-for="Description" class="fw-bold">Beskrivelse *</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
                 </div>
 
-                <!-- Telefonnummer / Kontaktpunkt -->
+                <!-- Telefonnummer -->
                 <div class="form-group mb-3">
-                    <label asp-for="PhoneNumber" class="fw-bold">Telefonnummer (Kontaktpunkt)</label>
-                    <input asp-for="PhoneNumber" class="form-control" />
+                    <label asp-for="PhoneNumber" class="fw-bold">Telefonnummer (Kontaktpunkt) *</label>
+                    <input asp-for="PhoneNumber" class="form-control" required />
                 </div>
 
                 <!-- Tilgjengelighet -->
@@ -39,21 +40,21 @@
                     <label class="form-check-label fw-bold" for="inputAvailability">Er tilgjengelig for oppdrag</label>
                 </div>
 
-                <!-- Tidsrom / Frister -->
+                <!-- Tidsrom -->
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label asp-for="AvailableFrom" class="form-label small fw-bold mb-1">Tilgjengelig fra</label>
-                        <input asp-for="AvailableFrom" type="datetime-local" class="form-control form-control-sm" />
+                        <label asp-for="AvailableFrom" class="form-label small fw-bold mb-1">Tilgjengelig fra *</label>
+                        <input asp-for="AvailableFrom" type="datetime-local" class="form-control form-control-sm" required />
                     </div>
                     <div class="col-6">
-                        <label asp-for="AvailableTo" class="form-label small fw-bold mb-1">Tilgjengelig til</label>
-                        <input asp-for="AvailableTo" type="datetime-local" class="form-control form-control-sm" />
+                        <label asp-for="AvailableTo" class="form-label small fw-bold mb-1">Tilgjengelig til *</label>
+                        <input asp-for="AvailableTo" type="datetime-local" class="form-control form-control-sm" required />
                     </div>
                 </div>
 
                 <!-- Kategori -->
                 <div class="form-group mb-3">
-                    <label asp-for="Category" class="fw-bold">Kategori</label>
+                    <label asp-for="Category" class="fw-bold">Kategori *</label>
                     <select asp-for="Category" id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
                         <option value="Vehicle">Kjøretøy</option>
                         <option value="Provision">Provisjon</option>
@@ -79,7 +80,7 @@
                         <option value="Other">Annet</option>
                     </select>
                     <label class="fw-bold">Skiltnummer</label>
-                    <input id="inputLicensePlate" name="LicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
+                    <input id="inputLicensePlate" asp-for="LicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
                 </div>
 
                 <!-- Underkategori: Verktøy -->
@@ -113,7 +114,7 @@
                 <!-- Underkategori: Klær -->
                 <div id="seksjonKlær" class="kategori-seksjon mb-3" style="display:none;">
                     <label class="fw-bold">Størrelse</label>
-                    <select id="inputSize" name="Size" class="form-select mb-2">
+                    <select id="inputSize" asp-for="Size" class="form-select mb-2">
                         <option value="XS">XS</option>
                         <option value="S">S</option>
                         <option value="M">M</option>
@@ -134,19 +135,19 @@
 
                 <!-- Antall -->
                 <div class="form-group mb-3">
-                    <label asp-for="Quantity" class="fw-bold">Antall</label>
-                    <input asp-for="Quantity" type="number" min="1" class="form-control" />
+                    <label asp-for="Quantity" class="fw-bold">Antall *</label>
+                    <input asp-for="Quantity" type="number" min="1" class="form-control" required />
                 </div>
             </div>
 
             <!-- Koordinater -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label asp-for="Latitude" class="form-label small fw-bold">Breddegrad</label>
+                    <label asp-for="Latitude" class="form-label small fw-bold">Breddegrad *</label>
                     <input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required />
                 </div>
                 <div class="col-6">
-                    <label asp-for="Longitude" class="form-label small fw-bold">Lengdegrad</label>
+                    <label asp-for="Longitude" class="form-label small fw-bold">Lengdegrad *</label>
                     <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
                 </div>
             </div>
@@ -158,7 +159,7 @@
         </form>
     </div>
 
-    <!-- Kart-seksjon -->
+    <!-- Kart -->
     <div class="col-lg-7 col-md-6 d-flex flex-column p-3">
         <div id="map" class="flex-grow-1 w-100 rounded shadow-sm" style="min-height: 400px; height: 60vh;"></div>
     </div>
@@ -181,34 +182,48 @@
             oppdaterSkjemavisning(); 
         });
 
-        var latRaw = '@Model.Latitude'.replace(',', '.');
-        var lngRaw = '@Model.Longitude'.replace(',', '.');
-        var lat = parseFloat(latRaw); 
-        var lng = parseFloat(lngRaw);
-        
-        var harPosisjon = !isNaN(lat) && !isNaN(lng);
-        var startPunkt = harPosisjon ? [lat, lng] : [58.1467, 7.9956];
+        var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
+        var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
 
-        var map = L.map('map').setView(startPunkt, harPosisjon ? 14 : 12);
+        var harPosisjon = (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng));
+        var startPunkt = harPosisjon ? [lat, lng] : [58.163, 8.003];
+
+        var map = L.map('map').setView(startPunkt, harPosisjon ? 14 : 13);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            attribution: '&copy; OpenStreetMap contributors' 
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' 
         }).addTo(map);
 
-        var currentMarker; 
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
         if (harPosisjon) {
-            currentMarker = L.marker(startPunkt).addTo(map);
+            var existingMarker = L.marker(startPunkt);
+            drawnItems.addLayer(existingMarker);
         }
 
-        map.on('click', function(e) {
-            var klikketLat = e.latlng.lat.toFixed(6); 
-            var klikketLng = e.latlng.lng.toFixed(6);
-            document.getElementById('Latitude').value = klikketLat; 
-            document.getElementById('Longitude').value = klikketLng;
-            
-            if (currentMarker) map.removeLayer(currentMarker);
-            currentMarker = L.marker([klikketLat, klikketLng]).addTo(map);
+        var drawControl = new L.Control.Draw({
+            draw: { polygon: false, polyline: false, circle: false, rectangle: false, marker: true },
+            edit: { featureGroup: drawnItems, remove: true }
+        });
+        map.addControl(drawControl);
+
+        map.on('draw:created', function(e) {
+            var layer = e.layer;
+            drawnItems.clearLayers();
+            drawnItems.addLayer(layer);
+
+            var latlng = layer.getLatLng();
+            document.getElementById('Latitude').value = latlng.lat.toFixed(6);
+            document.getElementById('Longitude').value = latlng.lng.toFixed(6);
+        });
+
+        map.on('draw:deleted', function() {
+            document.getElementById('Latitude').value = '';
+            document.getElementById('Longitude').value = '';
         });
 
         setTimeout(function () { map.invalidateSize(); }, 200);
     </script>
+    <partial name="_ValidationScriptsPartial" />
 }
