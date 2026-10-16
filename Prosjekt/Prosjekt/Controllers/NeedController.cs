@@ -9,6 +9,15 @@ using System.Threading.Tasks;
 
 namespace Prosjekt.Controllers
 {
+    /// <summary>
+    /// ASP.NET MVC controller for creating, listing, editing, and deleting Need entities, coordinating model
+    /// validation, coordinate validation, and persistence via an INeedRepository.
+    /// </summary>
+    /// <remarks>Exposes Index (GET) to show the creation UI, Create (POST) to validate input (including map
+    /// coordinates) and create one or more Need records, Overview (GET) to list needs, Edit (GET/POST) to load and
+    /// update a need with validation, and Delete (POST) to remove a need. Create, Edit, and Delete use anti-forgery
+    /// validation. Maps between NeedViewModel and the domain Need, performs coordinate validation, and calls
+    /// asynchronous repository methods for data operations.</remarks>
     public class NeedController : Controller
     {
         private readonly INeedRepository _repo;
@@ -83,10 +92,10 @@ namespace Prosjekt.Controllers
                     {
                         Name = baseNeed.Name,
                         Description = baseNeed.Description ?? string.Empty,
-                        Category = baseNeed.Type.ToString(), // Mapper Type til Category
-                        PhoneNumber = baseNeed.Phone ?? string.Empty, // Mapper Phone til PhoneNumber
+                        Category = baseNeed.Type.ToString(),
+                        PhoneNumber = baseNeed.Phone ?? string.Empty,
                         Priority = baseNeed.Importance.ToString(),
-                        NeededBy = baseNeed.Deadline,
+                        NeededBy = baseNeed.Deadline ?? model.Deadline,
                         IsFulfilled = baseNeed.IsFulfilled,
                         Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
                         CreatedAt = DateTime.UtcNow
@@ -96,7 +105,7 @@ namespace Prosjekt.Controllers
                 }
             }
 
-            return RedirectToAction(nameof(Overview));
+            return View("Create", model);
         }
 
         [HttpGet]
