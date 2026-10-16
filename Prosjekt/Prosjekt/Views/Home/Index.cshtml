@@ -18,16 +18,41 @@
 <div id="homeMap" style="height: calc(100vh - 80px); width: 100%; margin: 0; padding: 0;"></div>
 
 @section Scripts {
-    <!-- Legg til Leaflet CSS for at kartet skal vises korrekt -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        var map = L.map('homeMap').setView([58.1467, 7.9956], 11);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // 1. Definer kartlagene
+        // Vanlig gatekart (OpenStreetMap)
+        var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        });
 
+        // Geonorge: Topografisk kart 
+        var geonorgeTopo = L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+        });
+
+        // Geonorge: Flybilder (Ortofoto via WMS)
+        // TODO: Bytt til wms.geonorge.no/skwms1/wms.nib og legg inn token etter Q&A med Kartverket
+        var geonorgeFlybilder = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; Midlertidig satellitt (Esri) - Venter på Geonorge-tilgang'
+
+        });
+
+        // 2. Start kartet og legg til standardkartet (OSM)
+        var map = L.map('homeMap', {
+            center: [58.1467, 7.9956], // Sentrert over Agder
+            zoom: 11,
+            layers: [osmKart]
+        });
+
+        // 3. Lag menyen oppe i hjørnet for å bytte kart
+        var bakgrunnsKart = {
+            "Standard (OSM)": osmKart,
+            "Topografisk (Geonorge)": geonorgeTopo,
+            "Flybilder (Geonorge)": geonorgeFlybilder
+        };
+        L.control.layers(bakgrunnsKart).addTo(map);
+
+        // 4. Logikk for å tegne markører og sirkler fra databasen
         var positions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
         var bounds = [];
 
@@ -37,45 +62,48 @@
                 var lng = parseFloat(pos.Longitude);
                 var radius = parseFloat(pos.Radius);
                 
-                var changeTypesText = (pos.SelectedChangeTypes && pos.SelectedChangeTypes.length > 0) 
-                    ? pos.SelectedChangeTypes.join(', ') 
-                    : 'Ingen angitt';
-
                 if (!isNaN(lat) && !isNaN(lng)) {
+                    var changeTypesText = (pos.SelectedChangeTypes && pos.SelectedChangeTypes.length > 0) 
+                        ? pos.SelectedChangeTypes.join(', ') 
+                        : 'Ingen angitt';
+
+                    // Tegn markør med popup
                     L.marker([lat, lng])
-                        .bindPopup(`
-                            <b>${pos.Description}</b><br>
-                            <b>Endringstype:</b> ${changeTypesText}<br>
-                            <b>Radius:</b> ${radius} m
-                        `)
+                        .bindPopup('<b>' + pos.Description + '</b><br><b>Endringstype:</b> ' + changeTypesText + '<br><b>Radius:</b> ' + radius + ' m')
                         .addTo(map);
                     
-                    L.circle([lat, lng], {
-                        radius: radius,
-                        color: '#3388ff',
-                        fillColor: '#3388ff',
-                        fillOpacity: 0.2
-                    }).addTo(map);
+                    // Tegn radius-sirkel
+                    if (!isNaN(radius) && radius > 0) {
+                        L.circle([lat, lng], {
+                            radius: radius,
+                            color: '#3388ff',
+                            fillColor: '#3388ff',
+                            fillOpacity: 0.2
+                        }).addTo(map);
+                    }
 
                     bounds.push([lat, lng]);
                 }
             });
         }
 
+        // Juster kartet slik at alle hendelser er synlige
         if (bounds.length > 0) {
             map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
         }
 
-        // Fikser grå fliser og oppdaterer kartet umiddelbart ved innlasting
+        // 5. Fikser grå fliser ved innlasting av Leaflet
         setTimeout(function() {
             map.invalidateSize();
-        }, 200);
+        }, 300);
 
-        // Gjør at kartet dynamisk og sømløst tilpasser seg hvis brukeren endrer vindusstørrelsen
+        // 6. Gjør at kartet dynamisk tilpasser seg hvis brukeren endrer vindusstørrelsen
         const mapContainer = document.getElementById('homeMap');
-        const resizeObserver = new ResizeObserver(() => {
-            map.invalidateSize();
-        });
-        resizeObserver.observe(mapContainer);
+        if (mapContainer) {
+            const resizeObserver = new ResizeObserver(function() {
+                map.invalidateSize();
+            });
+            resizeObserver.observe(mapContainer);
+        }
     </script>
 }
