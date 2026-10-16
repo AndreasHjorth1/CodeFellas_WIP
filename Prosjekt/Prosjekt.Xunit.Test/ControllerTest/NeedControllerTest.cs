@@ -124,8 +124,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var result = await controller.Create(model);
 
             // Assert
-            var redirect = Assert.IsType<RedirectToActionResult>(result);
-            Assert.Equal("Overview", redirect.ActionName);
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Create",viewResult.ViewName);
 
             var savedNeed = Assert.Single(repo.Needs);
             Assert.Equal("Vann", savedNeed.Name);
@@ -153,8 +153,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var result = await controller.Create(model);
 
             // Assert
-            var redirect = Assert.IsType<RedirectToActionResult>(result);
-            Assert.Equal("Overview", redirect.ActionName);
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Create", viewResult.ViewName);
 
             Assert.Equal(2, repo.Needs.Count);
             Assert.Contains(repo.Needs, n => n.Name == "Vann");

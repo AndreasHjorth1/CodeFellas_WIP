@@ -6,19 +6,21 @@
 }
 
 <div class="position-relative w-100 overflow-hidden" style="height: calc(100vh - 80px); min-height: 500px;">
+    <!-- Kart -->
     <div id="map" class="w-100 h-100"></div>
 
-    <div id="sideMeny" class="position-absolute top-0 start-0 h-100 bg-white shadow-lg p-4 rounded-end d-none"
+    <!-- Sidemeny på HØYRE side -->
+    <div id="sideMeny" class="position-absolute top-0 end-0 h-100 bg-white shadow-lg p-4 rounded-start d-none"
          style="z-index: 1000; width: 480px; max-width: 100%; overflow-y: auto;">
 
         <button type="button" class="btn-close float-end mb-2" id="lukkMenyBtn" aria-label="Lukk"></button>
         <div class="clearfix"></div>
 
         <h2 class="mb-1">Registrer Behov</h2>
-        <p class="text-muted small">Klikk på kartet for posisjon, og legg til ett eller flere behov.</p>
+        <p class="text-muted small">Klikk på kartet eller bruk tegneverktøyet for å sette posisjon.</p>
         <hr />
 
-        <form asp-controller="Need" asp-action="Create" method="post" autocomplete="off">
+        <form asp-controller="Need" asp-action="Create" method="post" autocomplete="off" id="hovedSkjema">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
@@ -30,18 +32,18 @@
                 </div>
 
                 <div class="form-group mb-3">
-                    <label asp-for="Deadline" class="fw-bold">Felles tidsfrist</label>
+                    <label asp-for="Deadline" class="fw-bold">Felles tidsfrist *</label>
                     <input asp-for="Deadline" type="datetime-local" class="form-control" required />
                     <span asp-validation-for="Deadline" class="text-danger small"></span>
                 </div>
 
                 <div class="row g-2">
                     <div class="col-6">
-                        <label asp-for="Latitude" class="form-label small mb-1 fw-bold">Breddegrad</label>
+                        <label asp-for="Latitude" class="form-label small mb-1 fw-bold">Breddegrad *</label>
                         <input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required />
                     </div>
                     <div class="col-6">
-                        <label asp-for="Longitude" class="form-label small mb-1 fw-bold">Lengdegrad</label>
+                        <label asp-for="Longitude" class="form-label small mb-1 fw-bold">Lengdegrad *</label>
                         <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
                     </div>
                 </div>
@@ -52,12 +54,12 @@
                 <h5 class="mb-3">Legg til behov i listen</h5>
 
                 <div class="form-group mb-3">
-                    <label class="fw-bold">Navn</label>
+                    <label class="fw-bold">Navn *</label>
                     <input id="inputName" class="form-control" placeholder="F.eks. Snørydding, Førstehjelpsutstyr" />
                 </div>
 
                 <div class="form-group mb-3">
-                    <label class="fw-bold">Telefonnummer</label>
+                    <label class="fw-bold">Telefonnummer *</label>
                     <input id="inputPhone" class="form-control" placeholder="F.eks. 98765432" />
                 </div>
 
@@ -79,14 +81,14 @@
                 </div>
 
                 <div class="form-group mb-3">
-                    <label class="fw-bold">Beskrivelse</label>
+                    <label class="fw-bold">Beskrivelse *</label>
                     <textarea id="inputDescription" class="form-control" rows="2" placeholder="Utdypende informasjon..."></textarea>
                 </div>
 
                 <button type="button" class="btn btn-secondary w-100" onclick="leggTilIListe()">+ Legg i listen</button>
             </div>
 
-            <!-- Tabell for oversikt over behov som skal sendes inn -->
+            <!-- Tabell for oversikt over behov -->
             <h6 class="fw-bold">Behov som blir registrert:</h6>
             <div class="table-responsive mb-3">
                 <table class="table table-sm table-bordered" id="behovTabell">
@@ -102,10 +104,10 @@
                 </table>
             </div>
 
-            <!-- Dynamisk genererte skjulte felter for model binding -->
+            <!-- Skjulte felter for binding mot NeedList -->
             <div id="skjulteInputFelter"></div>
 
-            <button type="submit" class="btn btn-primary w-100">Opprett alle behov</button>
+            <button type="submit" class="btn btn-primary w-100" onclick="return validerInnsending()">Opprett alle behov</button>
         </form>
     </div>
 </div>
@@ -113,76 +115,115 @@
 @section Scripts {
     <script>
         let behovListe = [];
-        var currentMarker = null;
         var sideMeny = document.getElementById('sideMeny');
 
-        var map = L.map('map').setView([58.1467, 7.9956], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
+        // Funksjon for fargede markører
         function getIkon(fargeNavn) {
             return new L.Icon({
                 iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
             });
         }
 
-        var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
-
-        function getAktueltIkon() {
-            var selectVal = document.getElementById('viktighetSelect').value;
-            return ikoner[selectVal] || ikoner[0];
+        function HentValgtIkon() {
+            var importanceVal = document.getElementById('viktighetSelect').value;
+            // Hvis Acute / 0 -> rød ('red'), ellers gul ('gold')
+            return (importanceVal === '0' || importanceVal === 'Acute') ? getIkon('red') : getIkon('gold');
         }
 
-        function updateMarkor() {
-            var lat = document.getElementById('Latitude').value;
-            var lng = document.getElementById('Longitude').value;
-            if (!lat || !lng) return;
-            if (currentMarker) map.removeLayer(currentMarker);
-            currentMarker = L.marker([lat, lng], { icon: getAktueltIkon() }).addTo(map);
-        }
+        // 1. Initialiser kartet
+        var map = L.map('map').setView([58.1467, 7.9956], 12);
 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        // Creates the drawing control on the map
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polygon: false, polyline: false, circle: false, rectangle: false,
+                marker: true
+            },
+            edit: { featureGroup: drawnItems, remove: true }
+        });
+        map.addControl(drawControl);
+
+        // Oppdaterer eksisterende markør dersom brukeren endrer dropdown-valget for Viktighet
         document.getElementById('viktighetSelect').addEventListener('change', function() {
-            if (currentMarker) currentMarker.setIcon(getAktueltIkon());
+            var valgtIkon = HentValgtIkon();
+            drawnItems.eachLayer(function(layer) {
+                if (layer instanceof L.Marker) {
+                    layer.setIcon(valgtIkon);
+                }
+            });
         });
 
+        // Event handler for tegning på kartet
+        map.on('draw:created', function(e) {
+            var layer = e.layer;
+            drawnItems.clearLayers();
+
+            if (layer instanceof L.Marker) {
+                layer.setIcon(HentValgtIkon());
+            }
+
+            drawnItems.addLayer(layer);
+
+            var latlng = layer.getLatLng();
+            settPosisjonOgVisMeny(latlng.lat.toFixed(6), latlng.lng.toFixed(6));
+        });
+
+        // Vanlig klikk på kartet
         map.on('click', function(e) {
             var lat = e.latlng.lat.toFixed(6);
             var lng = e.latlng.lng.toFixed(6);
-            document.getElementById('Latitude').value = lat;
-            document.getElementById('Longitude').value = lng;
-            updateMarkor();
-            sideMeny.classList.remove('d-none');
-            var menyBredde = sideMeny.offsetWidth || 480;
-            map.flyTo([lat, lng], map.getZoom(), { animate: true, duration: 0.8 });
-            setTimeout(function() { map.panBy([-menyBredde / 2, 0], { animate: true, duration: 0.4 }); }, 300);
+
+            drawnItems.clearLayers();
+            var newMarker = L.marker([lat, lng], { icon: HentValgtIkon() });
+            drawnItems.addLayer(newMarker);
+
+            settPosisjonOgVisMeny(lat, lng);
         });
 
+        function settPosisjonOgVisMeny(lat, lng) {
+            document.getElementById('Latitude').value = lat;
+            document.getElementById('Longitude').value = lng;
+            sideMeny.classList.remove('d-none');
+
+            var menyBredde = sideMeny.offsetWidth || 480;
+            map.flyTo([lat, lng], map.getZoom(), { animate: true, duration: 0.8 });
+            setTimeout(function() {
+                map.panBy([menyBredde / 2, 0], { animate: true, duration: 0.4 });
+            }, 300);
+        }
+
+        // Lukk meny
         document.getElementById('lukkMenyBtn').addEventListener('click', function() {
             sideMeny.classList.add('d-none');
-            if (currentMarker) {
-                map.removeLayer(currentMarker);
-                currentMarker = null;
-                document.getElementById('Latitude').value = '';
-                document.getElementById('Longitude').value = '';
-            }
+            drawnItems.clearLayers();
+            document.getElementById('Latitude').value = '';
+            document.getElementById('Longitude').value = '';
         });
 
         function leggTilIListe() {
-            let name = document.getElementById('inputName').value;
-            let phone = document.getElementById('inputPhone').value;
-            let description = document.getElementById('inputDescription').value;
+            let name = document.getElementById('inputName').value.trim();
+            let phone = document.getElementById('inputPhone').value.trim();
+            let description = document.getElementById('inputDescription').value.trim();
 
             let typeSelect = document.getElementById('inputType');
             let type = typeSelect.value;
             let typeText = typeSelect.options[typeSelect.selectedIndex].text;
 
-            if (!name || !phone) {
-                alert("Vennligst fyll ut navn og telefonnummer.");
-                return;
-            }
+            if (!name) { alert("Vennligst fyll ut 'Navn'."); document.getElementById('inputName').focus(); return; }
+            if (!phone) { alert("Vennligst fyll ut 'Telefonnummer'."); document.getElementById('inputPhone').focus(); return; }
+            if (!description) { alert("Vennligst fyll ut 'Beskrivelse'."); document.getElementById('inputDescription').focus(); return; }
 
             behovListe.push({ name, phone, type, typeText, description });
 
@@ -209,6 +250,14 @@
                     <input type="hidden" name="NeedList[${index}].Description" value="${item.description}" />
                 `;
             });
+        }
+
+        function validerInnsending() {
+            if (behovListe.length === 0) {
+                alert("Du må legge til minst ett behov i listen før du kan opprette!");
+                return false;
+            }
+            return true;
         }
 
         function fjernFraListe(index) {

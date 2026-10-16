@@ -1,154 +1,84 @@
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
-@model ResourceViewModel
+@model NeedViewModel
 
-@{ 
-    ViewData["Title"] = "Rediger Ressurs"; 
+@{
+    ViewData["Title"] = "Rediger Behov";
 }
 
 <div class="row min-vh-100 g-0 mt-2">
     <div class="col-lg-5 col-md-6 p-3 d-flex flex-column">
-        <h2 class="mb-4">Rediger Ressurs</h2>
-        <form asp-controller="Resource" asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off" class="flex-grow-1">
+        <h2 class="mb-4">Rediger Behov</h2>
+        <form asp-controller="Need" asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off" class="flex-grow-1">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="All" class="text-danger"></div>
-            
-            <!-- Skjult felt for å sende den unike ID-en -->
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
             <input type="hidden" asp-for="Id" />
 
             <div class="border p-4 mb-3 rounded bg-light shadow-sm">
                 <!-- Navn -->
                 <div class="form-group mb-3">
-                    <label asp-for="Name" class="fw-bold">Navn</label>
+                    <label asp-for="Name" class="fw-bold">Navn *</label>
                     <input asp-for="Name" class="form-control" required />
                 </div>
 
                 <!-- Beskrivelse -->
                 <div class="form-group mb-3">
-                    <label asp-for="Description" class="fw-bold">Beskrivelse</label>
-                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    <label asp-for="Description" class="fw-bold">Beskrivelse *</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
                 </div>
 
-                <!-- Telefonnummer / Kontaktpunkt -->
+                <!-- Telefonnummer -->
                 <div class="form-group mb-3">
-                    <label asp-for="PhoneNumber" class="fw-bold">Telefonnummer (Kontaktpunkt)</label>
-                    <input asp-for="PhoneNumber" class="form-control" />
+                    <label asp-for="Phone" class="fw-bold">Telefonnummer *</label>
+                    <input asp-for="Phone" class="form-control" required />
                 </div>
 
-                <!-- Tilgjengelighet -->
+                <!-- Behovstype -->
+                <div class="form-group mb-3">
+                    <label asp-for="Type" class="fw-bold">Behovstype *</label>
+                    <select asp-for="Type" class="form-select">
+                        <option value="Food">Mat/Vann</option>
+                        <option value="Medicine">Medisiner</option>
+                        <option value="Transport">Transport</option>
+                        <option value="PowerGenerator">Strøm/aggregat</option>
+                        <option value="SnowRemoval">Snørydding</option>
+                        <option value="SandGravel">Sand/grus</option>
+                        <option value="Machinery">Maskiner</option>
+                        <option value="Evacuation">Evakuering</option>
+                        <option value="Communication">Samband</option>
+                        <option value="Personnel">Mannskap</option>
+                        <option value="Other">Annet</option>
+                    </select>
+                </div>
+
+                <!-- Viktighet -->
+                <div class="form-group mb-3">
+                    <label asp-for="Importance" class="fw-bold">Viktighet *</label>
+                    <select asp-for="Importance" asp-items="Html.GetEnumSelectList<ImportanceLevel>()" class="form-select"></select>
+                </div>
+
+                <!-- Tidsfrist -->
+                <div class="form-group mb-3">
+                    <label asp-for="Deadline" class="fw-bold">Tidsfrist *</label>
+                    <input asp-for="Deadline" type="datetime-local" class="form-control" required />
+                </div>
+
+                <!-- Status / Oppfylt -->
                 <div class="form-check mb-3">
-                    <input asp-for="Availability" class="form-check-input" type="checkbox" id="inputAvailability" />
-                    <label class="form-check-label fw-bold" for="inputAvailability">Er tilgjengelig for oppdrag</label>
-                </div>
-
-                <!-- Tidsrom / Frister -->
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label asp-for="AvailableFrom" class="form-label small fw-bold mb-1">Tilgjengelig fra</label>
-                        <input asp-for="AvailableFrom" type="datetime-local" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-6">
-                        <label asp-for="AvailableTo" class="form-label small fw-bold mb-1">Tilgjengelig til</label>
-                        <input asp-for="AvailableTo" type="datetime-local" class="form-control form-control-sm" />
-                    </div>
-                </div>
-
-                <!-- Kategori -->
-                <div class="form-group mb-3">
-                    <label asp-for="Category" class="fw-bold">Kategori</label>
-                    <select asp-for="Category" id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
-                        <option value="Vehicle">Kjøretøy</option>
-                        <option value="Provision">Provisjon</option>
-                        <option value="Materials">Materialer</option>
-                        <option value="Clothing">Klær</option>
-                        <option value="Tool">Verktøy</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Kjøretøy -->
-                <div id="seksjonKjøretøy" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Kjøretøytype</label>
-                    <select id="inputVehicleType" name="VehicleType" class="form-select mb-2">
-                        <option value="Car">Bil</option>
-                        <option value="Bus">Buss</option>
-                        <option value="Bicycle">Sykkel</option>
-                        <option value="Motorcycle">Motorsykkel</option>
-                        <option value="Tractor">Traktor</option>
-                        <option value="Truck">Lastebil</option>
-                        <option value="Dozer">Doser</option>
-                        <option value="Excavator">Gravemaskin</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                    <label class="fw-bold">Skiltnummer</label>
-                    <input id="inputLicensePlate" asp-for="LicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
-                </div>
-
-                <!-- Underkategori: Verktøy -->
-                <div id="seksjonVerktøy" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Verktøytype</label>
-                    <select id="inputToolType" name="ToolType" class="form-select mb-2">
-                        <option value="HandTool">Håndverktøy</option>
-                        <option value="PowerTool">Elektroverktøy</option>
-                        <option value="GardenTool">Hageverktøy</option>
-                        <option value="MeasuringTool">Måleverktøy</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Materialer -->
-                <div id="seksjonMaterialer" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Materialtype</label>
-                    <select id="inputMaterialType" name="MaterialType" class="form-select mb-2">
-                        <option value="Wood">Treverk</option>
-                        <option value="Metal">Metall</option>
-                        <option value="Plastic">Plast</option>
-                        <option value="Glass">Glass</option>
-                        <option value="Gravel">Grus</option>
-                        <option value="Stone">Stein</option>
-                        <option value="Soil">Jord</option>
-                        <option value="Sand">Sand</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Klær -->
-                <div id="seksjonKlær" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Størrelse</label>
-                    <select id="inputSize" asp-for="Size" class="form-select mb-2">
-                        <option value="XS">XS</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                        <option value="XXL">XXL</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Provisjon -->
-                <div id="seksjonProvisjon" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Provisjonstype</label>
-                    <select id="inputProvisionType" name="ProvisionType" class="form-select mb-2">
-                        <option value="Water">Vann</option>
-                        <option value="FoodOnePortion">Mat (1 porsjon)</option>
-                    </select>
-                </div>
-
-                <!-- Antall -->
-                <div class="form-group mb-3">
-                    <label asp-for="Quantity" class="fw-bold">Antall</label>
-                    <input asp-for="Quantity" type="number" min="1" class="form-control" />
+                    <input asp-for="IsFulfilled" class="form-check-input" type="checkbox" id="inputIsFulfilled" />
+                    <label class="form-check-label fw-bold" for="inputIsFulfilled">Behovet er oppfylt</label>
                 </div>
             </div>
 
             <!-- Koordinater -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label asp-for="Latitude" class="form-label small fw-bold">Breddegrad</label>
+                    <label asp-for="Latitude" class="form-label small fw-bold">Breddegrad *</label>
                     <input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required />
                 </div>
                 <div class="col-6">
-                    <label asp-for="Longitude" class="form-label small fw-bold">Lengdegrad</label>
+                    <label asp-for="Longitude" class="form-label small fw-bold">Lengdegrad *</label>
                     <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
                 </div>
             </div>
@@ -168,63 +98,57 @@
 
 @section Scripts {
     <script>
-        function oppdaterSkjemavisning() {
-            let valgtTekst = document.getElementById('kategoriVelger').value;
-            document.querySelectorAll('.kategori-seksjon').forEach(s => s.style.display = 'none');
-            
-            if (valgtTekst === "Vehicle") document.getElementById('seksjonKjøretøy').style.display = 'block';
-            else if (valgtTekst === "Provision") document.getElementById('seksjonProvisjon').style.display = 'block';
-            else if (valgtTekst === "Materials") document.getElementById('seksjonMaterialer').style.display = 'block';
-            else if (valgtTekst === "Clothing") document.getElementById('seksjonKlær').style.display = 'block';
-            else if (valgtTekst === "Tool") document.getElementById('seksjonVerktøy').style.display = 'block';
-        }
-
-        document.addEventListener("DOMContentLoaded", function() { 
-            oppdaterSkjemavisning(); 
-        });
-
-        // Henter koordinatene trygt for double? ved hjelp av CultureInfo.InvariantCulture
         var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
         var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
+        var importanceNumber = @((int)Model.Importance);
 
         var harPosisjon = (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng));
-        var startPunkt = harPosisjon ? [lat, lng] : [58.163, 8.003]; // Standard startpunkt Kristiansand
+        var startPunkt = harPosisjon ? [lat, lng] : [58.163, 8.003];
 
-        // 1. Initialize the map
+        // Hjælpefunksjon for fargede markører
+        function getIkon(fargeNavn) {
+            return new L.Icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        // Velg rød (0 = Acute) eller gul/gold (1 = Planned)
+        var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
+        var valgtIkon = ikoner[importanceNumber] || getIkon('blue');
+
+        // 1. Initialiser kartet
         var map = L.map('map').setView(startPunkt, harPosisjon ? 14 : 13);
 
-        // 2. Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' 
+        // 2. Legg til tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // 3. Initialize feature group for drawn shapes
+        // 3. Initialiser Leaflet.Draw feature group
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        // Legg eksisterende markør i drawnItems dersom ressursen allerede har en posisjon
         if (harPosisjon) {
-            var existingMarker = L.marker(startPunkt);
+            var existingMarker = L.marker(startPunkt, { icon: valgtIkon });
             drawnItems.addLayer(existingMarker);
         }
 
-        // 4. Creates drawing control
+        // 4. Opprett draw control
         var drawControl = new L.Control.Draw({
             draw: {
-                polygon: false,
-                polyline: false,
-                circle: false,
-                rectangle: false,
-                marker: true
+                polygon: false, polyline: false, circle: false, rectangle: false,
+                marker: { icon: valgtIkon }
             },
-            edit: {
-                featureGroup: drawnItems,
-                remove: true
-            }
+            edit: { featureGroup: drawnItems, remove: true }
         });
         map.addControl(drawControl);
 
-        // 5. Event handler når en ny markør tegnes
+        // 5. Event handlers
         map.on('draw:created', function(e) {
             var layer = e.layer;
             drawnItems.clearLayers();
@@ -235,7 +159,6 @@
             document.getElementById('Longitude').value = latlng.lng.toFixed(6);
         });
 
-        // Event handler for sletting av markør
         map.on('draw:deleted', function() {
             document.getElementById('Latitude').value = '';
             document.getElementById('Longitude').value = '';
