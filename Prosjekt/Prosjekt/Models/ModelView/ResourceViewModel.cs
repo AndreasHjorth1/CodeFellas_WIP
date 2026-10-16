@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Prosjekt.Models.ModelView
 {
@@ -38,23 +38,26 @@ namespace Prosjekt.Models.ModelView
         public bool Availability { get; set; } = true;
 
         [Display(Name = "Breddegrad")]
-        [Required(ErrorMessage = "Du må legge inn breddegrad")]
+        [Required(ErrorMessage = "Du må velge en posisjon i kartet (Breddegrad).")]
         public double? Latitude { get; set; }
 
         [Display(Name = "Lengdegrad")]
-        [Required(ErrorMessage = "Du må legge inn lengdegrad")]
+        [Required(ErrorMessage = "Du må velge en posisjon i kartet (Lengdegrad).")]
         public double? Longitude { get; set; }
 
         [Display(Name = "Kategori")]
-        [Required(ErrorMessage = "Du må velge en kategori")]
+        [Required(ErrorMessage = "Du må velge en kategori.")]
         public ResourceType Category { get; set; } = ResourceType.Other;
 
-        [Display(Name = "Tilgjengelig fra: ")]
-        [Required(ErrorMessage = "Et tidspunkt må registreres")]
+        [Display(Name = "Tilgjengelig fra")]
+        [Required(ErrorMessage = "Tilgjengelig fra-tidspunkt må registreres.")]
         public DateTime? AvailableFrom { get; set; }
 
-        [Display(Name = "Tilgjengelig til: ")]
-        [Required(ErrorMessage = "Et tidspunkt må registreres")]
+        [Display(Name = "Tilgjengelig til")]
+        [Required(ErrorMessage = "Tilgjengelig til-tidspunkt må registreres.")]
         public DateTime? AvailableTo { get; set; }
+
+        public string? LicensePlate { get; set; }
+        public string? Size { get; set; }
     }
 }

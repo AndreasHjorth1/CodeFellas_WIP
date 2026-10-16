@@ -1,8 +1,9 @@
 ﻿@using Prosjekt.Models.ModelView
+@using System.Globalization
 @model ResourceViewModel
 
 @{
-    ViewData["Title"] = "Du har opprettet ny ressurs";
+    ViewData["Title"] = "Ressurs opprettet";
 }
 
 @functions {
@@ -17,22 +18,27 @@
     };
 }
 
-<h1>Du har opprettet ny ressurs</h1>
+<h1>Ressurs opprettet</h1>
 <hr />
-<div class="row mb-4">
+
+<div class="row mb-4 align-items-start">
     <div class="col-md-6 mb-4 mb-md-0">
-        <div class="card p-4 h-100 shadow-sm">
+        <!-- Fjernet 'h-100' og lagt til 'd-inline-block w-100' slik at kortet tilpasser seg innholdet dynamisk -->
+        <div class="card p-4 shadow-sm h-auto d-inline-block w-100">
             <p><strong>Navn:</strong> @Model.Name</p>
+            <p><strong>Telefonnummer:</strong> @Model.PhoneNumber</p>
             <p><strong>Beskrivelse:</strong> @Model.Description</p>
-            <p><strong>Kategori:</strong> @OversettKategori(Model.Category)</p>
+            <p><strong>Type:</strong> @OversettKategori(Model.Category)</p>
             <p><strong>Antall:</strong> @Model.Quantity</p>
-            <p class="mb-0 text-muted small"><strong>Posisjon:</strong> @Model.Latitude, @Model.Longitude</p>
+            <p><strong>Breddegrad:</strong> @Model.Latitude</p>
+            <p class="mb-0"><strong>Lengdegrad:</strong> @Model.Longitude</p>
         </div>
     </div>
     <div class="col-md-6">
-        <div id="kvitteringKart" style="height: 40vh; min-height: 250px; border-radius: 8px;" class="shadow-sm"></div>
+        <div id="map" style="height: 500px;" class="shadow-sm border rounded"></div>
     </div>
 </div>
+
 <div class="d-flex flex-wrap gap-2">
     <a asp-controller="Resource" asp-action="Index" class="btn btn-secondary">Opprett enda en ressurs</a>
     <a asp-controller="Resource" asp-action="Overview" class="btn btn-primary">Gå til oversikten</a>
@@ -41,17 +47,43 @@
 @section Scripts 
 {
     <script>
-        var lat = parseFloat('@Model.Latitude'.replace(',', '.'));
-        var lng = parseFloat('@Model.Longitude'.replace(',', '.'));
+        (function () {
+            // Sjekker om verdien finnes og konverterer double trygt til streng med punktum
+            var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "0");
+            var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "0");
 
-        var kart = L.map('kvitteringKart').setView([lat, lng], 14);
+            // Initialize the map
+            var map = L.map('map').setView([lat, lng], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(kart);
+            // Add a tile layer to the map
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
 
-        L.marker([lat, lng]).addTo(kart);
-        
-        setTimeout(function () { kart.invalidateSize(); }, 200);
+            // Initialize the feature group that will hold layers
+            var drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            // Create a marker at the model coordinates and add it to the feature group
+            var marker = L.marker([lat, lng]);
+            drawnItems.addLayer(marker);
+
+            // Open popup after reverse geocode to ensure the address is displayed
+            var url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+
+            fetch(url)
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Nettverksrespons var ikke OK');
+                    return response.json();
+                })
+                .then(function (data) {
+                    var address = data && data.display_name ? data.display_name : 'Adresse ikke funnet';
+                    marker.bindPopup('<b>Adresse:</b> ' + address).openPopup();
+                })
+                .catch(function (err) {
+                    console.error('Adresseoppslag mislyktes:', err);
+                    marker.bindPopup('<b>Adresse:</b> Ikke tilgjengelig').openPopup();
+                });
+        })();
     </script>
 }
