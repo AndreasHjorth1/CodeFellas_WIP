@@ -71,5 +71,11 @@ namespace Prosjekt.Models.ModelView
         public double? Latitude { get; set; }
 
         public double? Longitude { get; set; }
+
+        public string? AreaGeoJson { get; set; }
+
+        public double? AreaSquareMeters { get; set; }
+
+        public double? PerimeterMeters { get; set; }
     }
 }

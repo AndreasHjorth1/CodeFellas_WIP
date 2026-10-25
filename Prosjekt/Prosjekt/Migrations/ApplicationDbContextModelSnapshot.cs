@@ -73,6 +73,12 @@ namespace Prosjekt.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AreaGeoJson")
+                        .HasColumnType("longtext");
+
+                    b.Property<double?>("AreaSquareMeters")
+                        .HasColumnType("double");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -98,6 +104,9 @@ namespace Prosjekt.Migrations
 
                     b.Property<DateTime?>("NeededBy")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<double?>("PerimeterMeters")
+                        .HasColumnType("double");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()

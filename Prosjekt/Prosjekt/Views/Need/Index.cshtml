@@ -47,6 +47,13 @@
                         <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
                     </div>
                 </div>
+                <div id="omradeInfo" class="small text-muted mt-2 d-none">
+                    Område: ca. <span id="omradeAreal"></span> &middot; omkrets ca. <span id="omradeOmkrets"></span>
+                </div>
+
+                <input asp-for="AreaGeoJson" id="AreaGeoJson" type="hidden" />
+                <input asp-for="AreaSquareMeters" id="AreaSquareMeters" type="hidden" />
+                <input asp-for="PerimeterMeters" id="PerimeterMeters" type="hidden" />
             </div>
 
             <!-- Boks for å fylle inn enkeltbehov -->
@@ -213,14 +220,17 @@
             
             if (layer instanceof L.Polygon) {
                 latlng = layer.getBounds().getCenter();
+                lagreOmrade(layer);
             } else {
                 if (layer instanceof L.Marker) {
                     layer.setIcon(HentValgtIkon());
                 }
                 latlng = layer.getLatLng();
+                tomOmrade();
             }
             drawnItems.addLayer(layer);
             settPosisjonOgVisMeny(latlng.lat.toFixed(6), latlng.lng.toFixed(6));
+
         });
 
         // Vanlig klikk på kartet
@@ -230,11 +240,42 @@
             var lng = e.latlng.lng.toFixed(6);
 
             drawnItems.clearLayers();
+
+            tomOmrade();
             var newMarker = L.marker([lat, lng], { icon: HentValgtIkon() });
             drawnItems.addLayer(newMarker);
 
             settPosisjonOgVisMeny(lat, lng);
         });
+        function lagreOmrade(layer) {
+            // getLatLngs() gir en liste med ringer. [0] er ytterkanten.
+            var punkter = layer.getLatLngs()[0];
+
+            var areal = L.GeometryUtil.geodesicArea(punkter);
+
+            var omkrets = 0;
+            for (var i = 0; i < punkter.length; i++) {
+                var neste = punkter[(i + 1) % punkter.length];
+                omkrets += punkter[i].distanceTo(neste);
+            }
+
+            document.getElementById('AreaGeoJson').value = JSON.stringify(layer.toGeoJSON());
+            document.getElementById('AreaSquareMeters').value = areal.toFixed(2);
+            document.getElementById('PerimeterMeters').value = omkrets.toFixed(2);
+
+             document.getElementById('omradeAreal').textContent =
+                Math.round(areal).toLocaleString('nb-NO') + ' m²';
+            document.getElementById('omradeOmkrets').textContent =
+                Math.round(omkrets).toLocaleString('nb-NO') + ' m';
+            document.getElementById('omradeInfo').classList.remove('d-none');
+        }
+
+        function tomOmrade() {
+            document.getElementById('AreaGeoJson').value = '';
+            document.getElementById('AreaSquareMeters').value = '';
+            document.getElementById('PerimeterMeters').value = '';
+            document.getElementById('omradeInfo').classList.add('d-none');
+        }
 
         function settPosisjonOgVisMeny(lat, lng) {
             document.getElementById('Latitude').value = lat;
@@ -252,6 +293,7 @@
         document.getElementById('lukkMenyBtn').addEventListener('click', function() {
             sideMeny.classList.add('d-none');
             drawnItems.clearLayers();
+            tomOmrade();
             document.getElementById('Latitude').value = '';
             document.getElementById('Longitude').value = '';
         });
