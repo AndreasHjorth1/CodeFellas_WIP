@@ -177,12 +177,22 @@
         // Creates the drawing control on the map
         var drawControl = new L.Control.Draw({
             draw: {
-                polygon: false, polyline: false, circle: false, rectangle: false,
+                polygon: {
+                    allowIntersection: false,
+                    showArea: true,
+                    metric: true,
+                    shapeOptions: {color: '#dc3545'}
+                },
+                polyline: false, circle: false, rectangle: false,
                 marker: true
             },
             edit: { featureGroup: drawnItems, remove: true }
         });
         map.addControl(drawControl);
+
+        var tegnerNaa = false;
+        map.on('draw:drawstart', function() { tegnerNaa = true; });
+        map.on('draw:drawstop', function() { tegnerNaa = false; });
 
         // Oppdaterer eksisterende markør dersom brukeren endrer dropdown-valget for Viktighet
         document.getElementById('viktighetSelect').addEventListener('change', function() {
@@ -199,18 +209,23 @@
             var layer = e.layer;
             drawnItems.clearLayers();
 
-            if (layer instanceof L.Marker) {
-                layer.setIcon(HentValgtIkon());
+            var latlng;
+            
+            if (layer instanceof L.Polygon) {
+                latlng = layer.getBounds().getCenter();
+            } else {
+                if (layer instanceof L.Marker) {
+                    layer.setIcon(HentValgtIkon());
+                }
+                latlng = layer.getLatLng();
             }
-
             drawnItems.addLayer(layer);
-
-            var latlng = layer.getLatLng();
             settPosisjonOgVisMeny(latlng.lat.toFixed(6), latlng.lng.toFixed(6));
         });
 
         // Vanlig klikk på kartet
         map.on('click', function(e) {
+            if (tegnerNaa) return;
             var lat = e.latlng.lat.toFixed(6);
             var lng = e.latlng.lng.toFixed(6);
 
