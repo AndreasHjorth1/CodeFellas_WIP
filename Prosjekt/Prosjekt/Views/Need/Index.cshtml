@@ -248,7 +248,7 @@
             settPosisjonOgVisMeny(lat, lng);
         });
         function lagreOmrade(layer) {
-            // getLatLngs() gir en liste med ringer. [0] er ytterkanten.
+            // 
             var punkter = layer.getLatLngs()[0];
 
             var areal = L.GeometryUtil.geodesicArea(punkter);
@@ -263,10 +263,8 @@
             document.getElementById('AreaSquareMeters').value = areal.toFixed(2);
             document.getElementById('PerimeterMeters').value = omkrets.toFixed(2);
 
-             document.getElementById('omradeAreal').textContent =
-                 document.getElementById('omradeAreal').textContent = formaterAreal(areal);
-            document.getElementById('omradeOmkrets').textContent =
-                document.getElementById('omradeOmkrets').textContent = formaterLengde(omkrets);
+            document.getElementById('omradeAreal').textContent = formaterAreal(areal);
+            document.getElementById('omradeOmkrets').textContent = formaterLengde(omkrets);
             document.getElementById('omradeInfo').classList.remove('d-none');
         }
 
