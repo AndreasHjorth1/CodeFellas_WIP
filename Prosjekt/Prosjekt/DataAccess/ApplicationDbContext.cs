@@ -1,29 +1,23 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Prosjekt.Models.Entities;
 
 namespace Prosjekt.DataAccess
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     {
-        /// <summary>
-        /// Initializes a new ApplicationDbContext with the specified DbContextOptions.
-        /// </summary>
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<GeoChange> GeoChanges { get; set; }
-
-        // Her er tabellen for ressurser 
         public DbSet<Resource> Resources { get; set; }
-
-        // Her er tabellen for need / behov
         public DbSet<Need> Needs { get; set; }
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Konfigurasjon for GeoChange
+            // GeoChange-konfigurasjon
             modelBuilder.Entity<GeoChange>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -36,9 +30,10 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.ChangeTypes);
                 entity.Property(e => e.Radius);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UserId);
             });
 
-            // Konfigurasjon for Resource
+            // Resource-konfigurasjon
             modelBuilder.Entity<Resource>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -49,7 +44,6 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.IsAvailable).HasDefaultValue(true);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Mappet til koordinat-strukturen på samme måte som GeoChange
                 entity.ComplexProperty(e => e.Coords, coord =>
                 {
                     coord.Property(c => c.Latitude).HasColumnName("Latitude").IsRequired();
@@ -57,8 +51,7 @@ namespace Prosjekt.DataAccess
                 });
             });
 
-
-            // Konfigurasjon for Need
+            // Need-konfigurasjon
             modelBuilder.Entity<Need>(entity =>
             {
                 entity.HasKey(e => e.Id);

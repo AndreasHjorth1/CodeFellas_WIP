@@ -5,11 +5,6 @@ namespace Prosjekt.DataAccess.Repositories
 {
     public class GeoChangeRepository : IGeoChangeRepository
     {
-        /// <summary>
-        /// Application database context used to access the underlying data store.
-        /// </summary>
-        /// <remarks>Assigned via constructor injection and intended for use only within the declaring
-        /// class.</remarks>
         private readonly ApplicationDbContext _context;
 
         public GeoChangeRepository(ApplicationDbContext context)
@@ -25,8 +20,30 @@ namespace Prosjekt.DataAccess.Repositories
 
         public async Task<IEnumerable<GeoChange>> GetAllAsync()
         {
-            // Henter alle registreringer fra databasen
             return await _context.GeoChanges.ToListAsync();
+        }
+
+        public async Task<IEnumerable<GeoChange>> GetAllByUserIdAsync(string userId)
+        {
+            return await _context.GeoChanges
+                .Where(g => g.UserId == userId)
+                .ToListAsync();
+        }
+
+        public async Task<GeoChange?> GetByIdAndUserIdAsync(int id, string userId)
+        {
+            return await _context.GeoChanges
+                .FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId);
+        }
+
+        public async Task DeleteAsync(int id, string userId)
+        {
+            var entity = await GetByIdAndUserIdAsync(id, userId);
+            if (entity != null)
+            {
+                _context.GeoChanges.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

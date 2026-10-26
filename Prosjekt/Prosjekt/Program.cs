@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
@@ -6,20 +7,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-
-// 1. Hent tilkoblingsstreng
+// 1. Hent tilkoblingsstreng for databasen
 var connectionString = builder.Configuration.GetConnectionString("Mapdb")
+    ?? builder.Configuration.GetConnectionString("kartdb")
     ?? builder.Configuration.GetConnectionString("mariadbcontainer")
     ?? builder.Configuration.GetConnectionString("mysql")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing database connection string for 'Mapdb'.");
 
-// 2. Registrer repository
-builder.Services.AddScoped<IGeoChangeRepository, GeoChangeRepository>();
-builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
-builder.Services.AddScoped<INeedRepository, NeedRepository>();
-
-// 3. Registrer DbContext
+// 2. Registrer ApplicationDbContext med MariaDB og feilhåndtering
 var serverVersion = new MariaDbServerVersion(new Version(11, 4, 0));
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
@@ -33,12 +29,36 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     )
 );
 
-// Add services to the container.
+// 3. Konfigurer ASP.NET Core Identity
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login/";
+    options.AccessDeniedPath = "/Account/AccessDenied/";
+});
+
+// 4. Registrer alle Repositories i Dependency Injection
+builder.Services.AddScoped<IGeoChangeRepository, GeoChangeRepository>();
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<INeedRepository, NeedRepository>();
+
+// Legg til MVC-tjenester
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// 4. Automatisk migrasjon ved oppstart (slik skolen krever)[cite: 7]
+// 5. Automatisk migrering ved oppstart
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -56,11 +76,20 @@ using (var scope = app.Services.CreateScope())
 
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
+// Konfigurer HTTP-pipelinen
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
 app.UseDeveloperExceptionPage();
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapStaticAssets();
 
 app.MapControllerRoute(
@@ -68,11 +97,4 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate();
-}
-
 app.Run();
-

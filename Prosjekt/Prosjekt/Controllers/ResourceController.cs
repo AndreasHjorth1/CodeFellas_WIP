@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
@@ -9,13 +12,16 @@ using Prosjekt.Utils;
 
 namespace Prosjekt.Controllers
 {
+    [Authorize]
     public class ResourceController : Controller
     {
         private readonly IResourceRepository _repo;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public ResourceController(IResourceRepository repo)
+        public ResourceController(IResourceRepository repo, UserManager<IdentityUser> userManager)
         {
             _repo = repo;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -60,13 +66,15 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            ResourceViewModel createdResourceModel = null;
+            // Hent den innloggede brukeren
+            var user = await _userManager.GetUserAsync(User);
+
+            ResourceViewModel? createdResourceModel = null;
 
             for (int i = 0; i < model.ResourceList.Count; i++)
             {
                 var baseResource = model.ResourceList[i];
 
-                // BRUKER NÅ DEN NYE MODELL-EGENSKAPEN DIREKTE I STEDET FOR REQUEST.FORM
                 string extraInfo = "";
                 if (baseResource.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(baseResource.LicensePlate))
                 {
@@ -91,6 +99,7 @@ namespace Prosjekt.Controllers
                     AvailableTo = baseResource.AvailableTo,
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
                     CreatedAt = NorwegianTime.Now,
+                    UserId = user?.Id ?? string.Empty
                 };
 
                 await _repo.AddAsync(resourceEntity);
@@ -138,7 +147,6 @@ namespace Prosjekt.Controllers
             string licensePlate = "";
             string size = "";
 
-            // Henter ut [Reg.nr: ...] fra beskrivelsen
             if (description.Contains("[Reg.nr:"))
             {
                 var startIndex = description.IndexOf("[Reg.nr:") + 8;
@@ -150,7 +158,6 @@ namespace Prosjekt.Controllers
                 }
             }
 
-            // Henter ut [Size: ...] fra beskrivelsen
             if (description.Contains("[Size:"))
             {
                 var startIndex = description.IndexOf("[Size:") + 6;
@@ -208,7 +215,6 @@ namespace Prosjekt.Controllers
                 var resourceEntity = await _repo.GetByIdAsync(id);
                 if (resourceEntity == null) return NotFound();
 
-                // BRUKER NÅ MODELLEN DIREKTE VED LAGRING FRA EDIT
                 string extraInfo = "";
                 if (model.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(model.LicensePlate))
                 {

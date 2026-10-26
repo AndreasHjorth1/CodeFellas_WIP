@@ -1,23 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
-using Prosjekt.Models.ModelView;
 using Prosjekt.Models.Entities;
+using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
-namespace Prosjekt.Controllers
 
+namespace Prosjekt.Controllers
 {
+    [Authorize]
     public class GeoChangeController : Controller
     {
-        /// <summary>
-        /// Repository used to persist and retrieve geographic change records.
-        /// </summary>
-        /// <remarks>Assigned via constructor injection and accessed only within the declaring
-        /// class.</remarks>
         private readonly IGeoChangeRepository _repo;
+        private readonly UserManager<IdentityUser> _userManager; // 2. Legg til UserManager
 
-        public GeoChangeController(IGeoChangeRepository repo)
+        public GeoChangeController(IGeoChangeRepository repo, UserManager<IdentityUser> userManager)
         {
             _repo = repo;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -44,6 +44,9 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
+            // 3. Hent den innloggede brukeren
+            var user = await _userManager.GetUserAsync(User);
+
             var geoChange = new GeoChange
             {
                 Coords = coords,
@@ -53,6 +56,7 @@ namespace Prosjekt.Controllers
                     ? string.Join(", ", model.SelectedChangeTypes)
                     : string.Empty,
                 CreatedAt = NorwegianTime.Now,
+                UserId = user?.Id ?? string.Empty
             };
 
             await _repo.AddAsync(geoChange);

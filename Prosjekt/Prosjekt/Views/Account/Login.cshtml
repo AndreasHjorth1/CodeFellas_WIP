@@ -1,0 +1,41 @@
+﻿@model Prosjekt.Models.ModelView.Account.LoginViewModel
+
+@{
+    ViewData["Title"] = "Logg inn";
+}
+
+<div class="container mt-5" style="max-width: 450px;">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <h2 class="text-center mb-4 fw-bold">Logg inn</h2>
+
+            <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="Email" class="form-control" autocomplete="username" aria-required="true" placeholder="navn@eksempel.no" />
+                    <label asp-for="Email">E-postadresse</label>
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Passord" />
+                    <label asp-for="Password">Passord</label>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="w-100 btn btn-lg btn-primary mb-3">Logg inn</button>
+
+                <div class="text-center">
+                    <p>
+                        Har du ikke konto? <a asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]">Registrer deg her</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

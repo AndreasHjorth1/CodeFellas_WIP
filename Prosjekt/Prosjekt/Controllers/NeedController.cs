@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
@@ -9,22 +11,16 @@ using System.Threading.Tasks;
 
 namespace Prosjekt.Controllers
 {
-    /// <summary>
-    /// ASP.NET MVC controller for creating, listing, editing, and deleting Need entities, coordinating model
-    /// validation, coordinate validation, and persistence via an INeedRepository.
-    /// </summary>
-    /// <remarks>Exposes Index (GET) to show the creation UI, Create (POST) to validate input (including map
-    /// coordinates) and create one or more Need records, Overview (GET) to list needs, Edit (GET/POST) to load and
-    /// update a need with validation, and Delete (POST) to remove a need. Create, Edit, and Delete use anti-forgery
-    /// validation. Maps between NeedViewModel and the domain Need, performs coordinate validation, and calls
-    /// asynchronous repository methods for data operations.</remarks>
+    [Authorize]
     public class NeedController : Controller
     {
         private readonly INeedRepository _repo;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public NeedController(INeedRepository repo)
+        public NeedController(INeedRepository repo, UserManager<IdentityUser> userManager)
         {
             _repo = repo;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -84,6 +80,9 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            // Hent den innloggede brukeren
+            var user = await _userManager.GetUserAsync(User);
+
             foreach (var baseNeed in model.NeedList)
             {
                 if (!string.IsNullOrWhiteSpace(baseNeed.Name))
@@ -98,7 +97,8 @@ namespace Prosjekt.Controllers
                         NeededBy = baseNeed.Deadline ?? model.Deadline,
                         IsFulfilled = baseNeed.IsFulfilled,
                         Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        UserId = user?.Id ?? string.Empty // Tildeler UserId fra den innloggede brukeren
                     };
 
                     await _repo.AddAsync(needEntity);
@@ -107,7 +107,7 @@ namespace Prosjekt.Controllers
 
             return View("Create", model);
         }
-
+        
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
@@ -205,9 +205,9 @@ namespace Prosjekt.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, string userId)
         {
-            await _repo.DeleteAsync(id);
+            await _repo.DeleteAsync(id, userId);
             return RedirectToAction(nameof(Overview));
         }
     }

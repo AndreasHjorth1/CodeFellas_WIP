@@ -32,6 +32,26 @@
                             <a class="nav-link text-white-50" asp-area="" asp-controller="Home" asp-action="Privacy">Personvern</a>
                         </li>
                     </ul>
+<ul class="navbar-nav ms-auto">
+    @if (User.Identity.IsAuthenticated)
+    {
+        <li class="nav-item">
+            <form asp-action="Logout" asp-controller="Account" method="post" class="form-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-link nav-link" style="border: none; padding: 0;">Logout</button>
+            </form>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Account" asp-action="Register">Register</a>
+        </li>
+    }
+</ul>
                 </div>
             </div>
         </nav>

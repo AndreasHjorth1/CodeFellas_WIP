@@ -19,9 +19,22 @@ namespace Prosjekt.DataAccess.Repositories
             return await _context.Needs.ToListAsync();
         }
 
+        public async Task<IEnumerable<Need>> GetAllByUserIdAsync(string userId)
+        {
+            return await _context.Needs
+                .Where(n => n.UserId == userId)
+                .ToListAsync();
+        }
+
         public async Task<Need?> GetByIdAsync(int id)
         {
             return await _context.Needs.FindAsync(id);
+        }
+        
+        public async Task<Need?> GetByIdAndUserIdAsync(int id, string userId)
+        {
+            return await _context.Needs
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
         }
 
         public async Task AddAsync(Need need)
@@ -36,9 +49,9 @@ namespace Prosjekt.DataAccess.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(int id, string userId)
         {
-            var need = await _context.Needs.FindAsync(id);
+            var need = await _context.Needs.FindAsync(id, userId);
             if (need != null)
             {
                 _context.Needs.Remove(need);
