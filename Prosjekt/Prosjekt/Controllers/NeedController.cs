@@ -124,7 +124,10 @@ namespace Prosjekt.Controllers
                 Deadline = n.NeededBy,
                 IsFulfilled = n.IsFulfilled,
                 Latitude = n.Coords.Latitude,
-                Longitude = n.Coords.Longitude
+                Longitude = n.Coords.Longitude,
+                AreaGeoJson = n.AreaGeoJson,
+                AreaSquareMeters = n.AreaSquareMeters,
+                PerimeterMeters = n.PerimeterMeters
             }).ToList();
 
             return View(needViewModels);
