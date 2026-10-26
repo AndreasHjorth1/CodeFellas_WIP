@@ -84,6 +84,24 @@
             var valgtIkon = ikoner[importanceNumber] || ikoner[0];
 
             L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);
+
+            var omradeJson = @Json.Serialize(Model.AreaGeoJson);
+            var arealM2 = @Json.Serialize(Model.AreaSquareMeters);
+            var omkretsM = @Json.Serialize(Model.PerimeterMeters);
+
+            if (omradeJson) {
+                var omrade = L.geoJSON(JSON.parse(omradeJson), {
+                    style: { color: '#dc3545', weight: 2, fillOpacity: 0.15 }
+                }).addTo(kart);
+                if (arealM2) {
+                    omrade.bindTooltip(
+                        'Område: ca. ' + formaterAreal(arealM2) +
+                        ' · omkrets ca. ' + formaterLengde(omkretsM),
+                        { sticky: true }
+                    );
+                }
+                kart.fitBounds(omrade.getBounds(), { padding: [20, 20] });
+            }
         }
     </script>
 }

@@ -264,17 +264,10 @@
             document.getElementById('PerimeterMeters').value = omkrets.toFixed(2);
 
              document.getElementById('omradeAreal').textContent =
-                Math.round(areal).toLocaleString('nb-NO') + ' m²';
+                 document.getElementById('omradeAreal').textContent = formaterAreal(areal);
             document.getElementById('omradeOmkrets').textContent =
-                Math.round(omkrets).toLocaleString('nb-NO') + ' m';
+                document.getElementById('omradeOmkrets').textContent = formaterLengde(omkrets);
             document.getElementById('omradeInfo').classList.remove('d-none');
-        }
-
-        function tomOmrade() {
-            document.getElementById('AreaGeoJson').value = '';
-            document.getElementById('AreaSquareMeters').value = '';
-            document.getElementById('PerimeterMeters').value = '';
-            document.getElementById('omradeInfo').classList.add('d-none');
         }
 
         function settPosisjonOgVisMeny(lat, lng) {
