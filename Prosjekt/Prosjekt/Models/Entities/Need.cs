@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using Prosjekt.Utils;
 
 namespace Prosjekt.Models.Entities
 {
@@ -32,7 +33,11 @@ namespace Prosjekt.Models.Entities
 
         public Coordinates Coords { get; set; } = new Coordinates(0, 0);
 
+<<<<<<< HEAD
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+=======
+        public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
+>>>>>>> 29d1450 (Fikset tiden som registreres i databasen fra å være UTC +2 til å være universell uavhenging av sommer eller vintertid)
 
         // Område tegnet i kartet. Null når brukeren bare satte en markør.
         public string? AreaGeoJson { get; set; }

@@ -90,7 +90,7 @@ namespace Prosjekt.Controllers
                     AvailableFrom = baseResource.AvailableFrom,
                     AvailableTo = baseResource.AvailableTo,
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    CreatedAt = NorwegianTime.Now,
+                    
                 };
 
                 await _repo.AddAsync(resourceEntity);

@@ -5,7 +5,7 @@ namespace Prosjekt.Models.Entities
 {
     public class Resource
     {
-       
+
         public int Id { get; set; }
 
         [Required(ErrorMessage = "Ressursen må ha et navn")]
@@ -36,6 +36,8 @@ namespace Prosjekt.Models.Entities
 
         public Coordinates Coords { get; set; }
 
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
+
 }
