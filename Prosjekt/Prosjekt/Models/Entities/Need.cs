@@ -33,5 +33,10 @@ namespace Prosjekt.Models.Entities
         public Coordinates Coords { get; set; } = new Coordinates(0, 0);
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Område tegnet i kartet. Null når brukeren bare satte en markør.
+        public string? AreaGeoJson { get; set; }
+        public double? AreaSquareMeters { get; set; }
+        public double? PerimeterMeters { get; set; }
     }
 }

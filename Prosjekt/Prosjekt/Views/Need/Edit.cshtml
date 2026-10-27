@@ -83,6 +83,14 @@
                 </div>
             </div>
 
+            <div id="omradeInfo" class="small text-muted mb-3 d-none">
+                Område: ca. <span id="omradeAreal"></span> &middot; omkrets ca. <span id="omradeOmkrets"></span>
+            </div>
+
+            <input asp-for="AreaGeoJson" id="AreaGeoJson" type="hidden" />
+            <input asp-for="AreaSquareMeters" id="AreaSquareMeters" type="hidden" />
+            <input asp-for="PerimeterMeters" id="PerimeterMeters" type="hidden" />
+
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary w-50">Lagre</button>
                 <a asp-action="Overview" class="btn btn-secondary w-50">Avbryt</a>
@@ -117,6 +125,8 @@
             });
         }
 
+        var valgtFarge = (importanceNumber === 0) ? '#dc3545' : '#fd7e14';
+
         // Velg rød (0 = Acute) eller gul/gold (1 = Planned)
         var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
         var valgtIkon = ikoner[importanceNumber] || getIkon('blue');
@@ -133,7 +143,15 @@
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        if (harPosisjon) {
+        var omradeJson = @Json.Serialize(Model.AreaGeoJson);
+
+        if (omradeJson) {
+            var eksisterende = L.geoJSON(JSON.parse(omradeJson), {
+                style: { color: valgtFarge, weight: 2, fillOpacity: 0.15 }
+            });
+            eksisterende.eachLayer(function (l) { drawnItems.addLayer(l); });
+            map.fitBounds(eksisterende.getBounds(), { padding: [20, 20] });
+        } else if (harPosisjon) {
             var existingMarker = L.marker(startPunkt, { icon: valgtIkon });
             drawnItems.addLayer(existingMarker);
         }
@@ -141,7 +159,13 @@
         // 4. Opprett draw control
         var drawControl = new L.Control.Draw({
             draw: {
-                polygon: false, polyline: false, circle: false, rectangle: false,
+                polygon: {
+                    allowIntersection: false,
+                    showArea: true,
+                    metric: true,
+                    shapeOptions: { color: valgtFarge }
+                },
+                polyline: false, circle: false, rectangle: false,
                 marker: { icon: valgtIkon }
             },
             edit: { featureGroup: drawnItems, remove: true }
@@ -149,17 +173,28 @@
         map.addControl(drawControl);
 
         // 5. Event handlers
-        map.on('draw:created', function(e) {
+        map.on('draw:created', function (e) {
             var layer = e.layer;
             drawnItems.clearLayers();
-            drawnItems.addLayer(layer);
 
-            var latlng = layer.getLatLng();
+            var latlng;
+
+            if (layer instanceof L.Polygon) {
+                latlng = layer.getBounds().getCenter();
+                layer.setStyle({ color: valgtFarge, fillOpacity: 0.15 });
+                lagreOmrade(layer);
+            } else {
+                latlng = layer.getLatLng();
+                tomOmrade();
+            }
+
+            drawnItems.addLayer(layer);
             document.getElementById('Latitude').value = latlng.lat.toFixed(6);
             document.getElementById('Longitude').value = latlng.lng.toFixed(6);
         });
 
         map.on('draw:deleted', function() {
+            tomOmrade();
             document.getElementById('Latitude').value = '';
             document.getElementById('Longitude').value = '';
         });

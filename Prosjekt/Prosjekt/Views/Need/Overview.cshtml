@@ -137,6 +137,23 @@
                 var valgtIkon = ikoner[b.Importance] || ikoner[0];
                 var marker = L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);
 
+                if (b.AreaGeoJson) {
+                    var omrade = L.geoJSON(JSON.parse(b.AreaGeoJson), {
+                        style: {
+                            color: b.Importance === 0 ? '#dc3545' : '#fd7e14',
+                            weight: 2,
+                            fillOpacity: 0.12
+                        }
+                    }).addTo(kart);
+
+                    if (b.AreaSquareMeters) {
+                        omrade.bindTooltip(
+                            `${b.Name}: ca. ${formaterAreal(b.AreaSquareMeters)}`,
+                            { sticky: true }
+                        );
+                    }
+                }
+
                 // Sett opp en midlertidig popup mens adressen hentes
                 var basePopupContent = `
                     <b>${b.Name}</b><br/>
