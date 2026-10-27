@@ -44,7 +44,7 @@ jobs:
           --verbosity normal
           --logger trx
           --collect:"XPlat Code Coverage"
-          --result-directory -/TestResult
+          --result-directory -/TestResults
       
           
 
