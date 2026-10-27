@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using Prosjekt.Utils;
 
 namespace Prosjekt.Models.Entities
 {
@@ -36,6 +37,6 @@ namespace Prosjekt.Models.Entities
 
         public Coordinates Coords { get; set; }
 
-        public DateTime CreatedAt { get; init; } = DateTime.Now;
+        public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
     }
 }
