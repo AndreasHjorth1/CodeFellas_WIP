@@ -89,9 +89,10 @@ namespace Prosjekt.Controllers
                         AreaGeoJson = model.AreaGeoJson,
                         AreaSquareMeters = model.AreaSquareMeters,
                         PerimeterMeters = model.PerimeterMeters,
-                        CreatedAt = DateTime.UtcNow
+
                     };
 
+                    
                     await _repo.AddAsync(needEntity);
                 }
             }

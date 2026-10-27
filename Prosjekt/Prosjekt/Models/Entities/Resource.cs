@@ -36,6 +36,6 @@ namespace Prosjekt.Models.Entities
 
         public Coordinates Coords { get; set; }
 
-        public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; init; } = DateTime.Now;
     }
 }
