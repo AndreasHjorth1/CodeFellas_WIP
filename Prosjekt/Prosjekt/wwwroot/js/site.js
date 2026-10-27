@@ -17,3 +17,30 @@ function formaterLengde(m) {
     }
     return (m / 1000).toFixed(1).replace('.', ',') + ' km';
 }
+
+function tomOmrade() {
+    document.getElementById('AreaGeoJson').value = '';
+    document.getElementById('AreaSquareMeters').value = '';
+    document.getElementById('PerimeterMeters').value = '';
+    document.getElementById('omradeInfo').classList.add('d-none');
+}
+
+function lagreOmrade(layer) {
+
+    var punkter = layer.getLatLngs()[0];
+
+    var areal = L.GeometryUtil.geodesicArea(punkter);
+
+    var omkrets = 0;
+    for (var i = 0; i < punkter.length; i++) {
+        var neste = punkter[(i + 1) % punkter.length];
+        omkrets += punkter[i].distanceTo(neste);
+    }
+    document.getElementById('AreaGeoJson').value = JSON.stringify(layer.toGeoJSON());
+    document.getElementById('AreaSquareMeters').value = areal.toFixed(2);
+    document.getElementById('PerimeterMeters').value = omkrets.toFixed(2);
+
+    document.getElementById('omradeAreal').textContent = formaterAreal(areal);
+    document.getElementById('omradeOmkrets').textContent = formaterLengde(omkrets);
+    document.getElementById('omradeInfo').classList.remove('d-none');
+}

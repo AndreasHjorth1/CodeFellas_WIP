@@ -141,6 +141,11 @@
             return (importanceVal === '0' || importanceVal === 'Acute') ? getIkon('red') : getIkon('gold');
         }
 
+        function HentValgtFarge() {
+            var importanceVal = document.getElementById('viktighetSelect').value;
+            return (importanceVal === '0' || importanceVal === 'Acute') ? '#dc3545' : '#fd7e14';
+        }
+
         // 1. Definer kartlagene med noWrap
         var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors',
@@ -204,9 +209,12 @@
         // Oppdaterer eksisterende markør dersom brukeren endrer dropdown-valget for Viktighet
         document.getElementById('viktighetSelect').addEventListener('change', function() {
             var valgtIkon = HentValgtIkon();
+            var valgtFarge = HentValgtFarge();
             drawnItems.eachLayer(function(layer) {
                 if (layer instanceof L.Marker) {
                     layer.setIcon(valgtIkon);
+                } else if (layer instanceof L.Polygon) {
+                    layer.setStyle({ color: valgtFarge });
                 }
             });
         });
@@ -220,6 +228,7 @@
             
             if (layer instanceof L.Polygon) {
                 latlng = layer.getBounds().getCenter();
+                layer.setStyle({ color: HentValgtFarge(), fillOpacity: 0.15 });
                 lagreOmrade(layer);
             } else {
                 if (layer instanceof L.Marker) {
@@ -238,6 +247,11 @@
             if (tegnerNaa) return;
             var lat = e.latlng.lat.toFixed(6);
             var lng = e.latlng.lng.toFixed(6);
+            
+            var harOmrade = document.getElementById('AreaGeoJson').value !== '';
+            if (harOmrade && !confirm('Du har tegnet et område. Vil du erstatte det med en markør?')) {
+                return;
+            }
 
             drawnItems.clearLayers();
 
@@ -247,26 +261,6 @@
 
             settPosisjonOgVisMeny(lat, lng);
         });
-        function lagreOmrade(layer) {
-            // 
-            var punkter = layer.getLatLngs()[0];
-
-            var areal = L.GeometryUtil.geodesicArea(punkter);
-
-            var omkrets = 0;
-            for (var i = 0; i < punkter.length; i++) {
-                var neste = punkter[(i + 1) % punkter.length];
-                omkrets += punkter[i].distanceTo(neste);
-            }
-
-            document.getElementById('AreaGeoJson').value = JSON.stringify(layer.toGeoJSON());
-            document.getElementById('AreaSquareMeters').value = areal.toFixed(2);
-            document.getElementById('PerimeterMeters').value = omkrets.toFixed(2);
-
-            document.getElementById('omradeAreal').textContent = formaterAreal(areal);
-            document.getElementById('omradeOmkrets').textContent = formaterLengde(omkrets);
-            document.getElementById('omradeInfo').classList.remove('d-none');
-        }
 
         function settPosisjonOgVisMeny(lat, lng) {
             document.getElementById('Latitude').value = lat;

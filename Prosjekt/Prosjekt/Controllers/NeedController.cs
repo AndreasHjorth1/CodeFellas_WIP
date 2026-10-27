@@ -98,6 +98,9 @@ namespace Prosjekt.Controllers
                         NeededBy = baseNeed.Deadline ?? model.Deadline,
                         IsFulfilled = baseNeed.IsFulfilled,
                         Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
+                        AreaGeoJson = model.AreaGeoJson,
+                        AreaSquareMeters = model.AreaSquareMeters,
+                        PerimeterMeters = model.PerimeterMeters,
                         CreatedAt = DateTime.UtcNow
                     };
 
@@ -153,7 +156,10 @@ namespace Prosjekt.Controllers
                 Deadline = need.NeededBy,
                 IsFulfilled = need.IsFulfilled,
                 Latitude = need.Coords.Latitude,
-                Longitude = need.Coords.Longitude
+                Longitude = need.Coords.Longitude,
+                AreaGeoJson = need.AreaGeoJson,
+                AreaSquareMeters = need.AreaSquareMeters,
+                PerimeterMeters = need.PerimeterMeters
             };
 
             return View(viewModel);
@@ -200,6 +206,9 @@ namespace Prosjekt.Controllers
             existingNeed.NeededBy = model.Deadline;
             existingNeed.IsFulfilled = model.IsFulfilled;
             existingNeed.Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
+            existingNeed.AreaGeoJson = model.AreaGeoJson;
+            existingNeed.AreaSquareMeters = model.AreaSquareMeters;
+            existingNeed.PerimeterMeters = model.PerimeterMeters;
 
             await _repo.UpdateAsync(existingNeed);
 
