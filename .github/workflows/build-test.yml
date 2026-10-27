@@ -42,11 +42,11 @@ jobs:
           --no-build
           --no-restore
           --verbosity normal
-          --output Detailed
-          --report-xunit-trx
-          --coverlet
-          --coverlet-output-format cobertura
-          --results-directory ./TestResults
+          --logger trx
+          --collect:"XPlat Code Coverage"
+          --result-directory -/TestResult
+      
+          
 
       - name: Generate coverage report
         if: always() && hashFiles('TestResults/**/coverage.cobertura*.xml') != ''
