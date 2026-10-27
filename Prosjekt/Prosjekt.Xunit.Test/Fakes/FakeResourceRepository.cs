@@ -11,7 +11,7 @@ namespace Prosjekt.Xunit.Test.Fakes
 
         public Task AddAsync(Resource resource)
         {
-            resource.Id = Resources.Count + 1;
+            typeof(Resource).GetProperty("Id")?.SetValue(resource, Resources.Count + 1);
             Resources.Add(resource);
 
             return Task.CompletedTask;
