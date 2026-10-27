@@ -10,6 +10,63 @@
         padding-right: 0 !important;
         padding-bottom: 0 !important;
     }
+
+    /* Tvinger Leaflets øvre høyre hjørne til å legge kontrollene ved siden av hverandre */
+    .leaflet-top.leaflet-right {
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    /* Styling for Symbol Info-knappen (større skrift og polstring) */
+    .info-btn {
+        background-color: white;
+        border: 2px solid rgba(0,0,0,0.2);
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        white-space: nowrap;
+    }
+
+        .info-btn:hover {
+            background-color: #f4f4f4;
+        }
+
+    /* Styling for infoboksen (større bredde og tekst) */
+    .info-box {
+        background: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+        font-size: 1rem;
+        min-width: 250px;
+    }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .info-box li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+    /* Større fargede sirkler */
+    .color-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 10px;
+        flex-shrink: 0;
+    }
 </style>
 
 <!-- Kartbeholder -->
@@ -55,6 +112,43 @@
             };
             L.control.layers(bakgrunnsKart).addTo(map);
 
+            // --- SYMBOL INFO KNAPP OG BOKS I ØVRE HØYRE HJØRNE ---
+            var symbolInfoControl = L.control({ position: 'topright' });
+
+            symbolInfoControl.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'leaflet-bar');
+                div.style.border = 'none';
+                div.style.boxShadow = 'none';
+
+                div.innerHTML = `
+                            <button id="toggleInfoBtn" class="info-btn">Fargekoder - Markør</button>
+                            <div id="infoBoxContainer" class="info-box d-none mt-2">
+                                <strong style="font-size: 1.05rem;">Fargekoder - Markør</strong>
+                                <hr class="my-2">
+                                <ul>
+                                    <li><span class="color-dot" style="background-color: #dc3545;"></span> Rød: Akutte behov</li>
+                                    <li><span class="color-dot" style="background-color: #ffc107;"></span> Gul: Planlagte behov</li>
+                                    <li><span class="color-dot" style="background-color: #0d6efd;"></span> Blå: Offentlige aktører</li>
+                                    <li><span class="color-dot" style="background-color: #198754;"></span> Grønn: Tilgjengelige ressurser</li>
+                                    <li><span class="color-dot" style="background-color: #6c757d;"></span> Grå: Utilgjengelige ressurser</li>
+                                </ul>
+                            </div>
+                        `;
+
+                // Forhindrer at klikk på knappen eller boksen panorerer/zoomer kartet
+                L.DomEvent.disableClickPropagation(div);
+                return div;
+            };
+
+            symbolInfoControl.addTo(map);
+
+            // Legg til lytter for å vise/skjule infoboksen
+            document.getElementById('toggleInfoBtn').addEventListener('click', function () {
+                var infoBox = document.getElementById('infoBoxContainer');
+                infoBox.classList.toggle('d-none');
+            });
+            // -----------------------------------------------------------------
+
             var bounds = [];
 
             // Hjelpefunksjon for å generere fargede ikoner for Behov
@@ -94,7 +188,6 @@
                                         <div style="font-size: 0.9rem;">
                                             <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
                                             <b>${res.name || 'Uten navn'}</b> (${res.quantity || 1} stk)<br/>
-                                            ${res.description ? res.description + '<br/>' : ''}
                                             📞 Tlf: ${res.phoneNumber || 'Ikke oppgitt'}<br/>
                                             Status: ${status}
                                         </div>
