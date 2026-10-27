@@ -82,7 +82,7 @@ namespace Prosjekt.Controllers
                         Description = baseNeed.Description ?? string.Empty,
                         Category = baseNeed.Type.ToString(),
                         PhoneNumber = baseNeed.Phone ?? string.Empty,
-                        Priority = baseNeed.Importance.ToString(),
+                        Priority = model.Importance.ToString(),
                         NeededBy = baseNeed.Deadline ?? model.Deadline,
                         IsFulfilled = baseNeed.IsFulfilled,
                         Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),

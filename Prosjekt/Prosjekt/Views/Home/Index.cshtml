@@ -214,48 +214,64 @@
                         var areaGeoJson = need.areaGeoJson || need.AreaGeoJson;
                         var areaSquareMeters = need.areaSquareMeters || need.AreaSquareMeters;
 
-                        if (!isNaN(lat) && !isNaN(lng)) {
+                        // Teksten som skal vises når du trykker på enten området eller markøren
+                        var popupInnhold = `
+                            <div style="font-size: 0.9rem;">
+                                <strong style="color: #dc3545;">🆘 BEHOV</strong><br/>
+                                <b>${need.name || need.Name || 'Uten navn'}</b><br/>
+                                ${(need.description || need.Description) ? (need.description || need.Description) + '<br/>' : ''}
+                                ${areaSquareMeters ? '<b>Areal:</b> ca. ' + formaterAreal(areaSquareMeters) + '<br/>' : ''}
+                                📞 Tlf: ${need.phone || need.Phone || 'Ikke oppgitt'}
+                            </div>
+                        `;
+
+                        var harOmrade = false;
+
+                        // --- TEGN FIGUR / OMÅDE DERSOM GEOJSON FINNES ---
+                        if (areaGeoJson) {
+                            try {
+                                var parsedGeoJson = typeof areaGeoJson === 'string' ? JSON.parse(areaGeoJson) : areaGeoJson;
+
+                                var omrade = L.geoJSON(parsedGeoJson, {
+                                    style: {
+                                        color: importance === 0 ? '#dc3545' : '#fd7e14',
+                                        weight: 2,
+                                        fillOpacity: 0.25
+                                    }
+                                }).addTo(map);
+
+                                // Fest infoboksen direkte til området ved klikk
+                                omrade.bindPopup(popupInnhold);
+
+                                if (areaSquareMeters) {
+                                    omrade.bindTooltip(
+                                        `${need.name || need.Name || 'Område'}: ca. ${formaterAreal(areaSquareMeters)}`,
+                                        { sticky: true }
+                                    );
+                                }
+
+                                // Hent ut grensene (bounds) til området slik at kartzoomen tilpasser seg
+                                bounds.push(omrade.getBounds());
+                                harOmrade = true;
+
+                            } catch (err) {
+                                console.error("Feil ved innlasting av GeoJSON-figur:", err);
+                            }
+                        }
+
+                        // --- KUN VIS MARKØR DERSOM DET IKKE FINNES ET INNTEGNET OMÅDE ---
+                        if (!harOmrade && !isNaN(lat) && !isNaN(lng)) {
                             var chosenIcon = behovIkoner[importance] || behovIkoner[1];
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon }).addTo(map);
-                            marker.bindPopup(`
-                                <div style="font-size: 0.9rem;">
-                                    <strong style="color: #dc3545;">🆘 BEHOV</strong><br/>
-                                    <b>${need.name || need.Name || 'Uten navn'}</b><br/>
-                                    ${(need.description || need.Description) ? (need.description || need.Description) + '<br/>' : ''}
-                                    📞 Tlf: ${need.phone || need.Phone || 'Ikke oppgitt'}
-                                </div>
-                            `);
+                            marker.bindPopup(popupInnhold);
+
                             bounds.push([lat, lng]);
-
-                            // --- TEGN FIGUR / OMÅDE DERSOM GEOJSON FINNES ---
-                            if (areaGeoJson) {
-                                try {
-                                    var parsedGeoJson = typeof areaGeoJson === 'string' ? JSON.parse(areaGeoJson) : areaGeoJson;
-
-                                    var omrade = L.geoJSON(parsedGeoJson, {
-                                        style: {
-                                            color: importance === 0 ? '#dc3545' : '#fd7e14',
-                                            weight: 2,
-                                            fillOpacity: 0.18
-                                        }
-                                    }).addTo(map);
-
-                                    if (areaSquareMeters) {
-                                        omrade.bindTooltip(
-                                            `${need.name || need.Name || 'Område'}: ca. ${formaterAreal(areaSquareMeters)}`,
-                                            { sticky: true }
-                                        );
-                                    }
-                                } catch (err) {
-                                    console.error("Feil ved innlasting av GeoJSON-figur:", err);
-                                }
-                            }
                         }
                     });
                 }
 
-                // 6. Tilpass kartzoomen dersom det finnes markører
+                // 6. Tilpass kartzoomen dersom det finnes markører eller områder
                 if (bounds.length > 0) {
                     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
                 }
