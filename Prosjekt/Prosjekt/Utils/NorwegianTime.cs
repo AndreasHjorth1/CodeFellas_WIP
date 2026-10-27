@@ -1,6 +1,7 @@
 ﻿using System;
+using TimeZoneConverter;
 
-namespace Prosjekt.Utils // Pass på at dette stemmer overens med navnet på prosjektet og mappen din
+namespace Prosjekt.Utils 
 {
     public static class NorwegianTime
     {
@@ -8,14 +9,10 @@ namespace Prosjekt.Utils // Pass på at dette stemmer overens med navnet på pro
         {
             get
             {
-                // Finner riktig tidssone enten du kjører på Windows eller Mac/Linux/Docker
-                var tzId = Environment.OSVersion.Platform == PlatformID.Win32NT
-                    ? "W. Europe Standard Time"
-                    : "Europe/Oslo";
-
-                var norwayTimeZone = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-
-                // Henter UTC-tid og konverterer nøyaktig til norsk tid
+                // TZConvert oversetter IANA-formatet til riktig Windows/Linux-tidssone sømløst
+                var norwayTimeZone = TZConvert.GetTimeZoneInfo("Europe/Oslo");
+                               
+                // Konverterer fra UTC til nøyaktig Norsk tid
                 return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, norwayTimeZone);
             }
         }
