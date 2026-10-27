@@ -231,7 +231,9 @@ namespace Prosjekt.Controllers
                     : ImportanceLevel.Planned,
                 IsFulfilled = n.IsFulfilled,
                 Latitude = n.Coords.Latitude,
-                Longitude = n.Coords.Longitude
+                Longitude = n.Coords.Longitude,
+                AreaGeoJson = n.AreaGeoJson,
+                AreaSquareMeters = n.AreaSquareMeters
             });
 
             return Json(result);

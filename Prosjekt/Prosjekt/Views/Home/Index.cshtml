@@ -19,7 +19,7 @@
         gap: 10px;
     }
 
-    /* Styling for Symbol Info-knappen (større skrift og polstring) */
+    /* Styling for Symbol Info-knappen */
     .info-btn {
         background-color: white;
         border: 2px solid rgba(0,0,0,0.2);
@@ -36,7 +36,7 @@
             background-color: #f4f4f4;
         }
 
-    /* Styling for infoboksen (større bredde og tekst) */
+    /* Styling for infoboksen */
     .info-box {
         background: white;
         padding: 16px 20px;
@@ -58,7 +58,6 @@
             align-items: center;
         }
 
-    /* Større fargede sirkler */
     .color-dot {
         width: 16px;
         height: 16px;
@@ -75,7 +74,7 @@
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
-            // 1. Definer kartlagene med noWrap (fra Opprett Ressurser)
+            // 1. Definer kartlagene med noWrap
             var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 noWrap: true
@@ -104,7 +103,7 @@
                 layers: [osmKart]
             });
 
-            // 3. Lag menyen/filteret i hjørnet for å bytte bakgrunnskart
+            // 3. Lag menyen i hjørnet for å bytte bakgrunnskart
             var bakgrunnsKart = {
                 "Standard (OSM)": osmKart,
                 "Topografisk (Geonorge)": geonorgeTopo,
@@ -112,7 +111,7 @@
             };
             L.control.layers(bakgrunnsKart).addTo(map);
 
-            // --- SYMBOL INFO KNAPP OG BOKS I ØVRE HØYRE HJØRNE ---
+            // --- SYMBOL INFO KNAPP OG BOKS ---
             var symbolInfoControl = L.control({ position: 'topright' });
 
             symbolInfoControl.onAdd = function (map) {
@@ -121,35 +120,41 @@
                 div.style.boxShadow = 'none';
 
                 div.innerHTML = `
-                            <button id="toggleInfoBtn" class="info-btn">Fargekoder - Markør</button>
-                            <div id="infoBoxContainer" class="info-box d-none mt-2">
-                                <strong style="font-size: 1.05rem;">Fargekoder - Markør</strong>
-                                <hr class="my-2">
-                                <ul>
-                                    <li><span class="color-dot" style="background-color: #dc3545;"></span> Rød: Akutte behov</li>
-                                    <li><span class="color-dot" style="background-color: #ffc107;"></span> Gul: Planlagte behov</li>
-                                    <li><span class="color-dot" style="background-color: #0d6efd;"></span> Blå: Offentlige aktører</li>
-                                    <li><span class="color-dot" style="background-color: #198754;"></span> Grønn: Tilgjengelige ressurser</li>
-                                    <li><span class="color-dot" style="background-color: #6c757d;"></span> Grå: Utilgjengelige ressurser</li>
-                                </ul>
-                            </div>
-                        `;
+                    <button id="toggleInfoBtn" class="info-btn">Fargekoder - Markør</button>
+                    <div id="infoBoxContainer" class="info-box d-none mt-2">
+                        <strong style="font-size: 1.05rem;">Fargekoder - Markør</strong>
+                        <hr class="my-2">
+                        <ul>
+                            <li><span class="color-dot" style="background-color: #dc3545;"></span> Rød: Akutte behov</li>
+                            <li><span class="color-dot" style="background-color: #ffc107;"></span> Gul: Planlagte behov</li>
+                            <li><span class="color-dot" style="background-color: #0d6efd;"></span> Blå: Offentlige aktører</li>
+                            <li><span class="color-dot" style="background-color: #198754;"></span> Grønn: Tilgjengelige ressurser</li>
+                            <li><span class="color-dot" style="background-color: #6c757d;"></span> Grå: Utilgjengelige ressurser</li>
+                        </ul>
+                    </div>
+                `;
 
-                // Forhindrer at klikk på knappen eller boksen panorerer/zoomer kartet
                 L.DomEvent.disableClickPropagation(div);
                 return div;
             };
 
             symbolInfoControl.addTo(map);
 
-            // Legg til lytter for å vise/skjule infoboksen
             document.getElementById('toggleInfoBtn').addEventListener('click', function () {
                 var infoBox = document.getElementById('infoBoxContainer');
                 infoBox.classList.toggle('d-none');
             });
-            // -----------------------------------------------------------------
 
             var bounds = [];
+
+            // Hjelpefunksjon for å formatere areal
+            function formaterAreal(sqm) {
+                if (!sqm) return '';
+                if (sqm >= 1000000) {
+                    return (sqm / 1000000).toFixed(2) + ' km²';
+                }
+                return Math.round(sqm).toLocaleString('no-NO') + ' m²';
+            }
 
             // Hjelpefunksjon for å generere fargede ikoner for Behov
             function getIkon(fargeNavn) {
@@ -169,56 +174,83 @@
             };
 
             try {
-                // 4. Hent ressurser fra ResourceController sin GetInformasjon-metode
+                // 4. Hent ressurser
                 const resResponse = await fetch('/Resource/GetInformasjon');
                 if (resResponse.ok) {
                     const resourcesData = await resResponse.json();
 
                     resourcesData.forEach(function (res) {
-                        var lat = parseFloat(res.latitude);
-                        var lng = parseFloat(res.longitude);
+                        var lat = parseFloat(res.latitude || res.Latitude);
+                        var lng = parseFloat(res.longitude || res.Longitude);
 
                         if (!isNaN(lat) && !isNaN(lng)) {
-                            var status = res.availability
+                            var status = (res.availability || res.Availability)
                                 ? '<span class="badge bg-success">Tilgjengelig</span>'
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
                             var marker = L.marker([lat, lng]).addTo(map);
                             marker.bindPopup(`
-                                        <div style="font-size: 0.9rem;">
-                                            <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
-                                            <b>${res.name || 'Uten navn'}</b> (${res.quantity || 1} stk)<br/>
-                                            📞 Tlf: ${res.phoneNumber || 'Ikke oppgitt'}<br/>
-                                            Status: ${status}
-                                        </div>
-                                    `);
+                                <div style="font-size: 0.9rem;">
+                                    <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
+                                    <b>${res.name || res.Name || 'Uten navn'}</b> (${res.quantity || res.Quantity || 1} stk)<br/>
+                                    📞 Tlf: ${res.phoneNumber || res.PhoneNumber || 'Ikke oppgitt'}<br/>
+                                    Status: ${status}
+                                </div>
+                            `);
                             bounds.push([lat, lng]);
                         }
                     });
                 }
 
-                // 5. Hent behov fra NeedController sin GetInformasjon-metode
+                // 5. Hent behov (Inkludert inntegnede figurer/områder)
                 const needResponse = await fetch('/Need/GetInformasjon');
                 if (needResponse.ok) {
                     const needsData = await needResponse.json();
 
                     needsData.forEach(function (need) {
-                        var lat = parseFloat(need.latitude);
-                        var lng = parseFloat(need.longitude);
+                        var lat = parseFloat(need.latitude || need.Latitude);
+                        var lng = parseFloat(need.longitude || need.Longitude);
+                        var importance = need.importance !== undefined ? need.importance : need.Importance;
+                        var areaGeoJson = need.areaGeoJson || need.AreaGeoJson;
+                        var areaSquareMeters = need.areaSquareMeters || need.AreaSquareMeters;
 
                         if (!isNaN(lat) && !isNaN(lng)) {
-                            var chosenIcon = behovIkoner[need.importance] || behovIkoner[1];
+                            var chosenIcon = behovIkoner[importance] || behovIkoner[1];
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon }).addTo(map);
                             marker.bindPopup(`
-                                        <div style="font-size: 0.9rem;">
-                                            <strong style="color: #dc3545;">🆘 BEHOV</strong><br/>
-                                            <b>${need.name || 'Uten navn'}</b><br/>
-                                            ${need.description ? need.description + '<br/>' : ''}
-                                            📞 Tlf: ${need.phone || 'Ikke oppgitt'}
-                                        </div>
-                                    `);
+                                <div style="font-size: 0.9rem;">
+                                    <strong style="color: #dc3545;">🆘 BEHOV</strong><br/>
+                                    <b>${need.name || need.Name || 'Uten navn'}</b><br/>
+                                    ${(need.description || need.Description) ? (need.description || need.Description) + '<br/>' : ''}
+                                    📞 Tlf: ${need.phone || need.Phone || 'Ikke oppgitt'}
+                                </div>
+                            `);
                             bounds.push([lat, lng]);
+
+                            // --- TEGN FIGUR / OMÅDE DERSOM GEOJSON FINNES ---
+                            if (areaGeoJson) {
+                                try {
+                                    var parsedGeoJson = typeof areaGeoJson === 'string' ? JSON.parse(areaGeoJson) : areaGeoJson;
+
+                                    var omrade = L.geoJSON(parsedGeoJson, {
+                                        style: {
+                                            color: importance === 0 ? '#dc3545' : '#fd7e14',
+                                            weight: 2,
+                                            fillOpacity: 0.18
+                                        }
+                                    }).addTo(map);
+
+                                    if (areaSquareMeters) {
+                                        omrade.bindTooltip(
+                                            `${need.name || need.Name || 'Område'}: ca. ${formaterAreal(areaSquareMeters)}`,
+                                            { sticky: true }
+                                        );
+                                    }
+                                } catch (err) {
+                                    console.error("Feil ved innlasting av GeoJSON-figur:", err);
+                                }
+                            }
                         }
                     });
                 }
