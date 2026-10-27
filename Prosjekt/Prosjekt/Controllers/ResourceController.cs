@@ -247,5 +247,28 @@ namespace Prosjekt.Controllers
             await _repo.DeleteAsync(id);
             return RedirectToAction(nameof(Overview));
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetInformasjon()
+        {
+            var resources = await _repo.GetAllAsync();
+
+            var result = resources.Select(r => new ResourceViewModel
+            {
+                Id = r.Id,
+                Name = r.Name,
+                PhoneNumber = r.PhoneNumber,
+                Description = r.Description,
+                Quantity = r.Quantity,
+                Availability = r.IsAvailable,
+                Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat)
+                    ? cat
+                    : ResourceViewModel.ResourceType.Other,
+                Latitude = r.Coords.Latitude,
+                Longitude = r.Coords.Longitude
+            });
+
+            return Json(result);
+        }
     }
 }

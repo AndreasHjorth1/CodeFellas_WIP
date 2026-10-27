@@ -8,18 +8,9 @@ namespace Prosjekt.Controllers;
 public class HomeController : Controller
 {
     /// <summary>
-    /// Database connection string used to create connections to the target database.
+    /// Displays the default view for the controller.
     /// </summary>
-    /// <remarks>Assigned during construction and immutable thereafter. Should contain provider-specific
-    /// connection settings required by the data provider.</remarks>
-    private readonly string _connectionString;
-
-    public HomeController(IConfiguration configuration)
-    {
-        _connectionString = configuration.GetConnectionString("mysql")
-            ?? configuration.GetConnectionString("mariadbcontainer")
-            ?? "server=mariadbcontainer;port=3306;database=mysql;user=root;password=Gruppe12!";
-    }
+    /// <returns>An IActionResult that renders the view.</returns>
 
     public IActionResult Index()
     {
