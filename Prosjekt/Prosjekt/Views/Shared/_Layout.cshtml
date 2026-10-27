@@ -5,24 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - TotalForsvaret</title>
     <script type="importmap"></script>
-    @* Leaflet (kartbibliotek) brukes i Ressurs-, Behov- og Position-viewene. OBS: CSS-en lastes både lokalt her og fra unpkg under *@
     <link href="~/lib/leaflet/leaflet.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Prosjekt.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-    
-
 </head>
 <body>
     <header class="sticky-top">
-        <nav class="navbar navbar-expand-sm navbar-dark glass-navbar">
+        <nav class="navbar navbar-expand-sm navbar-dark glass-navbar" style="background-color: #699079;">
             <div class="container-fluid">
-                <a class="navbar-brand text-white fw-bold" asp-area="" asp-controller="Home" asp-action="Index">TotalForsvaret</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+                <!-- Meny-knapp plassert helt til venstre -->
+                <button class="btn btn-outline-light me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                    ☰ Meny
                 </button>
+                <a class="navbar-brand text-white fw-bold" asp-area="" asp-controller="Home" asp-action="Index">TotalForsvaret</a>
+
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
@@ -36,52 +34,46 @@
             </div>
         </nav>
     </header>
-    <div class="container-fluid flex-grow-1 d-flex flex-column">
-        <div class="row flex-grow-1">
 
-            <!-- Venstremeny -->
-            <aside class="col-md-3 col-lg-2 border-end pe-3 mb-4 d-flex flex-column" style="min-height: calc(100vh - 160px);">
-                <ul class="nav nav-pills flex-column gap-2">
-                    <strong>Registrering</strong>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark border" asp-area="" asp-controller="Resource" asp-action="Index">Registrer Ressurs</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark border" asp-area="" asp-controller="Need" asp-action="Index">Registrer Behov</a>
-                    </li>
-                    <strong>Oversikt</strong>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark border" asp-area="" asp-controller="Resource" asp-action="Overview">Oversikt over ressurser</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark border" asp-area="" asp-controller="Need" asp-action="Overview">Oversikt over behov</a>
-                    </li>
-                    <strong>Kriseinformasjon</strong>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark border" asp-area="" asp-controller="CrisisInformation" asp-action="Index">Kriseinformasjon</a>
-                    </li>
-					<strong>Kart (Leaflet)</strong>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark border" asp-area="" asp-controller="GeoChange" asp-action="CorrectMap">Registrer Geografisk Hendelse</a>
-                    </li>
-                </ul>
-
-                <!-- Innstillinger helt nederst uten boks -->
-                <div class="mt-auto">
-                    <a class="nav-link text-dark" asp-area="" asp-controller="Settings" asp-action="Index"><strong>Innstillinger</strong></a>
-                </div>
-            </aside>
-
-            <!-- Hovedinnhold -->
-            <main role="main" class="col-md-9 col-lg-10 pb-3">
-                @RenderBody()
-            </main>
-        </div>
+    <div class="container-fluid flex-grow-1 d-flex flex-column mt-4">
+        <main role="main" class="pb-3 flex-grow-1">
+            @RenderBody()
+        </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            @* OBS: HomeController har ingen Privacy-action (siden heter Personvern), så lenken fører ikke noe sted *@
+    <!-- BOOTSTRAP OFFCANVAS MENY -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold" id="offcanvasMenuLabel">Meny</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body p-0">
+            <div class="list-group list-group-flush">
+
+                <div class="list-group-item bg-light text-muted fw-bold" style="font-size: 0.85rem; text-transform: uppercase;">Generelt</div>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="Home" asp-action="Index">Hjem</a>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="Home" asp-action="Privacy">Personvern</a>
+
+                <div class="list-group-item bg-light text-muted fw-bold mt-2" style="font-size: 0.85rem; text-transform: uppercase;">Registrering</div>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="Resource" asp-action="Index">Registrer Ressurs</a>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="Need" asp-action="Index">Registrer Behov</a>
+
+                <div class="list-group-item bg-light text-muted fw-bold mt-2" style="font-size: 0.85rem; text-transform: uppercase;">Oversikt</div>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="Resource" asp-action="Overview">Oversikt over ressurser</a>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="Need" asp-action="Overview">Oversikt over behov</a>
+
+                <div class="list-group-item bg-light text-muted fw-bold mt-2" style="font-size: 0.85rem; text-transform: uppercase;">Informasjon</div>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="CrisisInformation" asp-action="Index">Kriseinformasjon</a>
+                <a class="list-group-item list-group-item-action py-3" asp-controller="Settings" asp-action="Index">Innstillinger</a>
+
+            </div>
+        </div>
+    </div>
+    <!-- SLUTT PÅ MENY -->
+
+    <footer class="border-top footer text-muted mt-auto">
+        <div class="container py-3">
             &copy; 2026 - TotalForsvaret - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
@@ -94,8 +86,6 @@
     <script src="~/js/leaflet-draw-no.js" asp-append-version="true"></script>
 
 
-
-    @* Hvert view legger sin kart-JS i "Scripts"-seksjonen, som rendres her etter at Leaflet er lastet *@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

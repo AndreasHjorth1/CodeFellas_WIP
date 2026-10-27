@@ -23,48 +23,6 @@ namespace Prosjekt.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("Prosjekt.Models.Entities.GeoChange", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ChangeTypes")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("varchar(4000)");
-
-                    b.Property<double>("Radius")
-                        .HasColumnType("double");
-
-                    b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.GeoChange.Coords#Coordinates", b1 =>
-                        {
-                            b1.Property<double>("Latitude")
-                                .HasColumnType("double")
-                                .HasColumnName("Latitude");
-
-                            b1.Property<double>("Longitude")
-                                .HasColumnType("double")
-                                .HasColumnName("Longitude");
-                        });
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GeoChanges");
-                });
-
             modelBuilder.Entity("Prosjekt.Models.Entities.Need", b =>
                 {
                     b.Property<int>("Id")

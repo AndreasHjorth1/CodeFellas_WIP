@@ -222,5 +222,30 @@ namespace Prosjekt.Controllers
             await _repo.DeleteAsync(id);
             return RedirectToAction(nameof(Overview));
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetInformasjon()
+        {
+            var behov = await _repo.GetAllAsync();
+
+            var result = behov.Select(n => new NeedViewModel
+            {
+                Id = n.Id,
+                Name = n.Name,
+                Phone = n.PhoneNumber,
+                Description = n.Description,
+                Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
+                    ? cat
+                    : NeedViewModel.NeedType.Other,
+                Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
+                    ? prio
+                    : ImportanceLevel.Planned,
+                IsFulfilled = n.IsFulfilled,
+                Latitude = n.Coords.Latitude,
+                Longitude = n.Coords.Longitude
+            });
+
+            return Json(result);
+        }
     }
 }
