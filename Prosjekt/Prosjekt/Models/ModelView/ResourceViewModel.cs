@@ -19,23 +19,23 @@ namespace Prosjekt.Models.ModelView
 
         [Display(Name = "Navn")]
         [Required(ErrorMessage = "Navn må fylles ut.")]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
 
         [Display(Name = "Telefonnummer")]
         [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
         [Phone(ErrorMessage = "Ugyldig telefonnummer.")]
-        public string PhoneNumber { get; set; } = string.Empty;
+        public string PhoneNumber { get; init; } = string.Empty;
 
         [Display(Name = "Beskrivelse")]
         [Required(ErrorMessage = "Beskrivelse må fylles ut.")]
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
 
         [Display(Name = "Antall")]
         [Range(1, 10000, ErrorMessage = "Antall må være minst 1.")]
-        public int Quantity { get; set; } = 1;
+        public int Quantity { get; init; } = 1;
 
         [Display(Name = "Tilgjengelighet")]
-        public bool Availability { get; set; } = true;
+        public bool Availability { get; init; } = true;
 
         [Display(Name = "Breddegrad")]
         [Required(ErrorMessage = "Du må velge en posisjon i kartet (Breddegrad).")]
@@ -47,17 +47,17 @@ namespace Prosjekt.Models.ModelView
 
         [Display(Name = "Kategori")]
         [Required(ErrorMessage = "Du må velge en kategori.")]
-        public ResourceType Category { get; set; } = ResourceType.Other;
+        public ResourceType Category { get; init; } = ResourceType.Other;
 
         [Display(Name = "Tilgjengelig fra")]
         [Required(ErrorMessage = "Tilgjengelig fra-tidspunkt må registreres.")]
-        public DateTime? AvailableFrom { get; set; }
+        public DateTime? AvailableFrom { get; init; }
 
         [Display(Name = "Tilgjengelig til")]
         [Required(ErrorMessage = "Tilgjengelig til-tidspunkt må registreres.")]
-        public DateTime? AvailableTo { get; set; }
+        public DateTime? AvailableTo { get; init; }
 
-        public string? LicensePlate { get; set; }
-        public string? Size { get; set; }
+        public string? LicensePlate { get; init; }
+        public string? Size { get; init; }
     }
 }

@@ -9,15 +9,15 @@ namespace Prosjekt.Models.ModelView
 
         [Display(Name = "Navn")]
         [Required(ErrorMessage = "Navn må fylles ut.")]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
 
         [Display(Name = "Telefonnummer")]
         [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
-        public string Phone { get; set; } = string.Empty;
+        public string Phone { get; init; } = string.Empty;
 
         [Display(Name = "Beskrivelse")]
         [Required(ErrorMessage = "Beskrivelse må fylles ut.")]
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
 
         public enum NeedType
         {
@@ -56,26 +56,26 @@ namespace Prosjekt.Models.ModelView
         }
 
         [Display(Name = "Behovstype")]
-        public NeedType Type { get; set; } = NeedType.Other;
+        public NeedType Type { get; init; } = NeedType.Other;
 
         [Display(Name = "Tidsfrist")]
         [Required(ErrorMessage = "Et tidspunkt må registreres")]
-        public DateTime? Deadline { get; set; }
+        public DateTime? Deadline { get; init; }
 
         [Display(Name = "Viktighet")]
-        public ImportanceLevel Importance { get; set; }
+        public ImportanceLevel Importance { get; init; }
 
         [Display(Name = "Er oppfylt")]
-        public bool IsFulfilled { get; set; } = false;
+        public bool IsFulfilled { get; init; } = false;
 
         public double? Latitude { get; set; }
 
         public double? Longitude { get; set; }
 
-        public string? AreaGeoJson { get; set; }
+        public string? AreaGeoJson { get; init; }
 
-        public double? AreaSquareMeters { get; set; }
+        public double? AreaSquareMeters { get; init; }
 
-        public double? PerimeterMeters { get; set; }
+        public double? PerimeterMeters { get; init; }
     }
 }
