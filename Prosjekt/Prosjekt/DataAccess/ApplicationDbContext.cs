@@ -10,8 +10,6 @@ namespace Prosjekt.DataAccess
         /// </summary>
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-        public DbSet<GeoChange> GeoChanges { get; set; }
-
         // Her er tabellen for ressurser 
         public DbSet<Resource> Resources { get; set; }
 
@@ -22,21 +20,6 @@ namespace Prosjekt.DataAccess
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // Konfigurasjon for GeoChange
-            modelBuilder.Entity<GeoChange>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.ComplexProperty(e => e.Coords, coord =>
-                {
-                    coord.Property(c => c.Latitude).HasColumnName("Latitude").IsRequired();
-                    coord.Property(c => c.Longitude).HasColumnName("Longitude").IsRequired();
-                });
-                entity.Property(e => e.Description);
-                entity.Property(e => e.ChangeTypes);
-                entity.Property(e => e.Radius);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            });
 
             // Konfigurasjon for Resource
             modelBuilder.Entity<Resource>(entity =>
