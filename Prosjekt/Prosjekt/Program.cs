@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
+using DotNetEnv;
+
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +11,8 @@ builder.AddServiceDefaults();
 
 
 // 1. Hent tilkoblingsstreng
-var connectionString = builder.Configuration.GetConnectionString("Mapdb")
+var connectionString = builder.Configuration.GetConnectionString("DB_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("Mapdb")
     ?? builder.Configuration.GetConnectionString("mariadbcontainer")
     ?? builder.Configuration.GetConnectionString("mysql")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
@@ -61,17 +65,11 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
 app.MapStaticAssets();
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate();
-}
-
 app.Run();
+
 
