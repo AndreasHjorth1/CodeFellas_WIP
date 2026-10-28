@@ -156,7 +156,7 @@
                 return Math.round(sqm).toLocaleString('no-NO') + ' m²';
             }
 
-            // Hjelpefunksjon for å generere fargede ikoner for Behov
+            // Hjelpefunksjon for å generere fargede ikoner
             function getIkon(fargeNavn) {
                 return new L.Icon({
                     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
@@ -173,6 +173,8 @@
                 1: getIkon('gold')   // Planlagt
             };
 
+            var ressursIkon = getIkon('green');
+
             try {
                 // 4. Hent ressurser
                 const resResponse = await fetch('/Resource/GetInformasjon');
@@ -188,7 +190,7 @@
                                 ? '<span class="badge bg-success">Tilgjengelig</span>'
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
-                            var marker = L.marker([lat, lng]).addTo(map);
+                            var marker = L.marker([lat, lng], { icon: ressursIkon }).addTo(map);
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>

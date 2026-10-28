@@ -18,13 +18,84 @@
     };
 }
 
+<style>
+    .resizable-container {
+        display: flex;
+        width: 100%;
+        height: calc(100vh - 80px);
+        min-height: 500px;
+        position: relative;
+    }
+
+    /* Brukes av scrollIntoView slik at menylinjen ikke dekker toppen av kartet */
+    #splitWrapper {
+        scroll-margin-top: 90px; /* høyden på menylinjen, juster ved behov */
+    }
+
+    /* Infoseksjonen starter på 40 %, kartet tar resten */
+    .info-section {
+        flex: 0 0 40%;
+        min-width: 250px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .map-section {
+        flex: 1 1 0;
+        min-width: 200px;
+        position: relative;
+    }
+
+    /* Drabar skillelinje */
+    .resizer {
+        width: 10px;
+        background: #e0e0e0;
+        cursor: col-resize;
+        transition: background 0.2s;
+        border-radius: 4px;
+        margin: 0 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+    }
+
+        .resizer:hover, .resizer.dragging {
+            background: #0d6efd;
+        }
+
+        .resizer::after {
+            content: "⋮";
+            color: #666;
+            font-weight: bold;
+        }
+
+        .resizer:hover::after, .resizer.dragging::after {
+            color: white;
+        }
+
+    #kvitteringRessursKart {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+    }
+
+    .info-clickable {
+        cursor: pointer;
+    }
+
+        .info-clickable:hover {
+            background-color: #f8f9fa;
+        }
+</style>
+
 <h1>Ressurs opprettet</h1>
 <hr />
 
-<div class="row mb-4 align-items-start">
-    <div class="col-md-6 mb-4 mb-md-0">
-        <!-- Fjernet 'h-100' og lagt til 'd-inline-block w-100' slik at kortet tilpasser seg innholdet dynamisk -->
-        <div class="card p-4 shadow-sm h-auto d-inline-block w-100">
+<div class="resizable-container mb-3" id="splitWrapper">
+    <!-- Info-seksjon -->
+    <div class="info-section" id="infoBox">
+        <div class="card p-4 h-100 shadow-sm info-clickable" onclick="fokuserPaKart()">
             <p><strong>Navn:</strong> @Model.Name</p>
             <p><strong>Telefonnummer:</strong> @Model.PhoneNumber</p>
             <p><strong>Beskrivelse:</strong> @Model.Description</p>
@@ -34,56 +105,117 @@
             <p class="mb-0"><strong>Lengdegrad:</strong> @Model.Longitude</p>
         </div>
     </div>
-    <div class="col-md-6">
-        <div id="map" style="height: 500px;" class="shadow-sm border rounded"></div>
+
+    <!-- Drabar skillelinje -->
+    <div class="resizer" id="dragHandle"></div>
+
+    <!-- Kart-seksjon -->
+    <div class="map-section" id="mapBox">
+        <div id="kvitteringRessursKart" class="shadow-sm border"></div>
     </div>
 </div>
 
-<div class="d-flex flex-wrap gap-2">
+<div class="mb-5 pb-4 d-flex flex-wrap gap-2">
     <a asp-controller="Resource" asp-action="Index" class="btn btn-secondary">Opprett enda en ressurs</a>
     <a asp-controller="Resource" asp-action="Overview" class="btn btn-primary">Gå til oversikten</a>
 </div>
 
-@section Scripts 
-{
+@section Scripts {
     <script>
-        (function () {
-            // Sjekker om verdien finnes og konverterer double trygt til streng med punktum
-            var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "0");
-            var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "0");
+        var kart;
+        var marker;
 
-            // Initialize the map
-            var map = L.map('map').setView([lat, lng], 13);
+        function fokuserPaKart() {
+            if (kart && marker) {
+                kart.flyTo(marker.getLatLng(), 16, { duration: 1 });
+                marker.openPopup();
+            }
+        }
 
-            // Add a tile layer to the map
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+        document.addEventListener("DOMContentLoaded", function () {
+            // Konverterer tall trygt til punktum som desimaltegn
+            var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
+            var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
+            var navn = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Name));
+            var antall = @Model.Quantity;
 
-            // Initialize the feature group that will hold layers
-            var drawnItems = new L.FeatureGroup();
-            map.addLayer(drawnItems);
+            // --- KART ---
+            if (lat !== null && lng !== null) {
+                kart = L.map('kvitteringRessursKart').setView([lat, lng], 14);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(kart);
 
-            // Create a marker at the model coordinates and add it to the feature group
-            var marker = L.marker([lat, lng]);
-            drawnItems.addLayer(marker);
+                function getIkon(fargeNavn) {
+                    return new L.Icon({
+                        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                    });
+                }
 
-            // Open popup after reverse geocode to ensure the address is displayed
-            var url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+                marker = L.marker([lat, lng], { icon: getIkon('green') }).addTo(kart);
 
-            fetch(url)
-                .then(function (response) {
-                    if (!response.ok) throw new Error('Nettverksrespons var ikke OK');
-                    return response.json();
-                })
-                .then(function (data) {
-                    var address = data && data.display_name ? data.display_name : 'Adresse ikke funnet';
-                    marker.bindPopup('<b>Adresse:</b> ' + address).openPopup();
-                })
-                .catch(function (err) {
-                    console.error('Adresseoppslag mislyktes:', err);
-                    marker.bindPopup('<b>Adresse:</b> Ikke tilgjengelig').openPopup();
-                });
-        })();
+                // Popup med ressurs + adresse
+                var toppInnhold = `<b>${navn}</b> (${antall} stk)`;
+                marker.bindPopup(toppInnhold + '<hr class="my-1"/><div class="small text-muted"><i>Henter adresse...</i></div>');
+
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+                    .then(response => response.ok ? response.json() : null)
+                    .then(data => {
+                        var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
+                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
+                        marker.openPopup();
+                    })
+                    .catch(function () {
+                        marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
+                        marker.openPopup();
+                    });
+            } else {
+                document.getElementById('mapBox').innerHTML =
+                    '<div class="text-muted p-3">Ingen gyldig posisjon å vise på kart.</div>';
+            }
+
+            // --- DRAG / RESIZE LOGIKK ---
+            const resizer = document.getElementById('dragHandle');
+            const leftSide = document.getElementById('infoBox');
+            const container = document.getElementById('splitWrapper');
+
+            let x = 0;
+            let leftWidth = 0;
+
+            const mouseDownHandler = function (e) {
+                x = e.clientX;
+                leftWidth = leftSide.getBoundingClientRect().width;
+                resizer.classList.add('dragging');
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+            };
+
+            const mouseMoveHandler = function (e) {
+                const dx = e.clientX - x;
+                const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
+
+                // Tillat justering mellom 15 % og 85 % bredde
+                if (newLeftWidth > 15 && newLeftWidth < 85) {
+                    leftSide.style.flex = `0 0 ${newLeftWidth}%`;
+                    if (kart) kart.invalidateSize();
+                }
+            };
+
+            const mouseUpHandler = function () {
+                resizer.classList.remove('dragging');
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+                if (kart) kart.invalidateSize();
+            };
+
+            resizer.addEventListener('mousedown', mouseDownHandler);
+
+            setTimeout(function () { if (kart) kart.invalidateSize(); }, 200);
+
+            // Scroll ned slik at kartet fyller skjermen under menylinjen
+            document.getElementById('splitWrapper').scrollIntoView({ block: 'start' });
+        });
     </script>
 }
