@@ -35,6 +35,12 @@ jobs:
       - name: Build solution
         run: dotnet build ./Prosjekt/Prosjekt.slnx --configuration Release --no-restore
 
+      - name: Create dummy .env for tests
+        run: |
+          echo "Parameters__password=DummyPassord123!" > .env
+          echo "DB_CONNECTION_STRING=Server=127.0.0.1;Database=TestDb;User=root;Password=DummyPassord123!;" >> .env
+        working-directory: ./Prosjekt
+
       - name: Run tests with coverage
         run: >
           dotnet test ./Prosjekt/Prosjekt.slnx
@@ -45,9 +51,7 @@ jobs:
           --logger trx
           --collect:"XPlat Code Coverage"
           --results-directory ./TestResults
-      
           
-
       - name: Generate coverage report
         if: always() && hashFiles('TestResults/**/coverage.cobertura*.xml') != ''
         continue-on-error: true
