@@ -28,11 +28,83 @@
     };
 }
 
+<style>
+    .resizable-container {
+        display: flex;
+        width: 100%;
+        height: calc(100vh - 80px);
+        min-height: 500px;
+        position: relative;
+    }
+
+    /* Brukes av scrollIntoView slik at menylinjen ikke dekker toppen av kartet */
+    #splitWrapper {
+        scroll-margin-top: 90px; /* høyden på menylinjen, juster ved behov */
+    }
+
+    /* Infoseksjonen starter på 40 %, kartet tar resten */
+    .info-section {
+        flex: 0 0 40%;
+        min-width: 250px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .map-section {
+        flex: 1 1 0;
+        min-width: 200px;
+        position: relative;
+    }
+
+    /* Drabar skillelinje */
+    .resizer {
+        width: 10px;
+        background: #e0e0e0;
+        cursor: col-resize;
+        transition: background 0.2s;
+        border-radius: 4px;
+        margin: 0 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+    }
+
+        .resizer:hover, .resizer.dragging {
+            background: #0d6efd;
+        }
+
+        .resizer::after {
+            content: "⋮";
+            color: #666;
+            font-weight: bold;
+        }
+
+        .resizer:hover::after, .resizer.dragging::after {
+            color: white;
+        }
+
+    #kvitteringBehovKart {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+    }
+
+    .need-item-clickable {
+        cursor: pointer;
+    }
+
+        .need-item-clickable:hover {
+            background-color: #f8f9fa;
+        }
+</style>
+
 <h1>Behov opprettet</h1>
 <hr />
 
-<div class="row mb-3">
-    <div class="col-md-6">
+<div class="resizable-container mb-3" id="splitWrapper">
+    <!-- Info-seksjon -->
+    <div class="info-section" id="infoBox">
         <div class="card p-3 h-100 shadow-sm">
             <h5>Felles informasjon</h5>
             <p><strong>Posisjon:</strong> @Model.Latitude, @Model.Longitude</p>
@@ -43,7 +115,7 @@
             <ul class="list-group list-group-flush">
                 @foreach (var need in Model.NeedList)
                 {
-                    <li class="list-group-item px-0">
+                    <li class="list-group-item px-0 need-item-clickable" onclick="fokuserPaKart()">
                         <strong>@need.Name</strong> (@OversettNeedType(need.Type))<br />
                         <span class="text-muted small">Tlf: @need.Phone</span><br />
                         <small>@need.Description</small>
@@ -52,56 +124,145 @@
             </ul>
         </div>
     </div>
-    <div class="col-md-6">
-        <div id="kvitteringBehovKart" class="shadow-sm rounded" style="height: 350px;"></div>
+
+    <!-- Drabar skillelinje -->
+    <div class="resizer" id="dragHandle"></div>
+
+    <!-- Kart-seksjon -->
+    <div class="map-section" id="mapBox">
+        <div id="kvitteringBehovKart" class="shadow-sm border"></div>
     </div>
 </div>
 
-<a asp-controller="Need" asp-action="Index" class="btn btn-secondary">Opprett flere behov</a>
-<a asp-controller="Need" asp-action="Overview" class="btn btn-primary">Gå til oversikt</a>
+<div class="mb-5 pb-4">
+    <a asp-controller="Need" asp-action="Index" class="btn btn-secondary">Opprett flere behov</a>
+    <a asp-controller="Need" asp-action="Overview" class="btn btn-primary">Gå til oversikt</a>
+</div>
 
 @section Scripts {
     <script>
-        var lat = parseFloat('@Model.Latitude'.replace(',', '.'));
-        var lng = parseFloat('@Model.Longitude'.replace(',', '.'));
-        var importanceNumber = @((int)Model.Importance);
+        var kart;
+        var marker;
 
-        if (!isNaN(lat) && !isNaN(lng)) {
-            var kart = L.map('kvitteringBehovKart').setView([lat, lng], 14);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(kart);
-
-            function getIkon(fargeNavn) {
-                return new L.Icon({
-                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-                });
-            }
-
-            var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
-            var valgtIkon = ikoner[importanceNumber] || ikoner[0];
-
-            L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);
-
-            var omradeJson = @Json.Serialize(Model.AreaGeoJson);
-            var arealM2 = @Json.Serialize(Model.AreaSquareMeters);
-            var omkretsM = @Json.Serialize(Model.PerimeterMeters);
-
-            if (omradeJson) {
-                var omrade = L.geoJSON(JSON.parse(omradeJson), {
-                    style: { color: '#dc3545', weight: 2, fillOpacity: 0.15 }
-                }).addTo(kart);
-                if (arealM2) {
-                    omrade.bindTooltip(
-                        'Område: ca. ' + formaterAreal(arealM2) +
-                        ' · omkrets ca. ' + formaterLengde(omkretsM),
-                        { sticky: true }
-                    );
-                }
-                kart.fitBounds(omrade.getBounds(), { padding: [20, 20] });
+        function fokuserPaKart() {
+            if (kart && marker) {
+                kart.flyTo(marker.getLatLng(), 16, { duration: 1 });
+                marker.openPopup();
             }
         }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var lat = parseFloat('@Model.Latitude'.replace(',', '.'));
+            var lng = parseFloat('@Model.Longitude'.replace(',', '.'));
+            var importanceNumber = @((int)Model.Importance);
+            var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.NeedList.Select(n => new { n.Name, n.Phone })));
+
+            // --- KART ---
+            if (!isNaN(lat) && !isNaN(lng)) {
+                kart = L.map('kvitteringBehovKart').setView([lat, lng], 14);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(kart);
+
+                function getIkon(fargeNavn) {
+                    return new L.Icon({
+                        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                    });
+                }
+
+                var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
+                var valgtIkon = ikoner[importanceNumber] || ikoner[0];
+
+                marker = L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);
+
+                // Popup med behov + adresse
+                var behovHtml = behov.map(function (b) {
+                    return `<b>${b.Name}</b><br/>📞 Tlf: ${b.Phone || 'Ikke oppgitt'}`;
+                }).join('<hr class="my-1"/>');
+
+                marker.bindPopup(behovHtml + '<hr class="my-1"/><div class="small text-muted"><i>Henter adresse...</i></div>');
+
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+                    .then(response => response.ok ? response.json() : null)
+                    .then(data => {
+                        var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
+                        marker.setPopupContent(behovHtml + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
+                    })
+                    .catch(function () {
+                        marker.setPopupContent(behovHtml + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
+                    });
+
+                // Område
+                var omradeJson = @Json.Serialize(Model.AreaGeoJson);
+                var arealM2 = @Json.Serialize(Model.AreaSquareMeters);
+                var omkretsM = @Json.Serialize(Model.PerimeterMeters);
+
+                if (omradeJson) {
+                    var omrade = L.geoJSON(JSON.parse(omradeJson), {
+                        style: {
+                            color: importanceNumber === 0 ? '#dc3545' : '#fd7e14',
+                            weight: 2,
+                            fillOpacity: 0.15
+                        }
+                    }).addTo(kart);
+
+                    if (arealM2) {
+                        omrade.bindTooltip(
+                            'Område: ca. ' + formaterAreal(arealM2) +
+                            ' · omkrets ca. ' + formaterLengde(omkretsM),
+                            { sticky: true }
+                        );
+                    }
+                    kart.fitBounds(omrade.getBounds(), { padding: [20, 20] });
+                }
+            } else {
+                document.getElementById('mapBox').innerHTML =
+                    '<div class="text-muted p-3">Ingen gyldig posisjon å vise på kart.</div>';
+            }
+
+            // --- DRAG / RESIZE LOGIKK ---
+            const resizer = document.getElementById('dragHandle');
+            const leftSide = document.getElementById('infoBox');
+            const container = document.getElementById('splitWrapper');
+
+            let x = 0;
+            let leftWidth = 0;
+
+            const mouseDownHandler = function (e) {
+                x = e.clientX;
+                leftWidth = leftSide.getBoundingClientRect().width;
+                resizer.classList.add('dragging');
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+            };
+
+            const mouseMoveHandler = function (e) {
+                const dx = e.clientX - x;
+                const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
+
+                // Tillat justering mellom 15 % og 85 % bredde
+                if (newLeftWidth > 15 && newLeftWidth < 85) {
+                    leftSide.style.flex = `0 0 ${newLeftWidth}%`;
+                    if (kart) kart.invalidateSize();
+                }
+            };
+
+            const mouseUpHandler = function () {
+                resizer.classList.remove('dragging');
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+                if (kart) kart.invalidateSize();
+            };
+
+            resizer.addEventListener('mousedown', mouseDownHandler);
+
+            setTimeout(function () { if (kart) kart.invalidateSize(); }, 200);
+
+            // Scroll ned slik at kartet fyller skjermen under menylinjen
+            document.getElementById('splitWrapper').scrollIntoView({ block: 'start' });
+        });
     </script>
 }
