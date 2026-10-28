@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Controllers;
 using Prosjekt.Models.Entities;
+using Prosjekt.Models.Enums;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Xunit.Test.Fakes;
 
@@ -272,7 +273,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             {
                 Id = 1,
                 Name = "Mat",
-                IsFulfilled = true,
+                Status = EntryStatus.UnderReview,
                 Latitude = 59.9,
                 Longitude = 10.7
             };
@@ -286,7 +287,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 
             var updatedNeed = Assert.Single(repo.Needs);
             Assert.Equal("Mat", updatedNeed.Name);
-            Assert.True(updatedNeed.IsFulfilled);
+            Assert.Equal(EntryStatus.UnderReview, updatedNeed.Status);
             Assert.Equal(59.9, updatedNeed.Coords.Latitude);
         }
 

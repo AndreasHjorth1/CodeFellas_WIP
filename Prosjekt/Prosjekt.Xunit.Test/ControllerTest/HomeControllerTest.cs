@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Prosjekt.Controllers;
 using Prosjekt.Models.ModelView;
 
@@ -10,8 +9,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
     {
         private static HomeController CreateController()
         {
-            var config = new ConfigurationBuilder().Build();
-            return new HomeController(config);
+            return new HomeController();
         }
 
         [Fact]

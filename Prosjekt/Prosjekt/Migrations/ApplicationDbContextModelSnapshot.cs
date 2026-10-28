@@ -50,9 +50,6 @@ namespace Prosjekt.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("varchar(4000)");
 
-                    b.Property<bool>("IsFulfilled")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -73,6 +70,9 @@ namespace Prosjekt.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.Need.Coords#Coordinates", b1 =>
                         {

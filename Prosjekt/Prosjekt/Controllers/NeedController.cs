@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
+using Prosjekt.Models.Enums;
 
 
 namespace Prosjekt.Controllers
@@ -84,7 +85,7 @@ namespace Prosjekt.Controllers
                         PhoneNumber = baseNeed.Phone ?? string.Empty,
                         Priority = model.Importance.ToString(),
                         NeededBy = baseNeed.Deadline ?? model.Deadline,
-                        IsFulfilled = baseNeed.IsFulfilled,
+                        Status = EntryStatus.New,
                         Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
                         AreaGeoJson = model.AreaGeoJson,
                         AreaSquareMeters = model.AreaSquareMeters,
@@ -114,7 +115,7 @@ namespace Prosjekt.Controllers
                 Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
                 Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
                 Deadline = n.NeededBy,
-                IsFulfilled = n.IsFulfilled,
+                Status = n.Status,
                 Latitude = n.Coords.Latitude,
                 Longitude = n.Coords.Longitude,
                 AreaGeoJson = n.AreaGeoJson,
@@ -143,7 +144,7 @@ namespace Prosjekt.Controllers
                 Type = Enum.TryParse<NeedViewModel.NeedType>(need.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
                 Importance = Enum.TryParse<ImportanceLevel>(need.Priority, out var prio) ? prio : default,
                 Deadline = need.NeededBy,
-                IsFulfilled = need.IsFulfilled,
+                Status = need.Status,
                 Latitude = need.Coords.Latitude,
                 Longitude = need.Coords.Longitude,
                 AreaGeoJson = need.AreaGeoJson,
@@ -193,7 +194,13 @@ namespace Prosjekt.Controllers
             existingNeed.Category = model.Type.ToString();
             existingNeed.Priority = model.Importance.ToString();
             existingNeed.NeededBy = model.Deadline;
-            existingNeed.IsFulfilled = model.IsFulfilled;
+            if (!EntryStatusFlow.CanMove(existingNeed.Status, model.Status))
+            {
+                ModelState.AddModelError(nameof(model.Status),
+                    $"Kan ikke gå fra {existingNeed.Status} til {model.Status}.");
+                return View(model);
+            }
+            existingNeed.Status = model.Status;
             existingNeed.Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
             existingNeed.AreaGeoJson = model.AreaGeoJson;
             existingNeed.AreaSquareMeters = model.AreaSquareMeters;
@@ -229,7 +236,7 @@ namespace Prosjekt.Controllers
                 Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
                     ? prio
                     : ImportanceLevel.Planned,
-                IsFulfilled = n.IsFulfilled,
+                Status = n.Status,
                 Latitude = n.Coords.Latitude,
                 Longitude = n.Coords.Longitude,
                 AreaGeoJson = n.AreaGeoJson,
