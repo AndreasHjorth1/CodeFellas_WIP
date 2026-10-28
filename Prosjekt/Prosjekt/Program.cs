@@ -18,6 +18,8 @@ var connectionString = builder.Configuration.GetConnectionString("DB_CONNECTION_
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing database connection string for 'Mapdb'.");
 
+
+
 // 2. Registrer repository
 builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
 builder.Services.AddScoped<INeedRepository, NeedRepository>();
