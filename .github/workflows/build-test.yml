@@ -1,3 +1,8 @@
+Her er den komplette og oppdaterte workflow-filen, akkurat slik den skal se ut med den skuddsikre kopieringen av dummy `.env`-filen lagt inn.
+
+Bare kopier dette og bytt ut innholdet i `.github/workflows/build-test.yml` (eller hva filen din heter):
+
+```yaml
 name: Build and test
 
 on:
@@ -37,9 +42,11 @@ jobs:
 
       - name: Create dummy .env for tests
         run: |
-          echo "Parameters__password=DummyPassord123!" > .env
-          echo "DB_CONNECTION_STRING=Server=127.0.0.1;Database=TestDb;User=root;Password=DummyPassord123!;" >> .env
-        working-directory: ./Prosjekt
+          echo "Parameters__password=DummyPassord123!" > dummy_env.txt
+          echo "DB_CONNECTION_STRING=Server=127.0.0.1;Database=TestDb;User=root;Password=DummyPassord123!;" >> dummy_env.txt
+          cp dummy_env.txt ./Prosjekt/.env
+          cp dummy_env.txt ./Prosjekt/Prosjekt/.env
+          cp dummy_env.txt ./Prosjekt/Prosjekt.Xunit.Test/.env
 
       - name: Run tests with coverage
         run: >
@@ -121,3 +128,5 @@ jobs:
         with:
           header: code-coverage
           path: code-coverage-results.md
+
+```
