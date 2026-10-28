@@ -32,4 +32,10 @@
     <ProjectReference Include="..\Prosjekt.ServiceDefaults\Prosjekt.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update=".env">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

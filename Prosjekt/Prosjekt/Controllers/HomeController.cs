@@ -1,24 +1,23 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Prosjekt.Models;
 using Prosjekt.Models.ModelView;
-using MySqlConnector;
+using DotNetEnv;
+
 namespace Prosjekt.Controllers;
 
 public class HomeController : Controller
 {
-    /// <summary>
-    /// Database connection string used to create connections to the target database.
-    /// </summary>
-    /// <remarks>Assigned during construction and immutable thereafter. Should contain provider-specific
-    /// connection settings required by the data provider.</remarks>
     private readonly string _connectionString;
 
     public HomeController(IConfiguration configuration)
     {
-        _connectionString = configuration.GetConnectionString("mysql")
+        // Leser .env-filen automatisk uansett om den kjøres lokalt eller i tester
+        DotNetEnv.Env.TraversePath().Load();
+
+        _connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+            ?? configuration.GetConnectionString("mysql")
             ?? configuration.GetConnectionString("mariadbcontainer")
-            ?? "server=mariadbcontainer;port=3306;database=mysql;user=root;password=Gruppe12!";
+            ?? throw new InvalidOperationException("Missing database connection string. Make sure .env file exists.");
     }
 
     public IActionResult Index()

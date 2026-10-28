@@ -28,4 +28,6 @@ RUN dotnet publish "./Prosjekt.csproj" -c $BUILD_CONFIGURATION -o /app/publish /
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Kopierer .env-filen eksplisitt inn i den ferdige containeren
+COPY ["Prosjekt/.env", "."]
 ENTRYPOINT ["dotnet", "Prosjekt.dll"]
