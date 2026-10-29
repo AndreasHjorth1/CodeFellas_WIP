@@ -20,65 +20,69 @@
     <link rel="stylesheet" href="~/Prosjekt.styles.css" asp-append-version="true" />
 
     <style>
-        /* Sørger for at bakgrunnen i bunnen matcher footeren slik at det ikke blir noe hvitt tomrom */
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: #0f2b48;
-        }
+    /* Setter den lys beige bakgrunnen på hele siden */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #f7f5f0; /* Endret fra #0f2b48 til lys bakgrunn */
+        color: #1a3048; /* Sørger for mørk, lesbar tekst */
+    }
 
-        /* Styling tilpasset Figma-designet */
-        .custom-navbar {
-            background-color: #f7f5f0; /* Lys kremhvit/beige bakgrunn */
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-        }
-        .custom-navbar .nav-link {
-            color: #1a3048;
-            font-weight: 500;
-        }
-        .custom-navbar .nav-link:hover {
-            color: #0d1b2a;
-        }
-        .btn-custom-outline {
-            border: 1px solid #1a3048;
-            color: #1a3048;
-            background-color: transparent;
-            border-radius: 8px;
-            padding: 0.5rem 1.25rem;
-            font-weight: 500;
-            text-decoration: none;
-        }
-        .btn-custom-outline:hover {
-            background-color: #e9e5dd;
-            color: #1a3048;
-        }
-        .btn-custom-dark {
-            background-color: #0f2b48;
-            color: #ffffff !important;
-            border: none;
-            border-radius: 8px;
-            padding: 0.5rem 1.25rem;
-            font-weight: 500;
-            text-decoration: none;
-        }
-        .btn-custom-dark:hover {
-            background-color: #081c30;
-            color: #ffffff;
-        }
+    /* Styling tilpasset Figma-designet */
+    .custom-navbar {
+        background-color: #f7f5f0;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    .custom-navbar .nav-link {
+        color: #1a3048;
+        font-weight: 500;
+    }
+    .custom-navbar .nav-link:hover {
+        color: #0d1b2a;
+    }
+    .btn-custom-outline {
+        border: 1px solid #1a3048;
+        color: #1a3048;
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .btn-custom-outline:hover {
+        background-color: #e9e5dd;
+        color: #1a3048;
+    }
+    .btn-custom-dark {
+        background-color: #0f2b48;
+        color: #ffffff !important;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .btn-custom-dark:hover {
+        background-color: #081c30;
+        color: #ffffff;
+    }
 
-        /* Fjern standard Bootstrap-margin i bunnen av main */
-        main {
-            padding-bottom: 0 !important;
-            margin-bottom: 0 !important;
-        }
+    /* Fjern ekstra margin i bunnen av main */
+    main {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
 
-        footer.footer-dark {
-            margin-top: auto !important;
-            margin-bottom: 0 !important;
-        }
-    </style>
+    /* Kun footeren skal ha den mørkeblå fargen */
+    footer.footer-dark {
+        background-color: #0f2b48 !important;
+        color: #ffffff !important;
+        margin-top: auto !important;
+        margin-bottom: 0 !important;
+    }
+</style>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
