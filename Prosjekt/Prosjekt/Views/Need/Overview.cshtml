@@ -104,6 +104,12 @@
     <!-- Tabell-seksjon (Behovsoversikt) -->
     <div class="table-section" id="tableBox">
         <div class="table-responsive bg-white p-3 shadow-sm border rounded h-100">
+            <div class="row g-2 mb-3">
+                <div class="col-md-7">
+                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk i navn, beskrivelse eller telefon" />
+                    <option value="">Alle typer</option>
+                </div>
+            </div>
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
                     <tr>
@@ -122,7 +128,7 @@
                         @foreach (var item in Model)
                         {
                             <tr class="table-row-clickable"
-                                onclick="fokuserPaBehov('@item.Id', @((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
+                                data-id="@item.Id" data-type="@item.Type" data-sok="@(($"{item.Name} {item.Description} {item.Phone}").ToLower())" onclick="fokuserPaBehov('@item.Id', @((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
                                 <td>
                                     <strong>@item.Name</strong><br />
                                     <small class="text-secondary">@item.Description</small>
@@ -175,6 +181,7 @@
     <script>
         var kart;
         var markorerMap = {};
+        var omraderMap = {};
 
         function fokuserPaBehov(id, lat, lng) {
             if (lat && lng && markorerMap[id]) {
@@ -203,7 +210,23 @@
 
             var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
             var bounds = [];
+            function filtrer() {
+                var tekst = document.getElementById('sokeFelt').value.toLowerCase().trim();
+                var type = document.getElementById('typeFilter').value;
 
+                document.querySelectorAll('tr.table-row-clickable').forEach(function (rød) {
+                    var passerTekst = tekst === '' || rad.dataset.sok.includes(tekst);
+                    var passerType = type === '' || rad.dataset.type === type;
+                    var vis = passerTekst && passerType;
+
+                    rad.classList.toggle('d-none', !vis;
+
+                    [markorerMap[rad.dataset.id], omraderMap[rad.dataset.id]].forEach(function (lag) {
+                        if (!lag) return;
+                        if (vis) { kart.addLayer(lag); } else { kart.removeLayer(lag); }
+                    });
+                });
+            }
             behov.forEach(function (b) {
                 var lat = parseFloat(b.Latitude);
                 var lng = parseFloat(b.Longitude);
@@ -227,6 +250,7 @@
                             fillOpacity: 0.12
                         }
                     }).addTo(kart);
+                    omraderMap[b.Id] = omrade;
 
                     if (b.AreaSquareMeters) {
                         omrade.bindTooltip(
