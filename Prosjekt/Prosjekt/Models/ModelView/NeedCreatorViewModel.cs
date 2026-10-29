@@ -16,9 +16,6 @@ namespace Prosjekt.Models.ModelView
 
         public ImportanceLevel Importance { get; init; } = ImportanceLevel.Planned;
 
-        public bool IsFulfilled { get; init; } = false;
-
-
         [Display(Name = "Tidsfrist")]
         public DateTime? Deadline { get; init; }
 

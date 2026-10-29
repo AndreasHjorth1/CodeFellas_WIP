@@ -188,20 +188,22 @@ namespace Prosjekt.Controllers
                 return NotFound();
             }
 
+            // Sjekk statusflyten FØR vi endrer noe på behovet
+            if (!EntryStatusFlow.CanMove(existingNeed.Status, model.Status))
+            {
+                ModelState.AddModelError(nameof(model.Status),
+                    "Status kan bare flyttes ett steg om gangen.");
+                return View(model);
+            }
+
             existingNeed.Name = model.Name;
             existingNeed.Description = model.Description;
             existingNeed.PhoneNumber = model.Phone;
             existingNeed.Category = model.Type.ToString();
             existingNeed.Priority = model.Importance.ToString();
             existingNeed.NeededBy = model.Deadline;
-            if (!EntryStatusFlow.CanMove(existingNeed.Status, model.Status))
-            {
-                ModelState.AddModelError(nameof(model.Status),
-                    $"Kan ikke gå fra {existingNeed.Status} til {model.Status}.");
-                return View(model);
-            }
             existingNeed.Status = model.Status;
-            existingNeed.Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
+            existingNeed.Coords = coords;
             existingNeed.AreaGeoJson = model.AreaGeoJson;
             existingNeed.AreaSquareMeters = model.AreaSquareMeters;
             existingNeed.PerimeterMeters = model.PerimeterMeters;
@@ -210,6 +212,8 @@ namespace Prosjekt.Controllers
 
             return RedirectToAction(nameof(Overview));
         }
+
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
