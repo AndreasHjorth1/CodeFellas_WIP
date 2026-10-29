@@ -107,7 +107,15 @@
             <div class="row g-2 mb-3">
                 <div class="col-md-7">
                     <input type="search" id="sokeFelt" class="form-control" placeholder="Søk i navn, beskrivelse eller telefon" />
-                    <option value="">Alle typer</option>
+                </div>
+                <div class="col-md-5">
+                    <select id="typeFilter" class="form-select">
+                        <option value="">Alle typer</option>
+                        @foreach (var t in Enum.GetValues<NeedViewModel.NeedType>())
+                        {
+                            <option value="@t">@OversettNeedType(t)</option>
+                        }
+                    </select>
                 </div>
             </div>
             <table class="table table-hover align-middle mb-0">
@@ -214,12 +222,12 @@
                 var tekst = document.getElementById('sokeFelt').value.toLowerCase().trim();
                 var type = document.getElementById('typeFilter').value;
 
-                document.querySelectorAll('tr.table-row-clickable').forEach(function (rød) {
+                document.querySelectorAll('tr.table-row-clickable').forEach(function (rad) {
                     var passerTekst = tekst === '' || rad.dataset.sok.includes(tekst);
                     var passerType = type === '' || rad.dataset.type === type;
                     var vis = passerTekst && passerType;
 
-                    rad.classList.toggle('d-none', !vis;
+                    rad.classList.toggle('d-none', !vis);
 
                     [markorerMap[rad.dataset.id], omraderMap[rad.dataset.id]].forEach(function (lag) {
                         if (!lag) return;
