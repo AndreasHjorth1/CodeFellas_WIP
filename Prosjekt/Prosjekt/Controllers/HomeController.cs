@@ -11,7 +11,7 @@ public class HomeController : Controller
 
     public HomeController(IConfiguration configuration)
     {
-        // Leser .env-filen automatisk uansett om den kjÃ¸res lokalt eller i tester
+        // Leser .env-filen automatisk uansett om den kjøres lokalt eller i tester
         DotNetEnv.Env.TraversePath().Load();
 
         _connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
