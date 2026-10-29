@@ -7,6 +7,12 @@ Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Beskytt serveren mot enorme forespørsler (f.eks. maks 30 MB request-størrelse)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 30 * 1024 * 1024; // 30 MB
+});
+
 builder.AddServiceDefaults();
 
 

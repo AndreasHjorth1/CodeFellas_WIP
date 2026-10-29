@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Prosjekt.Models.Enums;
 
 namespace Prosjekt.Models.ModelView
 {
@@ -65,8 +66,8 @@ namespace Prosjekt.Models.ModelView
         [Display(Name = "Viktighet")]
         public ImportanceLevel Importance { get; init; }
 
-        [Display(Name = "Er oppfylt")]
-        public bool IsFulfilled { get; init; } = false;
+        [Display(Name = "Status")]
+        public EntryStatus Status {get; init;} = EntryStatus.New;
 
         public double? Latitude { get; set; }
 

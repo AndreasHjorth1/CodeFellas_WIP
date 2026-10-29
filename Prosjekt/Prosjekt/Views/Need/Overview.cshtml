@@ -1,4 +1,5 @@
 ﻿@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.Enums
 @using System.Globalization
 @model List<NeedViewModel>
 
@@ -32,6 +33,22 @@
         NeedViewModel.NeedType.Communication => "Samband",
         NeedViewModel.NeedType.Personnel => "Mannskap",
         _ => "Annet"
+    };
+
+    string OversettStatus(EntryStatus s) => s switch
+    {
+        EntryStatus.UnderReview => "Vurderes",
+        EntryStatus.Assigned => "Tildelt",
+        EntryStatus.Resolved => "Løst",
+        _ => "Ny"
+    };
+
+    string StatusKlasse(EntryStatus s) => s switch
+    {
+        EntryStatus.UnderReview => "bg-warning text-dark",
+        EntryStatus.Assigned => "bg-primary",
+        EntryStatus.Resolved => "bg-success",
+        _ => "bg-secondary"
     };
 }
 
@@ -130,16 +147,7 @@
                                 <td><span class="badge bg-secondary">@OversettNeedType(item.Type)</span></td>
                                 <td><small class="text-muted">📞 @item.Phone</small></td>
                                 <td class="small">@(item.Deadline.HasValue ? item.Deadline.Value.ToString("dd.MM.yyyy HH:mm") : "-")</td>
-                                <td>
-                                    @if (item.IsFulfilled)
-                                    {
-                                        <span class="badge bg-success">Oppfylt</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-outline-secondary text-dark border">Ikke oppfylt</span>
-                                    }
-                                </td>
+                                <td><span class="badge @StatusKlasse(item.Status)">@OversettStatus(item.Status)</span></td>
                                 <td><span class="badge" style="@($"background-color: {Farge(item.Importance)}")">@OversettViktighet(item.Importance)</span></td>
                                 <td class="text-nowrap" onclick="event.stopPropagation();">
                                     <div class="d-flex gap-1">
@@ -211,9 +219,10 @@
 
                 bounds.push([lat, lng]);
 
-                var statusTekst = b.IsFulfilled
-                    ? '<span style="color: green; font-weight: bold;">Oppfylt</span>'
-                    : '<span style="color: red; font-weight: bold;">Ikke oppfylt</span>';
+                // b.Status kommer som tall: 0 = Ny, 1 = Vurderes, 2 = Tildelt, 3 = Løst
+                var statusNavn = ['Ny', 'Vurderes', 'Tildelt', 'Løst'][b.Status] || 'Ny';
+                var statusFarge = ['gray', 'orange', 'blue', 'green'][b.Status] || 'gray';
+                var statusTekst = `<span style="color: ${statusFarge}; font-weight: bold;">${statusNavn}</span>`;
 
                 var valgtIkon = ikoner[b.Importance] || ikoner[0];
                 var marker = L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);
