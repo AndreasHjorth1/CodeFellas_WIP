@@ -107,13 +107,10 @@
                     <!-- 2. Midtstilte navigasjonslenker -->
                     <ul class="navbar-nav mx-auto gap-4">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Slik fungerer det</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="UserInstruction">Slik fungerer det</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Resource" asp-action="Index">Bidra</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Om Oss</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="AboutUs">Om oss</a>
                         </li>
                     </ul>
 
@@ -195,9 +192,8 @@
                 <div class="col-md-6 text-md-end small">
                     <p class="mb-2 text-light opacity-75">En felles digital møteplass for tryggere lokalsamfunn i hele Norge.</p>
                     <div class="d-flex justify-content-md-end gap-4 mt-2">
-                        <a href="#" class="text-light text-decoration-none">Kontakt</a>
                         <a asp-controller="Home" asp-action="Privacy" class="text-light text-decoration-none">Personvern</a>
-                        <a href="#" class="text-light text-decoration-none">Vilkår for bruk</a>
+                        <a asp-controller="Home" asp-action="AboutUs" class="text-light text-decoration-none">Om oss</a>
                     </div>
                 </div>
 
