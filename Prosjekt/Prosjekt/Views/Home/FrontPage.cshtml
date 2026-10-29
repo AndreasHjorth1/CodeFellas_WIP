@@ -1,0 +1,296 @@
+﻿@model IEnumerable<Prosjekt.Models.ModelView.NeedViewModel>
+
+@{
+    ViewData["Title"] = "Hjem - Samfunnsberedskap";
+}
+
+<!-- Custom CSS for å treffe fargene og layouten fra skissen -->
+<style>
+    /* Bakgrunnsfarge på den øvre hero-seksjonen */
+    .hero-section {
+        background-color: #f7f5f0;
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+
+    .hero-title {
+        font-size: 3.8rem;
+        font-weight: 800;
+        color: #1a3048;
+        line-height: 1.1;
+    }
+
+    .hero-title-italics {
+        font-family: serif;
+        font-style: italic;
+        font-weight: 400;
+        color: #2b5b84;
+    }
+
+    /* Mørkeblå knapper */
+    .btn-dark-navy {
+        background-color: #0f2b48;
+        color: #ffffff;
+        border-radius: 8px;
+        padding: 0.75rem 1.75rem;
+        font-weight: 600;
+        border: none;
+    }
+
+    .btn-dark-navy:hover {
+        background-color: #081d33;
+        color: #ffffff;
+    }
+
+    /* Mørkeblå dekorativ linje */
+    .section-divider {
+        width: 40px;
+        height: 3px;
+        background-color: #d9534f;
+        margin-bottom: 1rem;
+    }
+
+    /* Bjelken i bunnen av det øverste bildet */
+    .banner-dark {
+        background-color: #0f2b48;
+        color: #ffffff;
+        padding: 1.25rem 0;
+    }
+
+    /* Kort-stiler for "Slik fungerer det" */
+    .card-step {
+        background-color: #f7f5f0;
+        border: 1px solid #e5e0d8;
+        border-radius: 4px;
+        padding: 2.5rem 2rem;
+        position: relative;
+        height: 100%;
+    }
+
+    .step-number {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        color: #b0a89d;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: #e2d9cc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2rem;
+        color: #1a3048;
+    }
+
+    .card-step-title {
+        color: #1a3048;
+        font-weight: 700;
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+    }
+
+    .card-step-text {
+        color: #5a6572;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 2.5rem;
+    }
+
+    .card-step-link {
+        color: #0f2b48;
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 0.95rem;
+    }
+
+    .card-step-link:hover {
+        text-decoration: underline;
+    }
+
+    /* Mørkeblå Footer */
+    .footer-dark {
+        background-color: #0f2b48;
+        color: #ffffff;
+        padding-top: 3rem;
+        padding-bottom: 2rem;
+    }
+
+    .footer-dark a {
+        color: #d1d5db;
+        text-decoration: none;
+    }
+
+    .footer-dark a:hover {
+        color: #ffffff;
+    }
+</style>
+
+<!-- ========================================== -->
+<!-- 1. ØVRE DEL (HERO & KART FRA BILDE 1)       -->
+<!-- ========================================== -->
+<section class="hero-section">
+    <div class="container-fluid px-lg-5">
+        <div class="row align-items-center g-5">
+            
+            <!-- Venstre side: Tekst, Tittel og Knapp -->
+            <div class="col-lg-5">
+                <div class="section-divider"></div>
+                <h6 class="text-uppercase fw-bold text-muted mb-3" style="letter-spacing: 1px; font-size: 0.8rem;">
+                    Samfunnsberedskap for hele Norge
+                </h6>
+                
+                <h1 class="hero-title mb-4">
+                    Sammen gjør vi <br />
+                    Norge <span class="hero-title-italics">tryggere.</span>
+                </h1>
+
+                <p class="fs-5 text-muted mb-4" style="max-width: 480px; line-height: 1.6;">
+                    Vi kobler mennesker som vil hjelpe med lokale behov — enkelt, trygt og når det virkelig gjelder. For alt vi har og alt vi er.
+                </p>
+
+                <a asp-controller="Account" asp-action="Register" class="btn btn-dark-navy d-inline-flex align-items-center gap-2">
+                    Bli med i fellesskapet <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Høyre side: Interaktivt Kart -->
+            <div class="col-lg-7">
+                <div id="homeMap" class="shadow-sm rounded border" style="height: 520px; width: 100%;"></div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Mørk horisontal bjelke (Aktører) -->
+<div class="banner-dark">
+    <div class="container-fluid px-lg-5">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <span class="text-uppercase fw-bold small text-light" style="letter-spacing: 1.5px;">
+                ET FELLES LØFT FOR ET TRYGGERE NORGE
+            </span>
+
+            <div class="d-flex flex-wrap align-items-center gap-4 gap-md-5 small opacity-75">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-building-columns"></i> Kommuner
+                </div>
+                <span>•</span>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-industry"></i> Næringsliv
+                </div>
+                <span>•</span>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-heart"></i> Frivilligheten
+                </div>
+                <span>•</span>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-shield"></i> Offentlige aktører
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ========================================== -->
+<!-- 2. NEDRE DEL ("SLIK FUNGERER DET" - BILDE 2) -->
+<!-- ========================================== -->
+<section class="py-5" style="background-color: #fcfbf9;">
+    <div class="container-fluid px-lg-5 py-4">
+        
+        <!-- Tittel for seksjonen -->
+        <div class="mb-5">
+            <span class="text-uppercase fw-bold text-danger small" style="letter-spacing: 1px;">
+                SAMMEN GJØR VI EN FORSKJELL
+            </span>
+            <h2 class="display-5 fw-bold text-dark mt-1">Slik fungerer det</h2>
+        </div>
+
+        <!-- 3 Steg-kort -->
+        <div class="row g-4">
+            
+            <!-- Kort 1 -->
+            <div class="col-md-4">
+                <div class="card-step">
+                    <span class="step-number">01</span>
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-heart-pulse fs-5"></i>
+                    </div>
+                    <h3 class="card-step-title">Fortell hva du kan bidra med</h3>
+                    <p class="card-step-text">
+                        Registrer tid, kompetanse eller utstyr på noen få minutter.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Kort 2 -->
+            <div class="col-md-4">
+                <div class="card-step">
+                    <span class="step-number">02</span>
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-building-columns fs-5"></i>
+                    </div>
+                    <h3 class="card-step-title">Vi kobler behov og ressurser</h3>
+                    <p class="card-step-text">
+                        Lokale behov matches raskt med mennesker og ressurser i nærheten.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Kort 3 -->
+            <div class="col-md-4">
+                <div class="card-step">
+                    <span class="step-number">03</span>
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-city fs-5"></i>
+                    </div>
+                    <h3 class="card-step-title">Vi står sterkere sammen</h3>
+                    <p class="card-step-text">
+                        Når noe skjer, kan fellesskapet organisere hjelpen der den trengs mest.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ========================================== -->
+<!-- 4. LEAFLET KART-SKRIPT FOR HERO-KARTET       -->
+<!-- ========================================== -->
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Sentrer kartet over Agder / Kristiansand
+            var map = L.map('homeMap').setView([58.1467, 7.9956], 10);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Eksempel-markører fra C# modellen hvis de sendes fra HomeController
+            var needs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<Prosjekt.Models.ModelView.NeedViewModel>()));
+
+            needs.forEach(function (n) {
+                var lat = parseFloat(n.Latitude);
+                var lng = parseFloat(n.Longitude);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    L.marker([lat, lng])
+                        .bindPopup(`<b>${n.Name}</b><br>${n.Description || ''}`)
+                        .addTo(map);
+                }
+            });
+
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 200);
+        });
+    </script>
+}

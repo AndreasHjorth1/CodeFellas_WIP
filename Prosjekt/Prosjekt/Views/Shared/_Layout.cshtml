@@ -1,42 +1,145 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - TotalForsvaret</title>
-    <script type="importmap"></script>
+
+    <!-- Leaflet & Leaflet Draw CSS -->
     <link href="~/lib/leaflet/leaflet.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    
+    <!-- FontAwesome Ikoner -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Egne CSS-stiler -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Prosjekt.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-</head>
-<body>
-    <header class="sticky-top">
-        <nav class="navbar navbar-expand-sm navbar-dark glass-navbar" style="background-color: #699079;">
-            <div class="container-fluid">
-                <!-- Meny-knapp plassert helt til venstre -->
-                <button class="btn btn-outline-light me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
-                    ☰ Meny
-                </button>
-                <a class="navbar-brand text-white fw-bold" asp-area="" asp-controller="Home" asp-action="Index">TotalForsvaret</a>
 
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+    <style>
+    /* Setter den lys beige bakgrunnen på hele siden */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #f7f5f0; /* Endret fra #0f2b48 til lys bakgrunn */
+        color: #1a3048; /* Sørger for mørk, lesbar tekst */
+    }
+
+    /* Styling tilpasset Figma-designet */
+    .custom-navbar {
+        background-color: #f7f5f0;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    .custom-navbar .nav-link {
+        color: #1a3048;
+        font-weight: 500;
+    }
+    .custom-navbar .nav-link:hover {
+        color: #0d1b2a;
+    }
+    .btn-custom-outline {
+        border: 1px solid #1a3048;
+        color: #1a3048;
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .btn-custom-outline:hover {
+        background-color: #e9e5dd;
+        color: #1a3048;
+    }
+    .btn-custom-dark {
+        background-color: #0f2b48;
+        color: #ffffff !important;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .btn-custom-dark:hover {
+        background-color: #081c30;
+        color: #ffffff;
+    }
+
+    /* Fjern ekstra margin i bunnen av main */
+    main {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Kun footeren skal ha den mørkeblå fargen */
+    footer.footer-dark {
+        background-color: #0f2b48 !important;
+        color: #ffffff !important;
+        margin-top: auto !important;
+        margin-bottom: 0 !important;
+    }
+</style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <header class="sticky-top">
+        <nav class="navbar navbar-expand-lg custom-navbar border-bottom">
+            <div class="container-fluid px-4">
+                
+                <!-- 1. Meny-knapp og logo helt til venstre -->
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-custom-outline btn-sm me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                        <i class="fa-solid fa-bars me-1"></i> Meny
+                    </button>
+                    <a class="navbar-brand fw-bold text-dark mb-0 h4" asp-area="" asp-controller="Home" asp-action="Index">TotalForsvaret</a>
+                </div>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-collapse collapse">
+                    <!-- 2. Midtstilte navigasjonslenker -->
+                    <ul class="navbar-nav mx-auto gap-4">
                         <li class="nav-item">
-                            <a class="nav-link text-white" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="UserInstruction">Slik fungerer det</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white-50" asp-area="" asp-controller="Home" asp-action="Privacy">Personvern</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="AboutUs">Om oss</a>
                         </li>
                     </ul>
+
+                    <!-- 3. Innlogging / Registrering / Utlogging helt til høyre -->
+                    <div class="d-flex align-items-center gap-2 ms-auto ms-lg-0">
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-custom-outline">Logg ut (@User.Identity.Name)</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a class="btn btn-custom-outline" asp-area="" asp-controller="Account" asp-action="Login">Logg inn</a>
+                            <a class="btn btn-custom-dark d-flex align-items-center gap-2" asp-area="" asp-controller="Account" asp-action="Register">
+                                Opprett bruker <i class="fa-solid fa-arrow-right fs-6"></i>
+                            </a>
+                        }
+                    </div>
                 </div>
+
             </div>
         </nav>
     </header>
 
-    <div class="container-fluid flex-grow-1 d-flex flex-column mt-4">
-        <main role="main" class="pb-3 flex-grow-1">
+    <!-- HOVEDINNHOLD -->
+    <div class="container-fluid flex-grow-1 d-flex flex-column p-0">
+        <main role="main" class="flex-grow-1">
             @RenderBody()
         </main>
     </div>
@@ -50,7 +153,6 @@
 
         <div class="offcanvas-body p-0">
             <div class="list-group list-group-flush">
-
                 <div class="list-group-item bg-light text-muted fw-bold" style="font-size: 0.85rem; text-transform: uppercase;">Generelt</div>
                 <a class="list-group-item list-group-item-action py-3" asp-controller="Home" asp-action="Index">Hjem</a>
                 <a class="list-group-item list-group-item-action py-3" asp-controller="Home" asp-action="Privacy">Personvern</a>
@@ -66,25 +168,50 @@
                 <div class="list-group-item bg-light text-muted fw-bold mt-2" style="font-size: 0.85rem; text-transform: uppercase;">Informasjon</div>
                 <a class="list-group-item list-group-item-action py-3" asp-controller="CrisisInformation" asp-action="Index">Kriseinformasjon</a>
                 <a class="list-group-item list-group-item-action py-3" asp-controller="Settings" asp-action="Index">Innstillinger</a>
-
             </div>
         </div>
     </div>
-    <!-- SLUTT PÅ MENY -->
 
-    <footer class="border-top footer text-muted mt-auto">
-        <div class="container py-3">
-            &copy; 2026 - TotalForsvaret - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <!-- MØRKEBLÅ GLOBAL FOOTER -->
+    <footer class="footer-dark mt-auto" style="background-color: #0f2b48; color: #ffffff; padding-top: 3rem; padding-bottom: 2rem;">
+        <div class="container-fluid px-lg-5">
+            <div class="row align-items-center pb-4 border-bottom border-secondary mb-4">
+                
+                <!-- Logo og Beskrivelse -->
+                <div class="col-md-6 d-flex align-items-center gap-3 mb-3 mb-md-0">
+                    <div class="p-2 border border-light rounded">
+                        <i class="fa-solid fa-shield-halved fs-3 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-white">Totalforsvaret</h5>
+                        <small class="text-light opacity-75">Sammen når det gjelder</small>
+                    </div>
+                </div>
+
+                <!-- Lenker -->
+                <div class="col-md-6 text-md-end small">
+                    <p class="mb-2 text-light opacity-75">En felles digital møteplass for tryggere lokalsamfunn i hele Norge.</p>
+                    <div class="d-flex justify-content-md-end gap-4 mt-2">
+                        <a asp-controller="Home" asp-action="Privacy" class="text-light text-decoration-none">Personvern</a>
+                        <a asp-controller="Home" asp-action="AboutUs" class="text-light text-decoration-none">Om oss</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="text-light opacity-50 small">
+                &copy; 2026 Beredt. Alle rettigheter reservert.
+            </div>
         </div>
     </footer>
-    <!-- Oversetter Leaflet funksjoner til norsk -->
+
+    <!-- SKRIPTER -->
     <script src="~/lib/leaflet/leaflet.js"></script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="~/js/leaflet-draw-no.js" asp-append-version="true"></script>
-
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
