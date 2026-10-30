@@ -61,3 +61,43 @@ body {
     border-radius: 50%;
     background: #fff;
 }
+
+/* Utskrift: bare tabellen, ingen kart eller knapper */
+@media print {
+    .navbar,
+    footer,
+    .resizer,
+    .map-section,
+    #oversiktBehovKart,
+    #oversiktRessursKart,
+    .row.g-2.mb-3,
+    .btn,
+    form {
+        display: none !important;
+    }
+
+    .table-section,
+    .resizable-container {
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    thead {
+        position: static !important;
+    }
+
+    .table-row-clickable.d-none {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+    }
+
+    a[href]::after {
+        content: "";
+    }
+}
