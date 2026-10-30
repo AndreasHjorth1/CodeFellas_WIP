@@ -1,10 +1,15 @@
 using System;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
+using Prosjekt.Services;
 using Prosjekt.Utils;
 
 namespace Prosjekt.Controllers
@@ -12,10 +17,12 @@ namespace Prosjekt.Controllers
     public class ResourceController : Controller
     {
         private readonly IResourceRepository _repo;
+        private readonly IStedsoppslag _sted;
 
-        public ResourceController(IResourceRepository repo)
+        public ResourceController(IResourceRepository repo, IStedsoppslag sted)
         {
             _repo = repo;
+            _sted = sted;
         }
 
         [HttpGet]
@@ -60,6 +67,9 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            // Alle ressursene i skjemaet deler samme punkt, så vi slår opp stedet én gang
+            var sted = await _sted.FinnStedAsync(coords.Latitude, coords.Longitude);
+
             ResourceViewModel createdResourceModel = null;
 
             for (int i = 0; i < model.ResourceList.Count; i++)
@@ -90,7 +100,8 @@ namespace Prosjekt.Controllers
                     AvailableFrom = baseResource.AvailableFrom,
                     AvailableTo = baseResource.AvailableTo,
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    
+                    Fylke = sted?.Fylke,
+                    Kommune = sted?.Kommune
                 };
 
                 await _repo.AddAsync(resourceEntity);
@@ -269,6 +280,119 @@ namespace Prosjekt.Controllers
             });
 
             return Json(result);
+        }
+
+        // Eksport av alle tilgjengelige ressurser, gruppert etter fylke og kommune.
+        // Ment for offentlige aktører. Siden er ikke lenket i menyen ennå.
+        // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
+        [HttpGet]
+        public IActionResult Export()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCsv()
+        {
+            var ressurser = await HentTilgjengeligeRessurser();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Fylke;Kommune;Kategori;Navn;Antall;Beskrivelse;Telefon;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
+
+            foreach (var r in ressurser)
+            {
+                sb.AppendLine(string.Join(";",
+                    Csv(r.Fylke ?? "Ukjent"),
+                    Csv(r.Kommune ?? "Ukjent"),
+                    OversettKategori(r.Category),
+                    Csv(r.Name),
+                    r.Quantity,
+                    Csv(r.Description),
+                    Csv(r.PhoneNumber),
+                    r.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    r.AvailableTo?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
+                    r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            // BOM gjør at Excel viser æ, ø og å riktig
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"ressurser_{DateTime.Now:yyyy-MM-dd}.csv");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportJson()
+        {
+            var ressurser = await HentTilgjengeligeRessurser();
+
+            var data = ressurser
+                .GroupBy(r => r.Fylke ?? "Ukjent")
+                .Select(fylke => new
+                {
+                    Fylke = fylke.Key,
+                    AntallRessurser = fylke.Count(),
+                    Kommuner = fylke
+                        .GroupBy(r => r.Kommune ?? "Ukjent")
+                        .Select(kommune => new
+                        {
+                            Kommune = kommune.Key,
+                            AntallRessurser = kommune.Count(),
+                            Ressurser = kommune.Select(r => new
+                            {
+                                Navn = r.Name,
+                                Kategori = OversettKategori(r.Category),
+                                Antall = r.Quantity,
+                                Beskrivelse = r.Description,
+                                Telefon = r.PhoneNumber,
+                                TilgjengeligFra = r.AvailableFrom,
+                                TilgjengeligTil = r.AvailableTo,
+                                Breddegrad = r.Coords.Latitude,
+                                Lengdegrad = r.Coords.Longitude
+                            })
+                        })
+                });
+
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // æøå som tekst, ikke ø
+            };
+
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
+            return File(bytes, "application/json", $"ressurser_{DateTime.Now:yyyy-MM-dd}.json");
+        }
+
+        // Kun tilgjengelige ressurser, sortert slik at de kommer gruppert per område
+        private async Task<List<Resource>> HentTilgjengeligeRessurser()
+        {
+            var alle = await _repo.GetAllAsync();
+            return alle
+                .Where(r => r.IsAvailable && r.Coords != null)
+                .OrderBy(r => r.Fylke ?? "Ukjent")
+                .ThenBy(r => r.Kommune ?? "Ukjent")
+                .ThenBy(r => OversettKategori(r.Category))
+                .ThenBy(r => r.Name)
+                .ToList();
+        }
+
+        // Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
+        private static string OversettKategori(string category) => category switch
+        {
+            nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
+            nameof(ResourceViewModel.ResourceType.Clothing) => "Klær",
+            nameof(ResourceViewModel.ResourceType.Tool) => "Verktøy",
+            nameof(ResourceViewModel.ResourceType.Vehicle) => "Kjøretøy",
+            nameof(ResourceViewModel.ResourceType.Materials) => "Materialer",
+            _ => "Annet"
+        };
+
+        // Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
+        private static string Csv(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
         }
     }
 }

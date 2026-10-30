@@ -2,6 +2,7 @@
 using Prosjekt.Controllers;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
+using Prosjekt.Services;
 using Prosjekt.Xunit.Test.Fakes;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
@@ -13,7 +14,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = controller.Index();
@@ -29,7 +30,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             controller.ModelState.AddModelError("Latitude", "Required");
 
             var model = new ResourceCreatorViewModel
@@ -54,7 +55,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             var model = new ResourceCreatorViewModel
             {
@@ -78,7 +79,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             var model = new ResourceCreatorViewModel
             {
@@ -105,7 +106,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             var model = new ResourceCreatorViewModel
             {
@@ -137,7 +138,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Båt", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.Overview();
@@ -155,7 +156,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.Edit(99);
@@ -170,7 +171,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.Edit(1);
@@ -188,7 +189,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             var model = new ResourceViewModel { Id = 2, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956 };
 
             // Act
@@ -203,7 +204,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             var model = new ResourceViewModel { Id = 1, Name = "Aggregat" };
 
             // Act
@@ -220,7 +221,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             var model = new ResourceViewModel { Id = 99, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956 };
 
             // Act
@@ -236,7 +237,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -267,7 +268,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.Delete(1);
@@ -282,7 +283,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             controller.ModelState.AddModelError("ResourceList[0].Latitude", "Required");
             controller.ModelState.AddModelError("ResourceList[0].Longitude", "Required");
 
@@ -312,7 +313,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             var model = new ResourceCreatorViewModel
             {
@@ -344,7 +345,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             var model = new ResourceCreatorViewModel
             {
@@ -383,7 +384,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = "Vehicle",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.Edit(1);
@@ -409,7 +410,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = "Clothing",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.Edit(1);
@@ -433,7 +434,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Coords = new
 Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -464,7 +465,7 @@ Coordinates(58.1467, 7.9956)
                 Coords = new
 Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             controller.ModelState.AddModelError("PhoneNumber", "Required");
             var model = new ResourceViewModel
             {
@@ -496,7 +497,7 @@ Coordinates(58.1467, 7.9956)
                 Coords = new
 Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -528,7 +529,7 @@ Coordinates(58.1467, 7.9956)
                 Coords = new
 Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -569,7 +570,7 @@ Coordinates(58.1467, 7.9956)
                 Coords = new Coordinates(59.9,
 10.7)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.GetInformasjon();
@@ -599,7 +600,7 @@ Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value).ToList
                 Category = "FinnesIkke",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
 
             // Act
             var result = await controller.GetInformasjon();
@@ -609,6 +610,157 @@ Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value).ToList
             var resource =
 Assert.Single(Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value));
             Assert.Equal(ResourceViewModel.ResourceType.Other, resource.Category);
+        }
+
+        [Fact]
+        public async Task Create_SavesFylkeAndKommuneFromLookup()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            var sted = new FakeStedsoppslag { Svar = new Sted("Vestland", "Bergen") };
+            var controller = new ResourceController(repo, sted);
+
+            var model = new ResourceCreatorViewModel
+            {
+                ResourceList = new List<ResourceViewModel>
+                  {
+                      new ResourceViewModel { Name = "Aggregat" }
+                  },
+                Latitude = 60.39,
+                Longitude = 5.32
+            };
+
+            // Act
+            await controller.Create(model);
+
+            // Assert
+            var savedResource = Assert.Single(repo.Resources);
+            Assert.Equal("Vestland", savedResource.Fylke);
+            Assert.Equal("Bergen", savedResource.Kommune);
+        }
+
+        [Fact]
+        public async Task Create_LookupFails_StillSavesResource()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            var sted = new FakeStedsoppslag { Svar = null };
+            var controller = new ResourceController(repo, sted);
+
+            var model = new ResourceCreatorViewModel
+            {
+                ResourceList = new List<ResourceViewModel>
+                  {
+                      new ResourceViewModel { Name = "Aggregat" }
+                  },
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            await controller.Create(model);
+
+            // Assert
+            var savedResource = Assert.Single(repo.Resources);
+            Assert.Null(savedResource.Fylke);
+            Assert.Null(savedResource.Kommune);
+        }
+
+        [Fact]
+        public async Task ExportCsv_OnlyIncludesAvailableResources()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", Fylke = "Agder", Kommune = "Kristiansand", Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Fylke = "Agder", Kommune = "Kristiansand", Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
+
+            // Act
+            var result = await controller.ExportCsv();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.Equal("text/csv", file.ContentType);
+            Assert.StartsWith("ressurser_", file.FileDownloadName);
+
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("Agder;Kristiansand;Kjøretøy;Traktor", text);
+            Assert.DoesNotContain("Aggregat", text);
+        }
+
+        [Fact]
+        public async Task ExportCsv_SortsByFylkeThenKommune()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Båt", IsAvailable = true, Fylke = "Oslo", Kommune = "Oslo", Coords = new Coordinates(59.9, 10.7) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Presenning", IsAvailable = true, Fylke = "Agder", Kommune = "Kristiansand", Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 3, Name = "Traktor", IsAvailable = true, Fylke = "Agder", Kommune = "Arendal", Coords = new Coordinates(58.46, 8.77) });
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
+
+            // Act
+            var result = await controller.ExportCsv();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            var arendal = text.IndexOf("Traktor");
+            var kristiansand = text.IndexOf("Presenning");
+            var oslo = text.IndexOf("Båt");
+            Assert.True(arendal < kristiansand);
+            Assert.True(kristiansand < oslo);
+        }
+
+        [Fact]
+        public async Task ExportCsv_TextWithSemicolon_IsQuoted()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Description = "Diesel; 5 kW", IsAvailable = true, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
+
+            // Act
+            var result = await controller.ExportCsv();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("\"Diesel; 5 kW\"", text);
+        }
+
+        [Fact]
+        public async Task ExportJson_GroupsByFylkeAndKommune()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", Fylke = "Agder", Kommune = "Arendal", Coords = new Coordinates(58.46, 8.77) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Presenning", IsAvailable = true, Category = "Materials", Fylke = "Agder", Kommune = "Kristiansand", Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 3, Name = "Båt", IsAvailable = true, Fylke = null, Kommune = null, Coords = new Coordinates(59.9, 10.7) });
+            var controller = new ResourceController(repo, new FakeStedsoppslag());
+
+            // Act
+            var result = await controller.ExportJson();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.Equal("application/json", file.ContentType);
+            Assert.StartsWith("ressurser_", file.FileDownloadName);
+
+            using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
+            var fylker = json.RootElement.EnumerateArray().ToList();
+            Assert.Equal(2, fylker.Count);
+
+            var agder = fylker.Single(f => f.GetProperty("Fylke").GetString() == "Agder");
+            Assert.Equal(2, agder.GetProperty("AntallRessurser").GetInt32());
+            Assert.Equal(2, agder.GetProperty("Kommuner").GetArrayLength());
+
+            var arendal = agder.GetProperty("Kommuner")[0];
+            Assert.Equal("Arendal", arendal.GetProperty("Kommune").GetString());
+            var traktor = arendal.GetProperty("Ressurser")[0];
+            Assert.Equal("Traktor", traktor.GetProperty("Navn").GetString());
+            Assert.Equal("Kjøretøy", traktor.GetProperty("Kategori").GetString());
+
+            Assert.Contains(fylker, f => f.GetProperty("Fylke").GetString() == "Ukjent");
         }
     }
 }

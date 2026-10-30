@@ -1,0 +1,14 @@
+@{
+    ViewData["Title"] = "Eksporter ressurser";
+}
+
+<h1 class="mb-2">Eksporter ressurser</h1>
+<p class="text-muted">
+    Laster ned alle registrerte ressurser som er tilgjengelige, gruppert etter fylke og kommune,
+    med navn og kategori.
+</p>
+
+<div class="d-flex gap-2">
+    <a asp-controller="Resource" asp-action="ExportCsv" class="btn btn-success">Eksporter CSV</a>
+    <a asp-controller="Resource" asp-action="ExportJson" class="btn btn-primary">Eksporter JSON</a>
+</div>
