@@ -226,23 +226,12 @@
 
             var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
             var bounds = [];
-            function filtrer() {
-                var tekst = document.getElementById('sokeFelt').value.toLowerCase().trim();
-                var type = document.getElementById('typeFilter').value;
+           
+            settOppFilter(kart, [markorerMap, omraderMap]);
 
-                document.querySelectorAll('tr.table-row-clickable').forEach(function (rad) {
-                    var passerTekst = tekst === '' || rad.dataset.sok.includes(tekst);
-                    var passerType = type === '' || rad.dataset.type === type;
-                    var vis = passerTekst && passerType;
+            document.getElementById('sokeFelt').addEventListener('input', filtrer);
+            document.getElementById('typeFilter').addEventListener('change', filtrer);
 
-                    rad.classList.toggle('d-none', !vis);
-
-                    [markorerMap[rad.dataset.id], omraderMap[rad.dataset.id]].forEach(function (lag) {
-                        if (!lag) return;
-                        if (vis) { kart.addLayer(lag); } else { kart.removeLayer(lag); }
-                    });
-                });
-            }
             behov.forEach(function (b) {
                 var lat = parseFloat(b.Latitude);
                 var lng = parseFloat(b.Longitude);

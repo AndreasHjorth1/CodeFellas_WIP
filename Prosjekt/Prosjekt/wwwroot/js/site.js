@@ -44,3 +44,31 @@ function lagreOmrade(layer) {
     document.getElementById('omradeOmkrets').textContent = formaterLengde(omkrets);
     document.getElementById('omradeInfo').classList.remove('d-none');
 }
+
+function settOppFilter(kart, lagRegistre) {
+    var sokeFelt = document.getElementById('sokeFelt');
+    var typeFilter = document.getElementById('typeFilter');
+    if (!sokeFelt || !typeFilter) return;
+
+    function filtrer() {
+        var tekst = sokeFelt.value.toLowerCase().trim();
+        var type = typeFilter.value;
+
+        document.querySelectorAll('tr.table-row-clickable').forEach(function (rad) {
+            var passerTekst = tekst === '' || rad.dataset.sok.includes(tekst);
+            var passerType = type === '' || rad.dataset.type === type;
+            var vis = passerTekst && passerType;
+
+            rad.classList.toggle('d-none', !vis);
+
+            lagRegistre.forEach(function (register) {
+                var lag = register[rad.dataset.id];
+                if (!lag) return;
+                if (vis) { kart.addLayer(lag); } else { kart.removeLayer(lag); }
+            });
+        });
+    }
+
+    sokeFelt.addEventListener('input', filtrer);
+    typeFilter.addEventListener('change', filtrer);
+}

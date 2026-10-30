@@ -87,6 +87,21 @@
     <!-- Tabell-seksjon (Ressursoversikt) -->
     <div class="table-section" id="tableBox">
         <div class="table-responsive bg-white p-3 shadow-sm border rounded h-100">
+            <div class="row g-2 mb-3">
+                <div class="col-md-7">
+                    <input type="search" id="sokeFelt" class="form-control"
+                           placeholder="Søk i navn eller beskrivelse" />
+                </div>
+                <div class="col-md-5">
+                    <select id="typeFilter" class="form-select">
+                        <option value="">Alle kategorier</option>
+                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+                        {
+                            <option value="@k">@OversettKategori(k)</option>
+                        }
+                    </select>
+                </div>
+            </div>
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
                     <tr>
@@ -104,6 +119,7 @@
                         @foreach (var res in Model)
                         {
                             <tr class="table-row-clickable"
+                                data-id="@res.Id" data-type="@res.Category" data-sok="@(($"{res.Name} {res.Description}").ToLower())" 
                                 onclick="fokuserPaRessurs('@res.Id', @((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
                                 <td>
                                     <strong>@res.Name</strong><br />
@@ -228,6 +244,8 @@
                         marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
                     });
             });
+            
+            settOppFilter(kart, [markorerMap]);
 
             if (bounds.length > 0) {
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
