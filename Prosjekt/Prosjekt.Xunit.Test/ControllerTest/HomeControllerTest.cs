@@ -1,23 +1,17 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Prosjekt.Controllers;
 using Prosjekt.Models.ModelView;
+using Xunit;
 
-namespace Prosjekt.Xunit.Test.ControllerTest
+namespace Prosjekt.Xunit
 {
     public class HomeControllerTest
     {
-        private static HomeController CreateController()
-        {
-            var config = new ConfigurationBuilder().Build();
-            return new HomeController(config);
-        }
-
         [Fact]
         public void Index_ReturnsViewResult()
         {
-            var controller = CreateController();
+            var controller = new HomeController();
 
             var result = controller.Index();
 
@@ -27,7 +21,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         [Fact]
         public void Privacy_ReturnsViewResult()
         {
-            var controller = CreateController();
+            var controller = new HomeController();
 
             var result = controller.Privacy();
 
@@ -37,20 +31,18 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         [Fact]
         public void Error_ReturnsViewWithRequestId()
         {
-            // Arrange
-            var controller = CreateController();
-            controller.ControllerContext = new ControllerContext
+            var httpContext = new DefaultHttpContext { TraceIdentifier = "test-trace-id" };
+            var controller = new HomeController
             {
-                HttpContext = new DefaultHttpContext()
+                ControllerContext = new ControllerContext { HttpContext = httpContext }
             };
 
-            // Act
             var result = controller.Error();
 
-            // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
             var model = Assert.IsType<ErrorViewModel>(viewResult.Model);
-            Assert.False(string.IsNullOrEmpty(model.RequestId));
+            Assert.Equal("test-trace-id", model.RequestId);
+            Assert.True(model.ShowRequestId);
         }
     }
 }

@@ -12,7 +12,6 @@
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="leaflet" Version="0.7.3" />
-    <PackageReference Include="MessagePack" Version="3.1.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
       <PrivateAssets>all</PrivateAssets>
@@ -31,11 +30,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Prosjekt.ServiceDefaults\Prosjekt.ServiceDefaults.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Update=".env">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

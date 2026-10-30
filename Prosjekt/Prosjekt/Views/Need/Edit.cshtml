@@ -1,6 +1,7 @@
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model NeedViewModel
+@using Prosjekt.Models.Enums;
 
 @{
     ViewData["Title"] = "Rediger Behov";
@@ -65,10 +66,12 @@
                 </div>
 
                 <!-- Status / Oppfylt -->
-                <div class="form-check mb-3">
-                    <input asp-for="IsFulfilled" class="form-check-input" type="checkbox" id="inputIsFulfilled" />
-                    <label class="form-check-label fw-bold" for="inputIsFulfilled">Behovet er oppfylt</label>
+                <div class="form-group mb-3">
+                    <label asp-for="Status" class="fw-bold">Status</label>
+                    <select asp-for="Status" asp-items="Html.GetEnumSelectList<EntryStatus>()" class="form-select"></select>
+                    <span asp-validation-for="Status" class="text-danger"></span>
                 </div>
+
             </div>
 
             <!-- Koordinater -->

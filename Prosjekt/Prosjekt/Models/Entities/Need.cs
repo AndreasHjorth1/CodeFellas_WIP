@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using Prosjekt.Utils;
+using Prosjekt.Models.Enums;
 
 namespace Prosjekt.Models.Entities
 {
@@ -29,7 +30,7 @@ namespace Prosjekt.Models.Entities
         public DateTime? NeededBy { get; set; }
 
         // MANGLET: Feltet for om behovet er oppfylt
-        public bool IsFulfilled { get; set; } = false;
+        public EntryStatus Status {get; set;} = EntryStatus.New;
 
         public Coordinates Coords { get; set; } = new Coordinates(0, 0);
 
