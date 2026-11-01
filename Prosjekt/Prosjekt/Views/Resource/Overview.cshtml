@@ -254,6 +254,7 @@
             });
             
             var kjorFilter = settOppFilter(kart, [markorerMap]);
+            settOppStedssok(kart, kjorFilter);
 
             if (bounds.length > 0) {
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
