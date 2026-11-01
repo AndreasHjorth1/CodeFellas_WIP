@@ -47,6 +47,10 @@ function lagreOmrade(layer) {
 
 // Satt av stedssøk. null = ingen geografisk begrensning
 var stedsBoks = null;
+var radiusSenter = null;
+var radiusMeter = 5000;
+var radiusSirkel = null;
+var velgerPunkt = false;
 function settOppFilter(kart, lagRegistre) {
     var sokeFelt = document.getElementById('sokeFelt');
     var typeFilter = document.getElementById('typeFilter');
@@ -65,7 +69,7 @@ function settOppFilter(kart, lagRegistre) {
             var passerSted = !stedsBoks ||
                 (lat >= stedsBoks.minLat && lat <= stedsBoks.maxLat &&
                     lng >= stedsBoks.minLng && lng <= stedsBoks.maxLng);
-
+            var passerRadius = !radiusSenter || radiusSenter.distanceTo(L.latLng(lat, lng)) <= radiusMeter;
             var vis = passerTekst && passerType && passerSted;
 
             rad.classList.toggle('d-none', !vis);
@@ -128,4 +132,57 @@ function sokSted(sporring, kart, kjorFilter)
 
             kjorFilter();
         });
+}
+
+function settOppRadiusSok(kart, kjorFilter) {
+    var knapp = document.getElementById('velgPunktBtn');
+    var radiusFelt = document.getElementById('radiusFelt');
+    if (!knapp || !radiusFelt) return;
+
+    knapp.addEventListener('click', function () {
+        if (radiusSenter) { nullstillRadius(kart, kjorFilter); return; }
+
+        velgerPunkt = !velgerPunkt;
+        knapp.textContent = velgerPunkt ? 'Avbryt' : 'Velg punkt';
+        kart.getContainer().style.cursor = velgerPunkt ? 'crosshair' : '';
+    });
+
+    kart.on('click', function (e) {
+        if (!velgerPunkt) return;
+
+        radiusSenter = e.latlng;
+        radiusMeter = (parseFloat(radiusFelt.value) || 5) * 1000;
+        velgerPunkt = false;
+        knapp.textContent = 'fjern punkt';
+        kart.getContainer().style.cursor = '';
+
+        tegnRadius(kart);
+        kjorFilter();
+    });
+
+    radiusFelt.addEventListener('input', function () {
+        if (!radiusSenter) return;
+        radiusMeter = (parseFloat(radiusFelt.value) || 5) * 1000;
+        tegnRadius(kart);
+        kjorFilter();
+    });
+}
+
+function tegnRadius(kart) {
+    if (radiusSirkel) { kart.removeLayer(radiusSirkel); }
+    radiusSirkel = L.circle(radiusSenter, {
+        radius: radiusMeter,
+        color: '#0d6efd',
+        weight: 2,
+        fillOpacity: 0.08
+    }).addTo(kart);
+}
+
+function nullstillRadius(kart, kjorFilter) {
+    radiusSenter = null;
+    velgerPunkt = false;
+    if (radiusSirkel) { kart.removeLayer(radiusSirkel); radiusSirkel = null; }
+    document.getElementById('velgPunktBtn').textContent = 'velg punkt';
+    kart.getContainer().style.cursor = '';
+    kjorFilter();
 }

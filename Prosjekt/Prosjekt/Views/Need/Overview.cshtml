@@ -142,6 +142,13 @@
                         🖨️ Skriv ut listen
                     </button>
                 </div>
+                <div class="col-md-6 d-flex gap-2 align-items-center">
+                    <button type"button" id="velgPunktBtn" class="btn btn-outline-primary btn-sm text-nowrap">
+                        Velg punkt
+                    </button>
+                    <input type="number" id"radiusFelt" class="form-control form-control-sm" value="5" min="1" max="500" step="1" style="max-width: 90px;" />
+                    <span class="small text-muted">km</span>
+                </div>
             </div>
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
@@ -237,6 +244,7 @@
            
             var kjorFilter = settOppFilter(kart, [markorerMap, omraderMap]);
             settOppStedssok(kart, kjorFilter);
+            settOppRadiusSok(kart, kjorFilter);
 
             document.getElementById('sokeFelt').addEventListener('input', filtrer);
             document.getElementById('typeFilter').addEventListener('change', filtrer);
