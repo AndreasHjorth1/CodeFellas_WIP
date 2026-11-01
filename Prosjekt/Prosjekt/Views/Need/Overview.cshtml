@@ -135,6 +135,9 @@
                     </select>
                 </div>
                 <div class="col-md-12">
+                    <input type="search" id="stedsFelt" class="form-control" placeholder="Søk på sted, f.eks. Kristiansand - trykk Enter" />
+                </div>
+                <div class="col-md-12">
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="windows.print()">
                         🖨️ Skriv ut listen
                     </button>
@@ -157,7 +160,7 @@
                     {
                         @foreach (var item in Model)
                         {
-                            <tr class="table-row-clickable"
+                            <tr class="table-row-clickable" data-lat="@((item.Latitude ?? =).ToString(CultureInfo.InvariantCulture))" data-lng="@((item.Longitude ?? =).ToString(CultureInfo.InvariantCulture))"
                                 data-id="@item.Id" data-type="@item.Type" data-sok="@(($"{item.Name} {item.Description} {item.Phone}").ToLower())" onclick="fokuserPaBehov('@item.Id', @((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
                                 <td>
                                     <strong>@item.Name</strong><br />
@@ -232,7 +235,8 @@
             var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
             var bounds = [];
            
-            settOppFilter(kart, [markorerMap, omraderMap]);
+            var kjorFilter = settOppFilter(kart, [markorerMap, omraderMap]);
+            settOppStedssok(kart, kjorFilter);
 
             document.getElementById('sokeFelt').addEventListener('input', filtrer);
             document.getElementById('typeFilter').addEventListener('change', filtrer);

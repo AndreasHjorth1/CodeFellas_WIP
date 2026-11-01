@@ -45,19 +45,28 @@ function lagreOmrade(layer) {
     document.getElementById('omradeInfo').classList.remove('d-none');
 }
 
+// Satt av stedssøk. null = ingen geografisk begrensning
+var stedsBoks = null;
 function settOppFilter(kart, lagRegistre) {
     var sokeFelt = document.getElementById('sokeFelt');
     var typeFilter = document.getElementById('typeFilter');
-    if (!sokeFelt || !typeFilter) return;
+    if (!sokeFelt || !typeFilter) return function () { };
 
     function filtrer() {
         var tekst = sokeFelt.value.toLowerCase().trim();
         var type = typeFilter.value;
 
         document.querySelectorAll('tr.table-row-clickable').forEach(function (rad) {
+            var lat = parseFloat(rad.dataset.lat);
+            var lng = parseFloat(rad.dataset.lng);
+
             var passerTekst = tekst === '' || rad.dataset.sok.includes(tekst);
             var passerType = type === '' || rad.dataset.type === type;
-            var vis = passerTekst && passerType;
+            var passerSted = !stedsBoks ||
+                (lat >= stedsBoks.minLat && lat <= stedsBoks.maxLat &&
+                    lng >= stedsBoks.minLng && lng <= stedsBoks.maxLng);
+
+            var vis = passerTekst && passerType && passerSted;
 
             rad.classList.toggle('d-none', !vis);
 
@@ -71,4 +80,52 @@ function settOppFilter(kart, lagRegistre) {
 
     sokeFelt.addEventListener('input', filtrer);
     typeFilter.addEventListener('change', filtrer);
+
+    return filtrer;
+}
+
+function settOppStedssok(kart, kjorFilter) {
+    var feltet = document.getElementById('stedsFelt');
+    if (!feltet) return;
+
+    feltet.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        sokSted(feltet.value.trim(), kart, kjorFilter);
+    });
+}
+
+function sokSted(sporring, kart, kjorFilter)
+{
+    if (!sporring)
+    {
+        stedsBoks = null;
+        kjorFilter();
+        return;
+    }
+    var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=no&q='
+        + encodeURIComponent(sporring);
+
+    fetch(url, { headers: { 'Accept-Language': 'nb' } })
+        .then(function (svar) { return svar.json(); })
+        .then(function (treff) {
+            if (!treff.length) {
+                alert('Fant ikke stedet "' + sporring + '".');
+                return;
+            }
+
+            // boundingbox: [minLat, maxLat, minLng, maxLng] som tekst
+            var b = treff[0].boundingbox;
+            stedsBoks = {
+                minLat: parseFloat(b[0]), maxLat: parseFloat(b[1]),
+                minLng: parseFloat(b[2]), maxLng: parseFloat(b[3])
+            };
+
+            kart.fitBounds([
+                [stedsBoks.minLat, stedsBoks.minLng],
+                [stedsBoks.maxLat, stedsBoks.maxLng]
+            ]);
+
+            kjorFilter();
+        });
 }

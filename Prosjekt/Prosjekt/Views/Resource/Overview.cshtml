@@ -101,6 +101,9 @@
                         }
                     </select>
                 </div>
+                <div class="cold-md-12">
+                    <input type="search" id="stedsFelt" class="form-control" placeholder="Søk på sted, f.eks. Kristiansand - trykk Enter"/>
+                </div>
                 <div class="col-md-12">
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
                         🖨️ Skriv ut listen
@@ -123,7 +126,7 @@
                     {
                         @foreach (var res in Model)
                         {
-                            <tr class="table-row-clickable"
+                            <tr class="table-row-clickable" data-lat="@((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture))" data-lng="@((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture))"
                                 data-id="@res.Id" data-type="@res.Category" data-sok="@(($"{res.Name} {res.Description}").ToLower())" 
                                 onclick="fokuserPaRessurs('@res.Id', @((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
                                 <td>
@@ -250,7 +253,7 @@
                     });
             });
             
-            settOppFilter(kart, [markorerMap]);
+            var kjorFilter = settOppFilter(kart, [markorerMap]);
 
             if (bounds.length > 0) {
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
