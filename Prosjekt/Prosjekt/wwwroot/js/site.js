@@ -70,7 +70,7 @@ function settOppFilter(kart, lagRegistre) {
                 (lat >= stedsBoks.minLat && lat <= stedsBoks.maxLat &&
                     lng >= stedsBoks.minLng && lng <= stedsBoks.maxLng);
             var passerRadius = !radiusSenter || radiusSenter.distanceTo(L.latLng(lat, lng)) <= radiusMeter;
-            var vis = passerTekst && passerType && passerSted;
+            var vis = passerTekst && passerType && passerSted &&passerRadius;
 
             rad.classList.toggle('d-none', !vis);
 

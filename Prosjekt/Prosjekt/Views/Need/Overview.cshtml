@@ -61,9 +61,9 @@
         position: relative;
     }
 
-    /* Behovsoversikten starter på 70 % av bredden */
+    /* Behovsoversikten starter på 45 % av bredden */
     .table-section {
-        flex: 0 0 70%;
+        flex: 0 0 45%;
         min-width: 250px;
         overflow-y: auto;
         padding-right: 10px;
@@ -143,10 +143,10 @@
                     </button>
                 </div>
                 <div class="col-md-6 d-flex gap-2 align-items-center">
-                    <button type"button" id="velgPunktBtn" class="btn btn-outline-primary btn-sm text-nowrap">
+                    <button type="button" id="velgPunktBtn" class="btn btn-outline-primary btn-sm text-nowrap">
                         Velg punkt
                     </button>
-                    <input type="number" id"radiusFelt" class="form-control form-control-sm" value="5" min="1" max="500" step="1" style="max-width: 90px;" />
+                    <input type="number" id="radiusFelt" class="form-control form-control-sm" value="5" min="1" max="500" step="1" style="max-width: 90px;" />
                     <span class="small text-muted">km</span>
                 </div>
             </div>
@@ -167,7 +167,7 @@
                     {
                         @foreach (var item in Model)
                         {
-                            <tr class="table-row-clickable" data-lat="@((item.Latitude ?? =).ToString(CultureInfo.InvariantCulture))" data-lng="@((item.Longitude ?? =).ToString(CultureInfo.InvariantCulture))"
+                            <tr class="table-row-clickable" data-lat="@((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture))" data-lng="@((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture))"
                                 data-id="@item.Id" data-type="@item.Type" data-sok="@(($"{item.Name} {item.Description} {item.Phone}").ToLower())" onclick="fokuserPaBehov('@item.Id', @((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
                                 <td>
                                     <strong>@item.Name</strong><br />
@@ -245,9 +245,6 @@
             var kjorFilter = settOppFilter(kart, [markorerMap, omraderMap]);
             settOppStedssok(kart, kjorFilter);
             settOppRadiusSok(kart, kjorFilter);
-
-            document.getElementById('sokeFelt').addEventListener('input', filtrer);
-            document.getElementById('typeFilter').addEventListener('change', filtrer);
 
             behov.forEach(function (b) {
                 var lat = parseFloat(b.Latitude);
