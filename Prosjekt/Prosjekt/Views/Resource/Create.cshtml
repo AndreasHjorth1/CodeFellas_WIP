@@ -136,7 +136,7 @@
             // Konverterer tall trygt til punktum som desimaltegn
             var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
             var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
-            var navn = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Name));
+            var navn = @Json.Serialize(Model.Name);
             var antall = @Model.Quantity;
 
             // --- KART ---
