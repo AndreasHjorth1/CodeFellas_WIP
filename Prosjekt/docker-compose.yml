@@ -1,0 +1,15 @@
+services:
+  prosjekt:
+    image: ${DOCKER_REGISTRY-}prosjekt
+    build:
+      context: .
+      dockerfile: Prosjekt/Dockerfile
+    ports:
+      - "5000:8080"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    external: true
+    name: appnet

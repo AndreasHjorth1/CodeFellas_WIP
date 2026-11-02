@@ -1,5 +1,8 @@
 <Solution>
-   <Project Path="Prosjekt.AppHost/Prosjekt.AppHost.csproj" />
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+  <Project Path="Prosjekt.AppHost/Prosjekt.AppHost.csproj" />
   <Project Path="Prosjekt.ServiceDefaults/Prosjekt.ServiceDefaults.csproj" />
   <Project Path="Prosjekt.Xunit.Test/Prosjekt.Xunit.Test.csproj" Id="54c2cce5-7146-4e04-8e6e-7d359587cf44" />
   <Project Path="Prosjekt/Prosjekt.csproj" />
