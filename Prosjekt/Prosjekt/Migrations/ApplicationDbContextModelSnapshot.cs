@@ -135,6 +135,10 @@ namespace Prosjekt.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<string>("SubCategory")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.Resource.Coords#Coordinates", b1 =>
                         {
                             b1.Property<double>("Latitude")

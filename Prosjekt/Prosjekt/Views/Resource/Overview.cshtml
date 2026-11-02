@@ -6,7 +6,22 @@
     ViewData["Title"] = "Oversikt over ressurser";
 }
 
+<link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
+
 @functions {
+    string RessursIkon(ResourceViewModel.ResourceType kategori) => kategori switch
+    {
+        ResourceViewModel.ResourceType.Vehicle => "vehicle",
+        ResourceViewModel.ResourceType.Tool => "tool",
+        ResourceViewModel.ResourceType.Clothing => "clothing",
+        ResourceViewModel.ResourceType.Provision => "provision",
+        ResourceViewModel.ResourceType.Materials => "materials",
+        _ => "other"
+    };
+
+    string RessursIkonFil(ResourceViewModel.ResourceType kategori, bool tilgjengelig)
+        => RessursIkon(kategori) + (tilgjengelig ? "" : "-unavailable") + ".svg";
+
     string OversettKategori(ResourceViewModel.ResourceType k) => k switch
     {
         ResourceViewModel.ResourceType.Vehicle => "Kjøretøy",
@@ -113,7 +128,14 @@
                                     <strong>@res.Name</strong><br />
                                     <small class="text-secondary">@res.Description</small>
                                 </td>
-                                <td><span class="badge bg-secondary">@OversettKategori(res.Category)</span></td>
+                                <td>
+                                    <span class="resource-category">
+                                        <img class="resource-category-icon"
+                                             src="@Url.Content($"~/images/resources/{RessursIkonFil(res.Category, res.Availability)}")"
+                                             width="28" height="28" alt="" />
+                                        <span class="badge bg-secondary">@OversettKategori(res.Category)</span>
+                                    </span>
+                                </td>
                                 <td>@res.Quantity</td>
                                 <td>
                                     @if (res.Availability)
@@ -173,15 +195,17 @@
 
         document.addEventListener("DOMContentLoaded", function () {
             // Konverter C#-modellen til JS uten kontaktinfo/reg-nr
-            var ressurser = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(r => new
+            var ressurser = @Json.Serialize((Model ?? Enumerable.Empty<ResourceViewModel>()).Select(r => new
             {
                 id = r.Id,
                 name = r.Name,
                 quantity = r.Quantity,
                 isAvailable = r.Availability,
+                categoryName = OversettKategori(r.Category),
+                iconUrl = Url.Content($"~/images/resources/{RessursIkonFil(r.Category, r.Availability)}"),
                 lat = r.Latitude,
                 lng = r.Longitude
-            })));
+            }));
 
             // Initialiser kartet
             kart = L.map('oversiktRessursKart').setView([58.163, 8.003], 12);
@@ -190,21 +214,13 @@
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(kart);
 
-            function getIkon(fargeNavn) {
-                return new L.Icon({
-                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-                });
-            }
-
-            var ikonGronn = getIkon('green');
             var bounds = [];
 
             ressurser.forEach(function (r) {
                 var lat = parseFloat(r.lat);
                 var lng = parseFloat(r.lng);
-                if (isNaN(lat) || isNaN(lng)) return;
+                if (!Number.isFinite(lat) || !Number.isFinite(lng) ||
+                    lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
 
                 bounds.push([lat, lng]);
 
@@ -212,7 +228,19 @@
                     ? '<span style="color: green; font-weight: bold;">Tilgjengelig</span>'
                     : '<span style="color: red; font-weight: bold;">Opptatt</span>';
 
-                var marker = L.marker([lat, lng], { icon: ikonGronn }).addTo(kart);
+                var resourceIcon = L.icon({
+                    iconUrl: r.iconUrl,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -22],
+                    className: 'resource-map-icon'
+                });
+
+                var marker = L.marker([lat, lng], {
+                    icon: resourceIcon,
+                    title: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig'),
+                    alt: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig')
+                }).addTo(kart);
                 markorerMap[r.id] = marker;
 
                 var toppInnhold = `

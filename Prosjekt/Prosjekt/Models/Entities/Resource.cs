@@ -22,7 +22,8 @@ namespace Prosjekt.Models.Entities
         [MaxLength(100)]
         public string Category { get; set; } = string.Empty;
 
-        // --- NYE FELTER FRA KRAVSPEKKEN ---
+        [MaxLength(100)]
+        public string? SubCategory { get; set; }
 
         [MaxLength(20)]
         public string PhoneNumber { get; set; } = string.Empty;
