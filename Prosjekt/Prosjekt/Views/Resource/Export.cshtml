@@ -3,11 +3,18 @@
 }
 
 <h1 class="mb-2">Eksporter ressurser</h1>
-<p class="text-muted">
-    Laster ned alle registrerte ressurser som er tilgjengelige, med id, navn, kategori, antall og telefonnummer.
-</p>
+<p class="text-muted">Last ned ressurser med id, navn, kategori, antall og telefonnummer.</p>
 
+<h5 class="mt-4">Tilgjengelige ressurser</h5>
+<p class="text-muted">Kun ressurser som er markert som tilgjengelige for oppdrag.</p>
+<div class="d-flex gap-2 mb-4">
+    <a asp-controller="Resource" asp-action="ExportCsv" asp-route-bareTilgjengelige="true" class="btn btn-success">Eksporter CSV</a>
+    <a asp-controller="Resource" asp-action="ExportJson" asp-route-bareTilgjengelige="true" class="btn btn-primary">Eksporter JSON</a>
+</div>
+
+<h5>Alle registrerte ressurser</h5>
+<p class="text-muted">Alle ressurser, også de som ikke er tilgjengelige.</p>
 <div class="d-flex gap-2">
-    <a asp-controller="Resource" asp-action="ExportCsv" class="btn btn-success">Eksporter CSV</a>
-    <a asp-controller="Resource" asp-action="ExportJson" class="btn btn-primary">Eksporter JSON</a>
+    <a asp-controller="Resource" asp-action="ExportCsv" asp-route-bareTilgjengelige="false" class="btn btn-outline-success">Eksporter CSV</a>
+    <a asp-controller="Resource" asp-action="ExportJson" asp-route-bareTilgjengelige="false" class="btn btn-outline-primary">Eksporter JSON</a>
 </div>

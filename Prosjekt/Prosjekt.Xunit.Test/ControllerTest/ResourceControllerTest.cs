@@ -633,11 +633,32 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Assert
             var file = Assert.IsType<FileContentResult>(result);
             Assert.Equal("text/csv", file.ContentType);
-            Assert.StartsWith("ressurser_", file.FileDownloadName);
+            Assert.StartsWith("ressurser_tilgjengelige_", file.FileDownloadName);
 
             var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
-            Assert.Contains("1;Traktor;Kjøretøy;1;98765432", text);
+            Assert.Contains("1;Traktor;Kjøretøy;1;Ja;98765432", text);
             Assert.DoesNotContain("Aggregat", text);
+        }
+
+        [Fact]
+        public async Task ExportCsv_AllResources_IncludesUnavailable()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", Quantity = 1, Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Quantity = 2, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo);
+
+            // Act
+            var result = await controller.ExportCsv(bareTilgjengelige: false);
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.StartsWith("ressurser_alle_", file.FileDownloadName);
+
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("1;Traktor;Kjøretøy;1;Ja;", text);
+            Assert.Contains("2;Aggregat;Verktøy;2;Nei;", text);
         }
 
         [Fact]
@@ -692,14 +713,37 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Assert
             var file = Assert.IsType<FileContentResult>(result);
             Assert.Equal("application/json", file.ContentType);
-            Assert.StartsWith("ressurser_", file.FileDownloadName);
+            Assert.StartsWith("ressurser_tilgjengelige_", file.FileDownloadName);
 
             using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
             var ressurs = Assert.Single(json.RootElement.EnumerateArray());
             Assert.Equal(1, ressurs.GetProperty("Id").GetInt32());
             Assert.Equal("Traktor", ressurs.GetProperty("Navn").GetString());
             Assert.Equal("Kjøretøy", ressurs.GetProperty("Kategori").GetString());
+            Assert.True(ressurs.GetProperty("Tilgjengelig").GetBoolean());
             Assert.Equal("98765432", ressurs.GetProperty("Telefon").GetString());
+        }
+
+        [Fact]
+        public async Task ExportJson_AllResources_IncludesUnavailable()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Coords = new Coordinates(58.46, 8.77) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo);
+
+            // Act
+            var result = await controller.ExportJson(bareTilgjengelige: false);
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.StartsWith("ressurser_alle_", file.FileDownloadName);
+
+            using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
+            var ressurser = json.RootElement.EnumerateArray().ToList();
+            Assert.Equal(2, ressurser.Count);
+            Assert.False(ressurser.Single(r => r.GetProperty("Navn").GetString() == "Aggregat").GetProperty("Tilgjengelig").GetBoolean());
         }
     }
 }

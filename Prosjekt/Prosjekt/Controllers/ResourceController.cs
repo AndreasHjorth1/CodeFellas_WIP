@@ -367,7 +367,7 @@ namespace Prosjekt.Controllers
             return Json(result);
         }
 
-        // Eksport av alle tilgjengelige ressurser. Ment for offentlige aktører.
+        // Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
         // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
         [HttpGet]
         public IActionResult Export()
@@ -376,12 +376,12 @@ namespace Prosjekt.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportCsv()
+        public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
         {
-            var ressurser = await HentTilgjengeligeRessurser();
+            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
 
             var sb = new StringBuilder();
-            sb.AppendLine("Id;Navn;Kategori;Antall;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
+            sb.AppendLine("Id;Navn;Kategori;Antall;Tilgjengelig;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
 
             foreach (var r in ressurser)
             {
@@ -390,6 +390,7 @@ namespace Prosjekt.Controllers
                     Csv(r.Name),
                     OversettKategori(r.Category),
                     r.Quantity,
+                    r.IsAvailable ? "Ja" : "Nei",
                     Csv(r.PhoneNumber),
                     Csv(r.Description),
                     r.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "",
@@ -400,13 +401,13 @@ namespace Prosjekt.Controllers
 
             // BOM gjør at Excel viser æ, ø og å riktig
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-            return File(bytes, "text/csv", $"ressurser_{DateTime.Now:yyyy-MM-dd}.csv");
+            return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportJson()
+        public async Task<IActionResult> ExportJson(bool bareTilgjengelige = true)
         {
-            var ressurser = await HentTilgjengeligeRessurser();
+            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
 
             var data = ressurser.Select(r => new
             {
@@ -414,6 +415,7 @@ namespace Prosjekt.Controllers
                 Navn = r.Name,
                 Kategori = OversettKategori(r.Category),
                 Antall = r.Quantity,
+                Tilgjengelig = r.IsAvailable,
                 Telefon = r.PhoneNumber,
                 Beskrivelse = r.Description,
                 TilgjengeligFra = r.AvailableFrom,
@@ -425,21 +427,28 @@ namespace Prosjekt.Controllers
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // æøå som tekst, ikke ø
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // skriver æøå som vanlig tekst
             };
 
             var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
-            return File(bytes, "application/json", $"ressurser_{DateTime.Now:yyyy-MM-dd}.json");
+            return File(bytes, "application/json", $"{Filnavn(bareTilgjengelige)}.json");
         }
 
-        // Kun tilgjengelige ressurser, sortert etter Id
-        private async Task<List<Resource>> HentTilgjengeligeRessurser()
+        // Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
+        private async Task<List<Resource>> HentRessurserForEksport(bool bareTilgjengelige)
         {
             var alle = await _repo.GetAllAsync();
             return alle
-                .Where(r => r.IsAvailable)
+                .Where(r => !bareTilgjengelige || r.IsAvailable)
                 .OrderBy(r => r.Id)
                 .ToList();
+        }
+
+        // Ulike filnavn så de to eksportene ikke blandes sammen
+        private static string Filnavn(bool bareTilgjengelige)
+        {
+            var navn = bareTilgjengelige ? "ressurser_tilgjengelige" : "ressurser_alle";
+            return $"{navn}_{DateTime.Now:yyyy-MM-dd}";
         }
 
         // Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
