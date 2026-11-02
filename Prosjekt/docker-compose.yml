@@ -6,6 +6,8 @@ services:
       dockerfile: Prosjekt/Dockerfile
     ports:
       - "5000:8080"
+    env_file:
+      - Prosjekt/.env   
     networks:
       - appnet
 
