@@ -2,11 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
+using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace Prosjekt.Controllers
 {
+    [Authorize(Roles = RoleNames.Admin)]
       public class NeedController : Controller
     {
         private readonly INeedRepository _repo;
