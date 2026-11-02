@@ -47,6 +47,13 @@
                         <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
                     </div>
                 </div>
+                <div id="omradeInfo" class="small text-muted mt-2 d-none">
+                    Område: ca. <span id="omradeAreal"></span> &middot; omkrets ca. <span id="omradeOmkrets"></span>
+                </div>
+
+                <input asp-for="AreaGeoJson" id="AreaGeoJson" type="hidden" />
+                <input asp-for="AreaSquareMeters" id="AreaSquareMeters" type="hidden" />
+                <input asp-for="PerimeterMeters" id="PerimeterMeters" type="hidden" />
             </div>
 
             <!-- Boks for å fylle inn enkeltbehov -->
@@ -134,6 +141,11 @@
             return (importanceVal === '0' || importanceVal === 'Acute') ? getIkon('red') : getIkon('gold');
         }
 
+        function HentValgtFarge() {
+            var importanceVal = document.getElementById('viktighetSelect').value;
+            return (importanceVal === '0' || importanceVal === 'Acute') ? '#dc3545' : '#fd7e14';
+        }
+
         // 1. Definer kartlagene med noWrap
         var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors',
@@ -177,19 +189,32 @@
         // Creates the drawing control on the map
         var drawControl = new L.Control.Draw({
             draw: {
-                polygon: false, polyline: false, circle: false, rectangle: false,
+                polygon: {
+                    allowIntersection: false,
+                    showArea: true,
+                    metric: true,
+                    shapeOptions: {color: '#dc3545'}
+                },
+                polyline: false, circle: false, rectangle: false,
                 marker: true
             },
             edit: { featureGroup: drawnItems, remove: true }
         });
         map.addControl(drawControl);
 
+        var tegnerNaa = false;
+        map.on('draw:drawstart', function() { tegnerNaa = true; });
+        map.on('draw:drawstop', function() { tegnerNaa = false; });
+
         // Oppdaterer eksisterende markør dersom brukeren endrer dropdown-valget for Viktighet
         document.getElementById('viktighetSelect').addEventListener('change', function() {
             var valgtIkon = HentValgtIkon();
+            var valgtFarge = HentValgtFarge();
             drawnItems.eachLayer(function(layer) {
                 if (layer instanceof L.Marker) {
                     layer.setIcon(valgtIkon);
+                } else if (layer instanceof L.Polygon) {
+                    layer.setStyle({ color: valgtFarge });
                 }
             });
         });
@@ -199,22 +224,38 @@
             var layer = e.layer;
             drawnItems.clearLayers();
 
-            if (layer instanceof L.Marker) {
-                layer.setIcon(HentValgtIkon());
+            var latlng;
+            
+            if (layer instanceof L.Polygon) {
+                latlng = layer.getBounds().getCenter();
+                layer.setStyle({ color: HentValgtFarge(), fillOpacity: 0.15 });
+                lagreOmrade(layer);
+            } else {
+                if (layer instanceof L.Marker) {
+                    layer.setIcon(HentValgtIkon());
+                }
+                latlng = layer.getLatLng();
+                tomOmrade();
             }
-
             drawnItems.addLayer(layer);
-
-            var latlng = layer.getLatLng();
             settPosisjonOgVisMeny(latlng.lat.toFixed(6), latlng.lng.toFixed(6));
+
         });
 
         // Vanlig klikk på kartet
         map.on('click', function(e) {
+            if (tegnerNaa) return;
             var lat = e.latlng.lat.toFixed(6);
             var lng = e.latlng.lng.toFixed(6);
+            
+            var harOmrade = document.getElementById('AreaGeoJson').value !== '';
+            if (harOmrade && !confirm('Du har tegnet et område. Vil du erstatte det med en markør?')) {
+                return;
+            }
 
             drawnItems.clearLayers();
+
+            tomOmrade();
             var newMarker = L.marker([lat, lng], { icon: HentValgtIkon() });
             drawnItems.addLayer(newMarker);
 
@@ -237,6 +278,7 @@
         document.getElementById('lukkMenyBtn').addEventListener('click', function() {
             sideMeny.classList.add('d-none');
             drawnItems.clearLayers();
+            tomOmrade();
             document.getElementById('Latitude').value = '';
             document.getElementById('Longitude').value = '';
         });

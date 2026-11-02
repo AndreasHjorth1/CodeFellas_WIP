@@ -23,48 +23,6 @@ namespace Prosjekt.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("Prosjekt.Models.Entities.GeoChange", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ChangeTypes")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("varchar(4000)");
-
-                    b.Property<double>("Radius")
-                        .HasColumnType("double");
-
-                    b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.GeoChange.Coords#Coordinates", b1 =>
-                        {
-                            b1.Property<double>("Latitude")
-                                .HasColumnType("double")
-                                .HasColumnName("Latitude");
-
-                            b1.Property<double>("Longitude")
-                                .HasColumnType("double")
-                                .HasColumnName("Longitude");
-                        });
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GeoChanges");
-                });
-
             modelBuilder.Entity("Prosjekt.Models.Entities.Need", b =>
                 {
                     b.Property<int>("Id")
@@ -73,23 +31,24 @@ namespace Prosjekt.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AreaGeoJson")
+                        .HasColumnType("longtext");
+
+                    b.Property<double?>("AreaSquareMeters")
+                        .HasColumnType("double");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(4000)
                         .HasColumnType("varchar(4000)");
-
-                    b.Property<bool>("IsFulfilled")
-                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -98,6 +57,9 @@ namespace Prosjekt.Migrations
 
                     b.Property<DateTime?>("NeededBy")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<double?>("PerimeterMeters")
+                        .HasColumnType("double");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
@@ -108,6 +70,9 @@ namespace Prosjekt.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.Need.Coords#Coordinates", b1 =>
                         {
@@ -145,9 +110,7 @@ namespace Prosjekt.Migrations
                         .HasColumnType("varchar(100)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -171,6 +134,10 @@ namespace Prosjekt.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("SubCategory")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.Resource.Coords#Coordinates", b1 =>
                         {

@@ -1,8 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Controllers;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Xunit.Test.Fakes;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
 {
@@ -35,9 +40,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var model = new ResourceCreatorViewModel
             {
                 ResourceList = new List<ResourceViewModel>
-                  {
-                      new ResourceViewModel { Name = "Aggregat" }
-                  }
+                {
+                    new ResourceViewModel { Name = "Aggregat" }
+                }
             };
 
             // Act
@@ -83,9 +88,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var model = new ResourceCreatorViewModel
             {
                 ResourceList = new List<ResourceViewModel>
-                  {
-                      new ResourceViewModel { Name = "Aggregat" }
-                  },
+                {
+                    new ResourceViewModel { Name = "Aggregat" }
+                },
                 Latitude = 200,
                 Longitude = 10
             };
@@ -110,9 +115,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var model = new ResourceCreatorViewModel
             {
                 ResourceList = new List<ResourceViewModel>
-                  {
-                      new ResourceViewModel { Name = "Aggregat", Quantity = 2 }
-                  },
+                {
+                    new ResourceViewModel { Name = "Aggregat", Quantity = 2 }
+                },
                 Latitude = 58.1467,
                 Longitude = 7.9956
             };
@@ -276,6 +281,341 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var redirect = Assert.IsType<RedirectToActionResult>(result);
             Assert.Equal("Overview", redirect.ActionName);
             Assert.Empty(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Create_CoordinateErrorsInList_AreRemovedAndResourceIsSaved()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            var controller = new ResourceController(repo);
+            controller.ModelState.AddModelError("ResourceList[0].Latitude", "Required");
+            controller.ModelState.AddModelError("ResourceList[0].Longitude", "Required");
+
+            var model = new ResourceCreatorViewModel
+            {
+                ResourceList = new List<ResourceViewModel>
+                {
+                    new ResourceViewModel { Name = "Aggregat" }
+                },
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Create(model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Create", viewResult.ViewName);
+            Assert.True(controller.ModelState.IsValid);
+            Assert.Equal(58.1467, model.ResourceList[0].Latitude);
+            Assert.Single(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Create_VehicleWithLicensePlate_AddsRegNrToDescription()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            var controller = new ResourceController(repo);
+
+            // Sett opp HttpContext med et tomt FormCollection for å unngå NullReferenceException på Request.Form
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
+            controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+
+            var model = new ResourceCreatorViewModel
+            {
+                ResourceList = new List<ResourceViewModel>
+                {
+                    new ResourceViewModel
+                    {
+                        Name = "Lastebil",
+                        Description = "Med henger",
+                        Category = ResourceViewModel.ResourceType.Vehicle,
+                        LicensePlate = "AB12345"
+                    }
+                },
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            await controller.Create(model);
+
+            // Assert
+            var savedResource = Assert.Single(repo.Resources);
+            Assert.Equal("Med henger [Reg.nr: AB12345]", savedResource.Description);
+            Assert.Equal("Vehicle", savedResource.Category);
+        }
+
+        [Fact]
+        public async Task Create_ClothingWithSize_AddsSizeToSubCategory()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            var controller = new ResourceController(repo);
+
+            var model = new ResourceCreatorViewModel
+            {
+                ResourceList = new List<ResourceViewModel>
+                {
+                    new ResourceViewModel
+                    {
+                        Name = "Jakke",
+                        Description = "Vinterjakke",
+                        Category = ResourceViewModel.ResourceType.Clothing,
+                        Size = "L"
+                    }
+                },
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            await controller.Create(model);
+
+            // Assert
+            var savedResource = Assert.Single(repo.Resources);
+            Assert.Equal("Vinterjakke", savedResource.Description);
+            Assert.Equal("L", savedResource.SubCategory);
+        }
+
+        [Fact]
+        public async Task Edit_Get_DescriptionWithRegNr_ExtractsLicensePlate()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Lastebil",
+                Description = "Med henger [Reg.nr: AB12345]",
+                Category = "Vehicle",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new ResourceController(repo);
+
+            // Act
+            var result = await controller.Edit(1);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            var model = Assert.IsType<ResourceViewModel>(viewResult.Model);
+            Assert.Equal("AB12345", model.LicensePlate);
+            Assert.Equal("Med henger", model.Description);
+            Assert.Equal(ResourceViewModel.ResourceType.Vehicle, model.Category);
+        }
+
+        [Fact]
+        public async Task Edit_Get_ClothingWithSize_MapsToViewModel()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Jakke",
+                Description = "Vinterjakke",
+                Category = "Clothing",
+                SubCategory = "L",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new ResourceController(repo);
+
+            // Act
+            var result = await controller.Edit(1);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            var model = Assert.IsType<ResourceViewModel>(viewResult.Model);
+            Assert.Equal("L", model.Size);
+            Assert.Equal("Vinterjakke", model.Description);
+            Assert.Equal(ResourceViewModel.ResourceType.Clothing, model.Category);
+        }
+
+        [Fact]
+        public async Task Edit_Post_InvalidCoordinates_ReturnsViewWithError()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new ResourceController(repo);
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Båt",
+                Latitude = 200,
+                Longitude = 10
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, viewResult.Model);
+            Assert.False(controller.ModelState.IsValid);
+            Assert.Equal("Aggregat", repo.Resources.Single().Name);
+        }
+
+        [Fact]
+        public async Task Edit_Post_InvalidModelState_ReturnsView()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new ResourceController(repo);
+            controller.ModelState.AddModelError("PhoneNumber", "Required");
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Båt",
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, viewResult.Model);
+            Assert.Equal("Aggregat", repo.Resources.Single().Name);
+        }
+
+        [Fact]
+        public async Task Edit_Post_VehicleWithLicensePlate_SavesRegNrInDescription()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Lastebil",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new ResourceController(repo);
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Lastebil",
+                Description = "Med henger",
+                Category = ResourceViewModel.ResourceType.Vehicle,
+                LicensePlate = "AB12345",
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            await controller.Edit(1, model);
+
+            // Assert
+            var updatedResource = Assert.Single(repo.Resources);
+            Assert.Equal("Med henger [Reg.nr: AB12345]", updatedResource.Description);
+        }
+
+        [Fact]
+        public async Task Edit_Post_ClothingWithSize_SavesSizeInSubCategory()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Jakke",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new ResourceController(repo);
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Jakke",
+                Description = "Vinterjakke",
+                Category = ResourceViewModel.ResourceType.Clothing,
+                Size = "L",
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            await controller.Edit(1, model);
+
+            // Assert
+            var updatedResource = Assert.Single(repo.Resources);
+            Assert.Equal("Vinterjakke", updatedResource.Description);
+            Assert.Equal("L", updatedResource.SubCategory);
+        }
+
+        [Fact]
+        public async Task GetInformasjon_ReturnsJsonWithAllResources()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Category = "Tool",
+                Quantity = 2,
+                IsAvailable = false,
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            repo.Resources.Add(new Resource
+            {
+                Id = 2,
+                Name = "Båt",
+                Coords = new Coordinates(59.9, 10.7)
+            });
+            var controller = new ResourceController(repo);
+
+            // Act
+            var result = await controller.GetInformasjon();
+
+            // Assert
+            var jsonResult = Assert.IsType<JsonResult>(result);
+            var resources = Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value).ToList();
+            Assert.Equal(2, resources.Count);
+
+            var aggregat = resources.Single(r => r.Name == "Aggregat");
+            Assert.Equal(ResourceViewModel.ResourceType.Tool, aggregat.Category);
+            Assert.Equal(2, aggregat.Quantity);
+            Assert.False(aggregat.Availability);
+            Assert.Equal(58.1467, aggregat.Latitude);
+        }
+
+        [Fact]
+        public async Task GetInformasjon_UnknownCategory_UsesOther()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Category = "FinnesIkke",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new ResourceController(repo);
+
+            // Act
+            var result = await controller.GetInformasjon();
+
+            // Assert
+            var jsonResult = Assert.IsType<JsonResult>(result);
+            var resource = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value));
+            Assert.Equal(ResourceViewModel.ResourceType.Other, resource.Category);
         }
     }
 }

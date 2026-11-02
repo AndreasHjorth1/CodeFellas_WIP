@@ -6,21 +6,21 @@ namespace Prosjekt.Models.ModelView.ResourceType
     {
         public enum MaterialType
         {
-            [Display(Name = "Treverk")]
+            [Display(Name = "Treverk (meter)")]
             Wood,
-            [Display(Name = "Metall")]
+            [Display(Name = "Metall (kg)")]
             Metal,
-            [Display(Name = "Plast")]
+            [Display(Name = "Plast (kg)")]
             Plastic,
-            [Display(Name = "Glass")]
+            [Display(Name = "Glass (m*2)")]
             Glass,
-            [Display(Name = "Grus")]
+            [Display(Name = "Grus (Kg)")]
             Gravel,
-            [Display(Name = "Stein")]
+            [Display(Name = "Stein (Kg)")]
             Stone,
-            [Display(Name = "Jord")]
+            [Display(Name = "Jord (Kg)")]
             Soil,
-            [Display(Name = "Sand")]
+            [Display(Name = "Sand (Kg)")]
             Sand,
             [Display(Name = "Annet")]
             Other

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Controllers;
 using Prosjekt.Models.Entities;
+using Prosjekt.Models.Enums;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Xunit.Test.Fakes;
 
@@ -272,7 +273,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             {
                 Id = 1,
                 Name = "Mat",
-                IsFulfilled = true,
+                Status = EntryStatus.UnderReview,
                 Latitude = 59.9,
                 Longitude = 10.7
             };
@@ -286,7 +287,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 
             var updatedNeed = Assert.Single(repo.Needs);
             Assert.Equal("Mat", updatedNeed.Name);
-            Assert.True(updatedNeed.IsFulfilled);
+            Assert.Equal(EntryStatus.UnderReview, updatedNeed.Status);
             Assert.Equal(59.9, updatedNeed.Coords.Latitude);
         }
 
@@ -305,6 +306,247 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var redirect = Assert.IsType<RedirectToActionResult>(result);
             Assert.Equal("Overview", redirect.ActionName);
             Assert.Empty(repo.Needs);
+        }
+
+        [Fact]
+        public async Task Edit_Post_SkipsStatusStep_ReturnsViewWithErrorAndKeepsStatus()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                Status = EntryStatus.New,
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new NeedController(repo);
+            var model = new NeedViewModel
+            {
+                Id = 1,
+                Name = "Vann",
+                Status = EntryStatus.Resolved, // Hopper over Vurderes og Tildelt
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, viewResult.Model);
+            Assert.False(controller.ModelState.IsValid);
+            Assert.True(controller.ModelState.ContainsKey(nameof(NeedViewModel.Status)));
+
+            var need = Assert.Single(repo.Needs);
+            Assert.Equal(EntryStatus.New, need.Status);
+        }
+
+        [Fact]
+        public async Task Edit_Post_OneStatusStepBack_UpdatesStatusAndRedirects()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                Status = EntryStatus.Assigned,
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new NeedController(repo);
+            var model = new NeedViewModel
+            {
+                Id = 1,
+                Name = "Vann",
+                Status = EntryStatus.UnderReview, // Ett steg tilbake (angre en feil)
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Overview", redirect.ActionName);
+
+            var need = Assert.Single(repo.Needs);
+            Assert.Equal(EntryStatus.UnderReview, need.Status);
+        }
+
+        [Fact]
+        public async Task Create_NullNeedList_ReturnsIndexViewWithError()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            var controller = new NeedController(repo);
+
+            var model = new NeedCreatorViewModel
+            {
+                NeedList = null!,
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Create(model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Index", viewResult.ViewName);
+            Assert.Single(model.NeedList);
+            Assert.False(controller.ModelState.IsValid);
+            Assert.Empty(repo.Needs);
+        }
+
+        [Fact]
+        public async Task Create_InvalidModelState_ReturnsIndexView()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            var controller = new NeedController(repo);
+            controller.ModelState.AddModelError("NeedList[0].Phone", "Required");
+
+            var model = new NeedCreatorViewModel
+            {
+                NeedList = new List<NeedViewModel>
+                  {
+                      new NeedViewModel { Name = "Vann" }
+                  },
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Create(model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Index", viewResult.ViewName);
+            Assert.Empty(repo.Needs);
+        }
+
+        [Fact]
+        public async Task Edit_Post_InvalidCoordinates_ReturnsViewWithError()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                Coords = new Coordinates(58.1467,
+7.9956)
+            });
+            var controller = new NeedController(repo);
+            var model = new NeedViewModel { Id = 1, Name = "Mat", Latitude = 200, Longitude = 10 };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, viewResult.Model);
+            Assert.False(controller.ModelState.IsValid);
+            Assert.Equal("Vann", repo.Needs.Single().Name);
+        }
+
+        [Fact]
+        public async Task Edit_Post_InvalidModelState_ReturnsView()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                Coords = new Coordinates(58.1467,
+7.9956)
+            });
+            var controller = new NeedController(repo);
+            controller.ModelState.AddModelError("Phone", "Required");
+            var model = new NeedViewModel
+            {
+                Id = 1,
+                Name = "Mat",
+                Latitude = 58.1467,
+                Longitude =
+7.9956
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, viewResult.Model);
+            Assert.Equal("Vann", repo.Needs.Single().Name);
+        }
+
+        [Fact]
+        public async Task GetInformasjon_ReturnsJsonWithAllNeeds()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                Category = "Food",
+                Priority = "Acute",
+                Status = EntryStatus.Assigned,
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            repo.Needs.Add(new Need
+            {
+                Id = 2,
+                Name = "Traktor",
+                Coords = new Coordinates(59.9, 10.7)
+            });
+            var controller = new NeedController(repo);
+
+            // Act
+            var result = await controller.GetInformasjon();
+
+            // Assert
+            var jsonResult = Assert.IsType<JsonResult>(result);
+            var needs =
+Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value).ToList();
+            Assert.Equal(2, needs.Count);
+
+            var vann = needs.Single(n => n.Name == "Vann");
+            Assert.Equal(NeedViewModel.NeedType.Food, vann.Type);
+            Assert.Equal(ImportanceLevel.Acute, vann.Importance);
+            Assert.Equal(EntryStatus.Assigned, vann.Status);
+            Assert.Equal(58.1467, vann.Latitude);
+        }
+
+        [Fact]
+        public async Task GetInformasjon_UnknownCategoryAndPriority_UsesOtherAndPlanned()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                Category = "FinnesIkke",
+                Priority = "FinnesIkke",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = new NeedController(repo);
+
+            // Act
+            var result = await controller.GetInformasjon();
+
+            // Assert
+            var jsonResult = Assert.IsType<JsonResult>(result);
+            var need =
+Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value));
+            Assert.Equal(NeedViewModel.NeedType.Other, need.Type);
+            Assert.Equal(ImportanceLevel.Planned, need.Importance);
         }
     }
 }

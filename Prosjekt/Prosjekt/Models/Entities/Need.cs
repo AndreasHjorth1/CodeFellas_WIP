@@ -1,11 +1,13 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using Prosjekt.Utils;
+using Prosjekt.Models.Enums;
 
 namespace Prosjekt.Models.Entities
 {
     public class Need
     {
-        public int Id { get; set; }
+        public int Id { get; init; }
 
         [Required]
         [StringLength(200)]
@@ -28,10 +30,15 @@ namespace Prosjekt.Models.Entities
         public DateTime? NeededBy { get; set; }
 
         // MANGLET: Feltet for om behovet er oppfylt
-        public bool IsFulfilled { get; set; } = false;
+        public EntryStatus Status {get; set;} = EntryStatus.New;
 
         public Coordinates Coords { get; set; } = new Coordinates(0, 0);
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
+
+        // Område tegnet i kartet. Null når brukeren bare satte en markør.
+        public string? AreaGeoJson { get; set; }
+        public double? AreaSquareMeters { get; set; }
+        public double? PerimeterMeters { get; set; }
     }
 }

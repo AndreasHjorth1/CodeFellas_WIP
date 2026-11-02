@@ -1,12 +1,13 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using Prosjekt.Utils;
 
 namespace Prosjekt.Models.Entities
 {
     public class Resource
     {
        
-        public int Id { get; set; }
+        public int Id { get; init; }
 
         [Required(ErrorMessage = "Ressursen må ha et navn")]
         [MaxLength(200)]
@@ -21,7 +22,8 @@ namespace Prosjekt.Models.Entities
         [MaxLength(100)]
         public string Category { get; set; } = string.Empty;
 
-        // --- NYE FELTER FRA KRAVSPEKKEN ---
+        [MaxLength(100)]
+        public string? SubCategory { get; set; }
 
         [MaxLength(20)]
         public string PhoneNumber { get; set; } = string.Empty;
@@ -36,6 +38,6 @@ namespace Prosjekt.Models.Entities
 
         public Coordinates Coords { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
     }
 }

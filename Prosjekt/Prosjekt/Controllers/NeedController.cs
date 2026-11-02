@@ -2,23 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Prosjekt.Models.Enums;
+
 
 namespace Prosjekt.Controllers
 {
-    /// <summary>
-    /// ASP.NET MVC controller for creating, listing, editing, and deleting Need entities, coordinating model
-    /// validation, coordinate validation, and persistence via an INeedRepository.
-    /// </summary>
-    /// <remarks>Exposes Index (GET) to show the creation UI, Create (POST) to validate input (including map
-    /// coordinates) and create one or more Need records, Overview (GET) to list needs, Edit (GET/POST) to load and
-    /// update a need with validation, and Delete (POST) to remove a need. Create, Edit, and Delete use anti-forgery
-    /// validation. Maps between NeedViewModel and the domain Need, performs coordinate validation, and calls
-    /// asynchronous repository methods for data operations.</remarks>
-    public class NeedController : Controller
+      public class NeedController : Controller
     {
         private readonly INeedRepository _repo;
 
@@ -94,13 +83,17 @@ namespace Prosjekt.Controllers
                         Description = baseNeed.Description ?? string.Empty,
                         Category = baseNeed.Type.ToString(),
                         PhoneNumber = baseNeed.Phone ?? string.Empty,
-                        Priority = baseNeed.Importance.ToString(),
+                        Priority = model.Importance.ToString(),
                         NeededBy = baseNeed.Deadline ?? model.Deadline,
-                        IsFulfilled = baseNeed.IsFulfilled,
+                        Status = EntryStatus.New,
                         Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                        CreatedAt = DateTime.UtcNow
+                        AreaGeoJson = model.AreaGeoJson,
+                        AreaSquareMeters = model.AreaSquareMeters,
+                        PerimeterMeters = model.PerimeterMeters,
+
                     };
 
+                    
                     await _repo.AddAsync(needEntity);
                 }
             }
@@ -122,9 +115,12 @@ namespace Prosjekt.Controllers
                 Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
                 Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
                 Deadline = n.NeededBy,
-                IsFulfilled = n.IsFulfilled,
+                Status = n.Status,
                 Latitude = n.Coords.Latitude,
-                Longitude = n.Coords.Longitude
+                Longitude = n.Coords.Longitude,
+                AreaGeoJson = n.AreaGeoJson,
+                AreaSquareMeters = n.AreaSquareMeters,
+                PerimeterMeters = n.PerimeterMeters
             }).ToList();
 
             return View(needViewModels);
@@ -148,9 +144,12 @@ namespace Prosjekt.Controllers
                 Type = Enum.TryParse<NeedViewModel.NeedType>(need.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
                 Importance = Enum.TryParse<ImportanceLevel>(need.Priority, out var prio) ? prio : default,
                 Deadline = need.NeededBy,
-                IsFulfilled = need.IsFulfilled,
+                Status = need.Status,
                 Latitude = need.Coords.Latitude,
-                Longitude = need.Coords.Longitude
+                Longitude = need.Coords.Longitude,
+                AreaGeoJson = need.AreaGeoJson,
+                AreaSquareMeters = need.AreaSquareMeters,
+                PerimeterMeters = need.PerimeterMeters
             };
 
             return View(viewModel);
@@ -189,19 +188,32 @@ namespace Prosjekt.Controllers
                 return NotFound();
             }
 
+            // Sjekk statusflyten FØR vi endrer noe på behovet
+            if (!EntryStatusFlow.CanMove(existingNeed.Status, model.Status))
+            {
+                ModelState.AddModelError(nameof(model.Status),
+                    "Status kan bare flyttes ett steg om gangen.");
+                return View(model);
+            }
+
             existingNeed.Name = model.Name;
             existingNeed.Description = model.Description;
             existingNeed.PhoneNumber = model.Phone;
             existingNeed.Category = model.Type.ToString();
             existingNeed.Priority = model.Importance.ToString();
             existingNeed.NeededBy = model.Deadline;
-            existingNeed.IsFulfilled = model.IsFulfilled;
-            existingNeed.Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
+            existingNeed.Status = model.Status;
+            existingNeed.Coords = coords;
+            existingNeed.AreaGeoJson = model.AreaGeoJson;
+            existingNeed.AreaSquareMeters = model.AreaSquareMeters;
+            existingNeed.PerimeterMeters = model.PerimeterMeters;
 
             await _repo.UpdateAsync(existingNeed);
 
             return RedirectToAction(nameof(Overview));
         }
+
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -209,6 +221,33 @@ namespace Prosjekt.Controllers
         {
             await _repo.DeleteAsync(id);
             return RedirectToAction(nameof(Overview));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetInformasjon()
+        {
+            var behov = await _repo.GetAllAsync();
+
+            var result = behov.Select(n => new NeedViewModel
+            {
+                Id = n.Id,
+                Name = n.Name,
+                Phone = n.PhoneNumber,
+                Description = n.Description,
+                Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
+                    ? cat
+                    : NeedViewModel.NeedType.Other,
+                Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
+                    ? prio
+                    : ImportanceLevel.Planned,
+                Status = n.Status,
+                Latitude = n.Coords.Latitude,
+                Longitude = n.Coords.Longitude,
+                AreaGeoJson = n.AreaGeoJson,
+                AreaSquareMeters = n.AreaSquareMeters
+            });
+
+            return Json(result);
         }
     }
 }

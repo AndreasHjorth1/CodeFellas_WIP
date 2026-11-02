@@ -50,3 +50,14 @@ body {
             color: #ffffff !important;
             opacity: 0.8;
         }
+
+/* Hjørnemarkører når man tegner i kartet (Leaflet.draw) */
+.leaflet-editing-icon {
+    width: 12px !important;
+    height: 12px !important;
+    margin-left: -6px !important;
+    margin-top: -6px !important;
+    border: 2px solid #dc3545 !important;
+    border-radius: 50%;
+    background: #fff;
+}

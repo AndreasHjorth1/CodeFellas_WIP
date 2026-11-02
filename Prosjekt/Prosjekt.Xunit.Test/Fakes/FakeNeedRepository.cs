@@ -11,7 +11,7 @@ namespace Prosjekt.Xunit.Test.Fakes
 
         public Task AddAsync(Need need)
         {
-            need.Id = Needs.Count + 1;
+            typeof(Need).GetProperty("Id")?.SetValue(need, Needs.Count + 1);
             Needs.Add(need);
 
             return Task.CompletedTask;

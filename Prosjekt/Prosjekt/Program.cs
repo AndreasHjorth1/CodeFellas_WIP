@@ -1,23 +1,32 @@
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
+using DotNetEnv;
+
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Beskytt serveren mot enorme forespørsler (f.eks. maks 30 MB request-størrelse)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 30 * 1024 * 1024; // 30 MB
+});
 
 builder.AddServiceDefaults();
 
 
-// 1. Hent tilkoblingsstreng
-var connectionString = builder.Configuration.GetConnectionString("Mapdb")
-    ?? builder.Configuration.GetConnectionString("mariadbcontainer")
-    ?? builder.Configuration.GetConnectionString("mysql")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Missing database connection string for 'Mapdb'.");
+// 1. Hent tilkoblingsstreng: .env lokalt, Aspire injiserer "Mapdb"
+var connectionString = builder.Configuration["DB_CONNECTION_STRING"]
+    ?? builder.Configuration.GetConnectionString("Mapdb")
+    ?? throw new InvalidOperationException("Mangler tilkoblingsstreng. Lag en .env-fil eller kjør via Aspire.");
+
+
 
 // 2. Registrer repository
-builder.Services.AddScoped<IGeoChangeRepository, GeoChangeRepository>();
 builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
 builder.Services.AddScoped<INeedRepository, NeedRepository>();
+
 
 // 3. Registrer DbContext
 var serverVersion = new MariaDbServerVersion(new Version(11, 4, 0));
@@ -57,22 +66,22 @@ using (var scope = app.Services.CreateScope())
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
-app.UseDeveloperExceptionPage();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
+
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
 app.MapStaticAssets();
-
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Home}/{action=FrontPage}/{id?}")
     .WithStaticAssets();
 
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate();
-}
-
 app.Run();
+
 

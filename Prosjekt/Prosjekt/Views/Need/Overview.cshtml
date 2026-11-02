@@ -1,4 +1,6 @@
-@using Prosjekt.Models.ModelView
+﻿@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.Enums
+@using System.Globalization
 @model List<NeedViewModel>
 
 @{
@@ -23,10 +25,10 @@
         _ => "other"
     };
 
-    string Farge(ImportanceLevel v) => v switch 
-    { 
-        ImportanceLevel.Acute => "#dc3545", 
-        _ => "#ffc107" 
+    string Farge(ImportanceLevel v) => v switch
+    {
+        ImportanceLevel.Acute => "#dc3545",
+        _ => "#ffc107"
     };
 
     string OversettViktighet(ImportanceLevel v) => v switch
@@ -49,16 +51,95 @@
         NeedViewModel.NeedType.Personnel => "Mannskap",
         _ => "Annet"
     };
+
+    string OversettStatus(EntryStatus s) => s switch
+    {
+        EntryStatus.UnderReview => "Vurderes",
+        EntryStatus.Assigned => "Tildelt",
+        EntryStatus.Resolved => "Løst",
+        _ => "Ny"
+    };
+
+    string StatusKlasse(EntryStatus s) => s switch
+    {
+        EntryStatus.UnderReview => "bg-warning text-dark",
+        EntryStatus.Assigned => "bg-primary",
+        EntryStatus.Resolved => "bg-success",
+        _ => "bg-secondary"
+    };
 }
 
-<h1 class="mb-4">Oversikt over behov</h1>
+<style>
+    .resizable-container {
+        display: flex;
+        width: 100%;
+        height: calc(100vh - 120px);
+        min-height: 500px;
+        position: relative;
+    }
 
-<div class="row min-vh-100 g-3">
-    <!-- Tabell-seksjon -->
-    <div class="col-lg-7 col-md-12">
-        <div class="table-responsive bg-white p-3 shadow-sm border rounded">
+    /* Behovsoversikten starter på 70 % av bredden */
+    .table-section {
+        flex: 0 0 70%;
+        min-width: 250px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    /* Kartet tar resten av bredden */
+    .map-section {
+        flex: 1 1 0;
+        min-width: 200px;
+        position: relative;
+    }
+
+    /* Drabar skillelinje */
+    .resizer {
+        width: 10px;
+        background: #e0e0e0;
+        cursor: col-resize;
+        transition: background 0.2s;
+        border-radius: 4px;
+        margin: 0 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+    }
+
+        .resizer:hover, .resizer.dragging {
+            background: #0d6efd;
+        }
+
+        .resizer::after {
+            content: "⋮";
+            color: #666;
+            font-weight: bold;
+        }
+
+        .resizer:hover::after, .resizer.dragging::after {
+            color: white;
+        }
+
+    #oversiktBehovKart {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+    }
+
+    .table-row-clickable {
+        cursor: pointer;
+    }
+</style>
+
+<h1 class="mb-3">Oversikt over behov</h1>
+
+<div class="resizable-container" id="splitWrapper">
+    <!-- Tabell-seksjon (Behovsoversikt) -->
+    <div class="table-section" id="tableBox">
+        <div class="table-responsive bg-white p-3 shadow-sm border rounded h-100">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
                     <tr>
                         <th>Navn / Beskrivelse</th>
                         <th>Type</th>
@@ -74,7 +155,8 @@
                     {
                         @foreach (var item in Model)
                         {
-                            <tr>
+                            <tr class="table-row-clickable"
+                                onclick="fokuserPaBehov('@item.Id', @((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
                                 <td>
                                     <strong>@item.Name</strong><br />
                                     <small class="text-secondary">@item.Description</small>
@@ -89,18 +171,9 @@
                                 </td>
                                 <td><small class="text-muted">📞 @item.Phone</small></td>
                                 <td class="small">@(item.Deadline.HasValue ? item.Deadline.Value.ToString("dd.MM.yyyy HH:mm") : "-")</td>
-                                <td>
-                                    @if (item.IsFulfilled)
-                                    {
-                                        <span class="badge bg-success">Oppfylt</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-outline-secondary text-dark border">Ikke oppfylt</span>
-                                    }
-                                </td>
+                                <td><span class="badge @StatusKlasse(item.Status)">@OversettStatus(item.Status)</span></td>
                                 <td><span class="badge" style="@($"background-color: {Farge(item.Importance)}")">@OversettViktighet(item.Importance)</span></td>
-                                <td class="text-nowrap">
+                                <td class="text-nowrap" onclick="event.stopPropagation();">
                                     <div class="d-flex gap-1">
                                         <a asp-controller="Need" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Rediger</a>
                                         <form asp-controller="Need" asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
@@ -121,85 +194,156 @@
         </div>
     </div>
 
+    <!-- Drabar skillelinje -->
+    <div class="resizer" id="dragHandle"></div>
+
     <!-- Kart-seksjon -->
-    <div class="col-lg-5 col-md-12">
-        <div id="oversiktBehovKart" class="w-100 rounded shadow-sm border" style="min-height: 400px; height: 80vh; position: sticky; top: 1rem;"></div>
+    <div class="map-section" id="mapBox">
+        <div id="oversiktBehovKart" class="shadow-sm border"></div>
     </div>
 </div>
 
 @section Scripts {
     <script>
+        var kart;
+        var markorerMap = {};
+
+        function fokuserPaBehov(id, lat, lng) {
+            if (lat && lng && markorerMap[id]) {
+                kart.flyTo([lat, lng], 15, { duration: 1 });
+                markorerMap[id].openPopup();
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
-            var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model ?? new List<NeedViewModel>()).Select(b => new {
-                b.Id, b.Name, b.Phone, b.Latitude, b.Longitude, b.IsFulfilled,
-                TypeName = OversettNeedType(b.Type),
-                ImportanceName = OversettViktighet(b.Importance),
-                IconUrl = Url.Content($"~/images/needs/{BehovIkon(b.Type)}.svg"),
-                IconClass = b.Importance == ImportanceLevel.Acute ? "need-map-acute" : "need-map-planned"
+            var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model ?? new List<NeedViewModel>()).Select(b => new
+            {
+                id = b.Id,
+                name = b.Name,
+                phone = b.Phone,
+                latitude = b.Latitude,
+                longitude = b.Longitude,
+                status = (int)b.Status,
+                importance = (int)b.Importance,
+                areaGeoJson = b.AreaGeoJson,
+                areaSquareMeters = b.AreaSquareMeters,
+                typeName = OversettNeedType(b.Type),
+                importanceName = OversettViktighet(b.Importance),
+                iconUrl = Url.Content($"~/images/needs/{BehovIkon(b.Type)}.svg"),
+                iconClass = b.Importance == ImportanceLevel.Acute ? "need-map-acute" : "need-map-planned"
             })));
-            
-            // 1. Initialiser kartet
-            var kart = L.map('oversiktBehovKart').setView([58.163, 8.003], 12);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-                attribution: '&copy; OpenStreetMap contributors' 
+
+            // Initialiser kartet
+            kart = L.map('oversiktBehovKart').setView([58.163, 8.003], 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(kart);
 
-            behov.forEach(function(b) {
-                var lat = parseFloat(b.Latitude);
-                var lng = parseFloat(b.Longitude);
+            var bounds = [];
+
+            behov.forEach(function (b) {
+                var lat = parseFloat(b.latitude);
+                var lng = parseFloat(b.longitude);
                 if (isNaN(lat) || isNaN(lng)) return;
 
-                var statusTekst = b.IsFulfilled 
-                    ? '<span style="color: green; font-weight: bold;">Oppfylt</span>' 
-                    : '<span style="color: red; font-weight: bold;">Ikke oppfylt</span>';
+                bounds.push([lat, lng]);
+
+                // b.status kommer som tall: 0 = Ny, 1 = Vurderes, 2 = Tildelt, 3 = Løst
+                var statusNavn = ['Ny', 'Vurderes', 'Tildelt', 'Løst'][b.status] || 'Ny';
+                var statusFarge = ['gray', 'orange', 'blue', 'green'][b.status] || 'gray';
+                var statusTekst = `<span style="color: ${statusFarge}; font-weight: bold;">${statusNavn}</span>`;
 
                 var valgtIkon = L.icon({
-                    iconUrl: b.IconUrl,
+                    iconUrl: b.iconUrl,
                     iconSize: [40, 40],
                     iconAnchor: [20, 20],
                     popupAnchor: [0, -24],
-                    className: 'need-map-icon ' + b.IconClass
+                    className: 'need-map-icon ' + b.iconClass
                 });
-                var marker = L.marker([lat, lng], { icon: valgtIkon, title: b.TypeName + ": " + b.Name + " – " + b.ImportanceName, alt: b.TypeName + ": " + b.Name + " – " + b.ImportanceName }).addTo(kart);
+                var marker = L.marker([lat, lng], {
+                    icon: valgtIkon,
+                    title: b.typeName + ': ' + b.name + ' – ' + b.importanceName,
+                    alt: b.typeName + ': ' + b.name + ' – ' + b.importanceName
+                }).addTo(kart);
+                markorerMap[b.id] = marker;
 
-                // Sett opp en midlertidig popup mens adressen hentes
-                var basePopupContent = `
-                    <b>${b.Name}</b><br/>
-                    📞 Tlf: ${b.Phone || 'Ikke oppgitt'}<br/>
-                    Status: ${statusTekst}<br/>
-                    <div class="small text-muted mt-1"><i>Henter adresse...</i></div>
-                `;
-                marker.bindPopup(basePopupContent);
+                if (b.areaGeoJson) {
+                    var omrade = L.geoJSON(JSON.parse(b.areaGeoJson), {
+                        style: {
+                            color: b.importance === 0 ? '#dc3545' : '#fd7e14',
+                            weight: 2,
+                            fillOpacity: 0.12
+                        }
+                    }).addTo(kart);
+
+                    if (b.areaSquareMeters) {
+                        omrade.bindTooltip(
+                            `${b.name}: ca. ${b.areaSquareMeters} m²`,
+                            { sticky: true }
+                        );
+                    }
+                }
+
+                var toppInnhold = `
+                    <b>${b.name}</b><br/>
+                    📞 Tlf: ${b.phone || 'Ikke oppgitt'}<br/>
+                    Status: ${statusTekst}<br/>`;
+
+                marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
 
                 // Slå opp adresse via Nominatim API
-                var url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-                fetch(url)
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        
-                        var updatedPopupContent = `
-                            <b>${b.Name}</b><br/>
-                            📞 Tlf: ${b.Phone || 'Ikke oppgitt'}<br/>
-                            Status: ${statusTekst}<br/>
-                            <hr class="my-1"/>
-                            <small>📍 <b>Adresse:</b> ${address}</small>
-                        `;
-                        marker.setPopupContent(updatedPopupContent);
+                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
                     })
-                    .catch(err => {
-                        console.error('Kunne ikke hente adresse:', err);
-                        var fallbackContent = `
-                            <b>${b.Name}</b><br/>
-                            📞 Tlf: ${b.Phone || 'Ikke oppgitt'}<br/>
-                            Status: ${statusTekst}<br/>
-                            <hr class="my-1"/>
-                            <small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>
-                        `;
-                        marker.setPopupContent(fallbackContent);
+                    .catch(function () {
+                        marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
                     });
             });
+
+            if (bounds.length > 0) {
+                kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+            }
+
+            // --- DRAG / RESIZE LOGIKK ---
+            const resizer = document.getElementById('dragHandle');
+            const leftSide = document.getElementById('tableBox');
+            const container = document.getElementById('splitWrapper');
+
+            let x = 0;
+            let leftWidth = 0;
+
+            const mouseDownHandler = function (e) {
+                x = e.clientX;
+                leftWidth = leftSide.getBoundingClientRect().width;
+
+                resizer.classList.add('dragging');
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+            };
+
+            const mouseMoveHandler = function (e) {
+                const dx = e.clientX - x;
+                const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
+
+                // Tillat justering mellom 15 % og 85 % bredde
+                if (newLeftWidth > 15 && newLeftWidth < 85) {
+                    leftSide.style.flex = `0 0 ${newLeftWidth}%`;
+                    kart.invalidateSize();
+                }
+            };
+
+            const mouseUpHandler = function () {
+                resizer.classList.remove('dragging');
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+                kart.invalidateSize();
+            };
+
+            resizer.addEventListener('mousedown', mouseDownHandler);
 
             setTimeout(function () { kart.invalidateSize(); }, 200);
         });
