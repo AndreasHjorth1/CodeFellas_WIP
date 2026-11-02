@@ -155,7 +155,14 @@
                                     <strong>@res.Name</strong><br />
                                     <small class="text-secondary">@res.Description</small>
                                 </td>
-                                <td><span class="badge bg-secondary">@OversettKategori(res.Category)</span></td>
+                                <td>
+                                    <span class="resource-category">
+                                        <img class="resource-category-icon"
+                                             src="@Url.Content($"~/images/resources/{RessursIkonFil(res.Category, res.Availability)}")"
+                                             width="28" height="28" alt="" />
+                                        <span class="badge bg-secondary">@OversettKategori(res.Category)</span>
+                                    </span>
+                                </td>
                                 <td class="small">
                                     @res.Available av @res.Quantity
                                     @if (res.Allocated > 0)
