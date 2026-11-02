@@ -14,6 +14,13 @@
 }
 
 <h1 class="mb-1">Passende ressurser</h1>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 <p class="text-muted mb-3">
     For behovet <strong>@ViewBag.NeedName</strong> — nærmeste først
 </p>
@@ -33,9 +40,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>Navn</th>
-                            <th>Antall</th>
+                            <th>Ledig</th>
                             <th>Avstand</th>
-                            <th>Kontakt</th>
+                            <th>Tildel</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,11 +51,32 @@
                             <tr>
                                 <td>
                                     <strong>@m.Name</strong><br />
-                                    <small class="text-secondary">@m.Description</small>
+                                    <small class="text-secondary">@m.Description</small><br />
+                                    <small class="text-muted">📞 @m.PhoneNumber</small>
+                                    @if (m.AllocatedToThisNeed > 0)
+                                    {
+                                        <br /><span class="badge bg-success">@m.AllocatedToThisNeed tildelt dette behovet</span>
+                                    }
                                 </td>
-                                <td>@m.Quantity</td>
+                                <td class="small">@m.Available av @m.Quantity</td>
                                 <td><span class="badge bg-primary">@FormatDistance(m.DistanceMeters)</span></td>
-                                <td><small>📞 @m.PhoneNumber</small></td>
+                                <td class="text-nowrap">
+                                    @if (m.Available > 0)
+                                    {
+                                        <form asp-action="Allocate" method="post" class="d-flex gap-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="needId" value="@ViewBag.NeedId" />
+                                            <input type="hidden" name="resourceId" value="@m.Id" />
+                                            <input type="number" name="quantity" value="1" min="1" max="@m.Available"
+                                                   class="form-control form-control-sm" style="max-width: 70px;" />
+                                            <button type="submit" class="btn btn-sm btn-success">Tildel</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Opptatt</span>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>

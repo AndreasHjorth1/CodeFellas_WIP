@@ -141,7 +141,13 @@
                                     <small class="text-secondary">@res.Description</small>
                                 </td>
                                 <td><span class="badge bg-secondary">@OversettKategori(res.Category)</span></td>
-                                <td>@res.Quantity</td>
+                                <td class="small">
+                                    @res.Available av @res.Quantity
+                                    @if (res.Allocated > 0)
+                                    {
+                                        <br /><span class="badge bg-warning text-dark">@res.Allocated i bruk</span>
+                                    }
+                                </td>
                                 <td>
                                     @if (res.Availability)
                                     {

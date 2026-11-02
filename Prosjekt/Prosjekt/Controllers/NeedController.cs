@@ -11,11 +11,13 @@ namespace Prosjekt.Controllers
     {
         private readonly INeedRepository _repo;
         private readonly IResourceRepository _resourceRepo;
+        private readonly IAllocationRepository _allocationRepo;
 
-        public NeedController(INeedRepository repo, IResourceRepository resourceRepo)
+        public NeedController(INeedRepository repo, IResourceRepository resourceRepo, IAllocationRepository allocationRepo)
         {
             _repo = repo;
             _resourceRepo = resourceRepo;
+            _allocationRepo = allocationRepo;
         }
 
         [HttpGet]
@@ -264,6 +266,7 @@ namespace Prosjekt.Controllers
             var wanted = CategoryMatching.MatchingResources(needType);
 
             var all = await _resourceRepo.GetAllAsync();
+            var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
             var matches = all
                 .Where(r => r.IsAvailable)
@@ -281,16 +284,55 @@ namespace Prosjekt.Controllers
                     Longitude = r.Coords.Longitude,
                     DistanceMeters = Distance.InMeters(
                         need.Coords.Latitude, need.Coords.Longitude,
-                        r.Coords.Latitude, r.Coords.Longitude)
+                        r.Coords.Latitude, r.Coords.Longitude),
+                    Allocated = allocations.Where(a => a.ResourceId == r.Id).Sum(a => a.Quantity),
+                    AllocatedToThisNeed = allocations.Where(a => a.ResourceId == r.Id && a.NeedId == id).Sum(a => a.Quantity)
                 })
                 .OrderBy(r => r.DistanceMeters)
                 .ToList();
 
+            ViewBag.NeedId = id;
             ViewBag.NeedName = need.Name;
             ViewBag.NeedLat = need.Coords.Latitude;
             ViewBag.NeedLng = need.Coords.Longitude;
 
             return View(matches);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Allocate(int needId, int resourceId, int quantity)
+        {
+            var need = await _repo.GetByIdAsync(needId);
+            var resource = await _resourceRepo.GetByIdAsync(resourceId);
+            if (need == null || resource == null) return NotFound();
+
+            // Hvor mye av ressursen er allerede tildelt andre behov?
+            var alle = await _allocationRepo.GetAllAsync();
+            var taken = alle.Where(a => a.ResourceId == resourceId).Sum(a => a.Quantity);
+            var available = resource.Quantity - taken;
+
+            if (quantity < 1 || quantity > available)
+            {
+                TempData["Error"] = $"Kan ikke tildele {quantity} - bare {available} er ledig.";
+                return RedirectToAction(nameof(Match), new { id = needId });
+            }
+
+            await _allocationRepo.AddAsync(new Allocation
+            {
+                NeedId = needId,
+                ResourceId = resourceId,
+                Quantity = quantity
+            });
+
+            // Behovet går fra Ny/Vurderes til Tildelt
+            if (need.Status == EntryStatus.New || need.Status == EntryStatus.UnderReview)
+            {
+                need.Status = EntryStatus.Assigned;
+                await _repo.UpdateAsync(need);
+            }
+
+            return RedirectToAction(nameof(Match), new { id = needId });
         }
     }
 }

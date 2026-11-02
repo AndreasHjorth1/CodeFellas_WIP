@@ -12,10 +12,12 @@ namespace Prosjekt.Controllers
     public class ResourceController : Controller
     {
         private readonly IResourceRepository _repo;
+        private readonly IAllocationRepository _allocationRepo;
 
         public ResourceController(IResourceRepository repo)
         {
             _repo = repo;
+            _allocationRepo = AllocationRepository;
         }
 
         [HttpGet]
@@ -109,6 +111,8 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Overview()
         {
             var resourceEntities = await _repo.GetAllAsync();
+            var resourceEntities = await _repo.GetAllAsync();
+            var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
             var resourceViewModels = resourceEntities.Select(r => new ResourceViewModel
             {
@@ -122,7 +126,8 @@ namespace Prosjekt.Controllers
                 Longitude = r.Coords.Longitude,
                 Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat) ? cat : ResourceViewModel.ResourceType.Other,
                 AvailableFrom = r.AvailableFrom,
-                AvailableTo = r.AvailableTo
+                AvailableTo = r.AvailableTo,
+                Allocated = allocations.Where(a => a.ResourceId == r.Id).Sum(a => a.Quantity),
             }).ToList();
 
             return View(resourceViewModels);

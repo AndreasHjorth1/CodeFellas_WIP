@@ -26,6 +26,7 @@ var connectionString = builder.Configuration["DB_CONNECTION_STRING"]
 // 2. Registrer repository
 builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
 builder.Services.AddScoped<INeedRepository, NeedRepository>();
+builder.Services.AddScoped<IAllocationRepository, AllocationRepository>();
 
 
 // 3. Registrer DbContext

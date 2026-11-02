@@ -11,5 +11,9 @@
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public double DistanceMeters { get; set; }
+        public int Allocated { get; set; }
+        public int AllocatedToThisNeed { get; set; }
+        public int Available => Quantity - Allocated;
+
     }
 }
