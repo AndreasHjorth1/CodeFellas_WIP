@@ -10,6 +10,6 @@
         public string PhoneNumber { get; set; } = string.Empty;
         public double Latitude { get; set; }
         public double Longitude { get; set; }
-        public double AvstandMeter { get; set; }
+        public double DistanceMeters { get; set; }
     }
 }

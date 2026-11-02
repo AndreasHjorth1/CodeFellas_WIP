@@ -12,10 +12,10 @@ namespace Prosjekt.Controllers
         private readonly INeedRepository _repo;
         private readonly IResourceRepository _resourceRepo;
 
-        public NeedController(INeedRepository repo)
+        public NeedController(INeedRepository repo, IResourceRepository resourceRepo)
         {
             _repo = repo;
-            _resourceRepo = _ressursRepo;
+            _resourceRepo = resourceRepo;
         }
 
         [HttpGet]
