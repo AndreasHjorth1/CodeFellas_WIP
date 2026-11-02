@@ -10,10 +10,12 @@ namespace Prosjekt.Controllers
       public class NeedController : Controller
     {
         private readonly INeedRepository _repo;
+        private readonly IResourceRepository _resourceRepo;
 
         public NeedController(INeedRepository repo)
         {
             _repo = repo;
+            _resourceRepo = _ressursRepo;
         }
 
         [HttpGet]
@@ -248,6 +250,47 @@ namespace Prosjekt.Controllers
             });
 
             return Json(result);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Match(int id)
+        {
+            var need = await _repo.GetByIdAsync(id);
+            if (need == null) return NotFound();
+
+            var needType = Enum.TryParse<NeedViewModel.NeedType>(need.Category, out var nt)
+                ? nt : NeedViewModel.NeedType.Other;
+
+            var wanted = CategoryMatching.MatchingResources(needType);
+
+            var all = await _resourceRepo.GetAllAsync();
+
+            var matches = all
+                .Where(r => r.IsAvailable)
+                .Where(r => Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var rt)
+                            && wanted.Contains(rt))
+                .Select(r => new ResourceMatchViewModel
+                {
+                    Id = r.Id,
+                    Name = r.Name,
+                    Description = r.Description,
+                    Category = r.Category,
+                    Quantity = r.Quantity,
+                    PhoneNumber = r.PhoneNumber,
+                    Latitude = r.Coords.Latitude,
+                    Longitude = r.Coords.Longitude,
+                    DistanceMeters = Distance.InMeters(
+                        need.Coords.Latitude, need.Coords.Longitude,
+                        r.Coords.Latitude, r.Coords.Longitude)
+                })
+                .OrderBy(r => r.DistanceMeters)
+                .ToList();
+
+            ViewBag.NeedName = need.Name;
+            ViewBag.NeedLat = need.Coords.Latitude;
+            ViewBag.NeedLng = need.Coords.Longitude;
+
+            return View(matches);
         }
     }
 }

@@ -1,0 +1,105 @@
+﻿@using Prosjekt.Models.ModelView
+@model List<ResourceMatchViewModel>
+
+@{
+    ViewData["Title"] = "Passende ressurser";
+}
+
+@functions {
+    // Viser avstand i meter under 1 km, ellers kilometer
+    string FormatDistance(double meters) =>
+        meters < 1000
+            ? $"{Math.Round(meters)} m"
+            : $"{(meters / 1000):0.0} km".Replace(".", ",");
+}
+
+<h1 class="mb-1">Passende ressurser</h1>
+<p class="text-muted mb-3">
+    For behovet <strong>@ViewBag.NeedName</strong> — nærmeste først
+</p>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        @if (!Model.Any())
+        {
+            <div class="alert alert-warning">
+                Ingen tilgjengelige ressurser passer dette behovet.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive bg-white p-3 shadow-sm border rounded">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Navn</th>
+                            <th>Antall</th>
+                            <th>Avstand</th>
+                            <th>Kontakt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@m.Name</strong><br />
+                                    <small class="text-secondary">@m.Description</small>
+                                </td>
+                                <td>@m.Quantity</td>
+                                <td><span class="badge bg-primary">@FormatDistance(m.DistanceMeters)</span></td>
+                                <td><small>📞 @m.PhoneNumber</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <a asp-action="Overview" class="btn btn-secondary mt-3">Tilbake til oversikten</a>
+    </div>
+
+    <div class="col-lg-6">
+        <div id="matchKart" class="rounded shadow-sm" style="height: 60vh; min-height: 400px;"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var needLat = @ViewBag.NeedLat;
+        var needLng = @ViewBag.NeedLng;
+        var matches = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+
+        var kart = L.map('matchKart').setView([needLat, needLng], 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(kart);
+
+        // Behovet selv - rød sirkel i midten
+        L.circleMarker([needLat, needLng], {
+            radius: 10, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 0.8
+        }).addTo(kart).bindPopup('<b>@ViewBag.NeedName</b><br/>Behovet');
+
+        var punkter = [[needLat, needLng]];
+
+        matches.forEach(function (m) {
+            L.circleMarker([m.Latitude, m.Longitude], {
+                radius: 7, color: '#198754', fillColor: '#198754', fillOpacity: 0.7
+            }).addTo(kart).bindPopup(
+                `<b>${m.Name}</b><br/>Antall: ${m.Quantity}<br/>📞 ${m.PhoneNumber}`
+            );
+
+            // Strek fra behovet til ressursen
+            L.polyline([[needLat, needLng], [m.Latitude, m.Longitude]], {
+                color: '#198754', weight: 1, opacity: 0.4, dashArray: '4 4'
+            }).addTo(kart);
+
+            punkter.push([m.Latitude, m.Longitude]);
+        });
+
+        if (punkter.length > 1) {
+            kart.fitBounds(punkter, { padding: [30, 30] });
+        }
+    </script>
+}

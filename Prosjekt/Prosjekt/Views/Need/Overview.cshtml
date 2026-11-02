@@ -180,6 +180,7 @@
                                 <td><span class="badge" style="@($"background-color: {Farge(item.Importance)}")">@OversettViktighet(item.Importance)</span></td>
                                 <td class="text-nowrap" onclick="event.stopPropagation();">
                                     <div class="d-flex gap-1">
+                                        <a asp-controller="Need" asp-action="Match" asp-route-id="@item.Id" class="btn btn-sm btn-success">🔗 Finn ressurser</a>
                                         <a asp-controller="Need" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Rediger</a>
                                         <form asp-controller="Need" asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
                                             @Html.AntiForgeryToken()
