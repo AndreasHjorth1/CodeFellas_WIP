@@ -1,38 +1,33 @@
-using DotNetEnv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
-using Prosjekt.Services; // Husk å ha med mappen der IdentitySeeder og ConsoleEmailSender ligger
-
-// 1. Leser .env-filen dersom den finnes lokalt
-Env.TraversePath().Load();
+using Prosjekt.Services; // IdentitySeeder og ConsoleEmailSender
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Sikrer Kestrel-konfigurasjon
-builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+// 1. Kestrel: skjul serverheader og begrens stÃ¸rrelsen pÃ¥ forespÃ¸rsler (maks 30 MB)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    options.Limits.MaxRequestBodySize = 30 * 1024 * 1024;
+});
 
-// 2. Aspire service defaults
+// 2. Aspire service defaults (helsesjekker, logging, telemetri)
 builder.AddServiceDefaults();
 
-// Add services to the container
+// 3. MVC med anti-forgery pÃ¥ alle POST-forespÃ¸rsler
 builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
-// 3. Hent tilkoblingsstreng for MariaDB 
-var connectionString = builder.Configuration["DB_CONNECTION_STRING"]
-    ?? builder.Configuration.GetConnectionString("heimevernetdb")
-    ?? builder.Configuration.GetConnectionString("Mapdb")
-    ?? builder.Configuration.GetConnectionString("kartdb")
-    ?? builder.Configuration.GetConnectionString("mariadbcontainer")
-    ?? builder.Configuration.GetConnectionString("mysql")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Missing database connection string.");
+// 4. Tilkoblingsstreng: Aspire sender den inn som ConnectionStrings:Mapdb
+var connectionString = builder.Configuration.GetConnectionString("Mapdb")
+    ?? throw new InvalidOperationException(
+        "Mangler tilkoblingsstrengen 'Mapdb'. Start appen via Prosjekt.AppHost.");
 
-// 4. Registrer DbContext for EF Core med MariaDB
+// 5. DbContext for EF Core med MariaDB
 var serverVersion = new MariaDbServerVersion(new Version(11, 4, 0));
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
@@ -46,10 +41,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     )
 );
 
-// PÅKREVD FOR IDENTITY: Registrer e-postsenderen
+// 6. E-postsender for Identity (skriver e-post til loggen, sender ikke ekte e-post)
 builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
-// 5. Registrer Identity (Oppdelt i en var identityBuilder akkurat som instruksen viser)
+// 7. Identity: innlogging, brukere og roller
 var identityBuilder = builder.Services
     .AddIdentity<IdentityUser, IdentityRole>(options =>
     {
@@ -58,7 +53,7 @@ var identityBuilder = builder.Services
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = 10;
 
-        // Passordkrav (valgfritt å ha med, men greit for testing)
+        // Passordkrav (svake, greit for testing)
         options.Password.RequireDigit = false;
         options.Password.RequireLowercase = false;
         options.Password.RequireNonAlphanumeric = false;
@@ -67,20 +62,21 @@ var identityBuilder = builder.Services
     })
     .AddDefaultTokenProviders();
 
-// 6. Switch-statement fra instruksen for å dynamisk velge Entity Framework
+// 8. Velg datatilgang (som i instruksen)
 var dataAccessProvider = builder.Configuration["DataAccess:Provider"] ?? "EntityFramework";
 switch (dataAccessProvider.ToUpperInvariant())
 {
     case "ENTITYFRAMEWORK":
         identityBuilder.AddEntityFrameworkStores<ApplicationDbContext>();
-
-        // Registrerer repositoriene dine her inne i switchen
         builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
         builder.Services.AddScoped<INeedRepository, NeedRepository>();
         break;
+    default:
+        throw new InvalidOperationException(
+            $"DataAccess:Provider '{dataAccessProvider}' er ugyldig. Bruk EntityFramework.");
 }
 
-// Konfigurer innloggings- og tilgangs-stier for Cookies
+// 9. Innloggings- og tilgangssider for cookies
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login/";
@@ -89,7 +85,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 var app = builder.Build();
 
-// 7. Automatisk databasemigrering og seeding ved oppstart (Nøyaktig som bildet viser)
+// 10. Migrering og seeding ved oppstart
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -97,9 +93,6 @@ using (var scope = app.Services.CreateScope())
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
         dbContext.Database.Migrate();
-
-        // Har du en egen seeder for ressurser, brukes den her:
-        // ResourceDbSeeder.Seed(dbContext);
 
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await IdentitySeeder.SeedRolesAsync(roleManager);
@@ -117,7 +110,7 @@ using (var scope = app.Services.CreateScope())
 
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
+// 11. FeilhÃ¥ndtering: detaljerte feil bare i Development
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -125,10 +118,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseDeveloperExceptionPage();
 app.UseRouting();
 
-// 8. SIKKERHETS-MIDDLEWARE (Må stå etter app.UseRouting() akkurat som bildet presiserer!)
+// 12. Sikkerhet: mÃ¥ stÃ¥ etter UseRouting()
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -140,3 +132,5 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.Run();
+
+
