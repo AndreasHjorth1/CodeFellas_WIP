@@ -1,0 +1,5 @@
+.need-type { display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap; }
+.need-type-icon { width: 28px; height: 28px; flex-shrink: 0; }
+.need-map-icon { border-radius: 50%; outline: 3px solid; outline-offset: 1px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+.need-map-acute { outline-color: #dc3545; }
+.need-map-planned { outline-color: #ffc107; }

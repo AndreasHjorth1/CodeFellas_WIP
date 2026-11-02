@@ -7,7 +7,24 @@
     ViewData["Title"] = "Oversikt over behov";
 }
 
+<link rel="stylesheet" href="~/css/need-icons.css" asp-append-version="true" />
+
 @functions {
+    string BehovIkon(NeedViewModel.NeedType type) => type switch
+    {
+        NeedViewModel.NeedType.Food => "food",
+        NeedViewModel.NeedType.Medicine => "medicine",
+        NeedViewModel.NeedType.Transport => "transport",
+        NeedViewModel.NeedType.PowerGenerator => "power",
+        NeedViewModel.NeedType.SnowRemoval => "snow",
+        NeedViewModel.NeedType.SandGravel => "gravel",
+        NeedViewModel.NeedType.Machinery => "machinery",
+        NeedViewModel.NeedType.Evacuation => "evacuation",
+        NeedViewModel.NeedType.Communication => "communication",
+        NeedViewModel.NeedType.Personnel => "personnel",
+        _ => "other"
+    };
+
     string Farge(ImportanceLevel v) => v switch
     {
         ImportanceLevel.Acute => "#dc3545",
@@ -173,7 +190,14 @@
                                     <strong>@item.Name</strong><br />
                                     <small class="text-secondary">@item.Description</small>
                                 </td>
-                                <td><span class="badge bg-secondary">@OversettNeedType(item.Type)</span></td>
+                                <td>
+                                    <span class="need-type">
+                                        <img class="need-type-icon"
+                                             src="@Url.Content($"~/images/needs/{BehovIkon(item.Type)}.svg")"
+                                             width="28" height="28" alt="" />
+                                        <span class="badge bg-secondary">@OversettNeedType(item.Type)</span>
+                                    </span>
+                                </td>
                                 <td><small class="text-muted">📞 @item.Phone</small></td>
                                 <td class="small">@(item.Deadline.HasValue ? item.Deadline.Value.ToString("dd.MM.yyyy HH:mm") : "-")</td>
                                 <td><span class="badge @StatusKlasse(item.Status)">@OversettStatus(item.Status)</span></td>
@@ -223,7 +247,22 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            var behov = @Json.Serialize(Model);
+            var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model ?? new List<NeedViewModel>()).Select(b => new
+            {
+                id = b.Id,
+                name = b.Name,
+                phone = b.Phone,
+                latitude = b.Latitude,
+                longitude = b.Longitude,
+                status = (int)b.Status,
+                importance = (int)b.Importance,
+                areaGeoJson = b.AreaGeoJson,
+                areaSquareMeters = b.AreaSquareMeters,
+                typeName = OversettNeedType(b.Type),
+                importanceName = OversettViktighet(b.Importance),
+                iconUrl = Url.Content($"~/images/needs/{BehovIkon(b.Type)}.svg"),
+                iconClass = b.Importance == ImportanceLevel.Acute ? "need-map-acute" : "need-map-planned"
+            })));
 
             // Initialiser kartet
             kart = L.map('oversiktBehovKart').setView([58.163, 8.003], 12);
@@ -232,15 +271,6 @@
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(kart);
 
-            function getIkon(fargeNavn) {
-                return new L.Icon({
-                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-                });
-            }
-
-            var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
             var bounds = [];
            
             var kjorFilter = settOppFilter(kart, [markorerMap, omraderMap]);
@@ -259,8 +289,18 @@
                 var statusFarge = ['gray', 'orange', 'blue', 'green'][b.status] || 'gray';
                 var statusTekst = `<span style="color: ${statusFarge}; font-weight: bold;">${statusNavn}</span>`;
 
-                var valgtIkon = ikoner[b.importance] || ikoner[0];
-                var marker = L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);
+                var valgtIkon = L.icon({
+                    iconUrl: b.iconUrl,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -24],
+                    className: 'need-map-icon ' + b.iconClass
+                });
+                var marker = L.marker([lat, lng], {
+                    icon: valgtIkon,
+                    title: b.typeName + ': ' + b.name + ' – ' + b.importanceName,
+                    alt: b.typeName + ': ' + b.name + ' – ' + b.importanceName
+                }).addTo(kart);
                 markorerMap[b.id] = marker;
 
                 if (b.areaGeoJson) {
