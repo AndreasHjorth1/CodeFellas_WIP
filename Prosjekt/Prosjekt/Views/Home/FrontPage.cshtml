@@ -1,0 +1,615 @@
+﻿@model IEnumerable<Prosjekt.Models.ModelView.NeedViewModel>
+
+@{
+    ViewData["Title"] = "Hjem - Nasjonal ressursportal";
+}
+
+<style>
+    /* 1. GENERELLE STILVALG OG FARGER */
+    body {
+        background-color: #f4efe8; /* Varm beige/grå farge fra skissen */
+        color: #1a3048; /* Mørk marineblå */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* Dekorative rød overskriftlinjer */
+    .section-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #1a3048;
+        margin-bottom: 1.25rem;
+    }
+
+        .section-tag::before {
+            content: "";
+            display: inline-block;
+            width: 22px;
+            height: 1px;
+            background-color: #d9534f;
+        }
+
+    /* Typografi - Balansert proporsjonert */
+    .serif-title {
+        font-family: "Playfair Display", "Georgia", serif;
+        font-weight: 400;
+        letter-spacing: -0.5px;
+        color: #1a3048;
+    }
+
+    .serif-italic {
+        font-family: "Playfair Display", "Georgia", serif;
+        font-style: italic;
+        font-weight: 400;
+        color: #6c757d;
+    }
+
+    .display-huge {
+        font-size: 3.6rem;
+        line-height: 1.08;
+    }
+
+    .text-muted-custom {
+        color: #5a6572;
+    }
+
+    /* 2. RUTENETT-LINJER (BORDERS) */
+    .grid-border-bottom {
+        border-bottom: 1px solid #e0d8cc;
+    }
+
+    .grid-border-top {
+        border-top: 1px solid #e0d8cc;
+    }
+
+    .grid-border-right {
+        border-right: 1px solid #e0d8cc;
+    }
+
+    /* 3. KNAPPER */
+    .btn-navy {
+        background-color: #0f2b48;
+        color: #ffffff;
+        border-radius: 0px;
+        padding: 0.85rem 1.75rem;
+        font-weight: 600;
+        font-size: 0.725rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        border: none;
+        transition: background-color 0.2s;
+    }
+
+        .btn-navy:hover {
+            background-color: #1d4670;
+            color: #ffffff;
+        }
+
+    /* 4. KART OG TEGNFORKLARING */
+    #homeMap {
+        width: 100%;
+        min-height: 500px;
+        height: 100%;
+        background-color: #e5e5e5;
+    }
+
+    .map-legend-bar {
+        background-color: #f4efe8;
+        padding: 0.85rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #5a6572;
+    }
+
+    .shape-diamond {
+        width: 10px;
+        height: 10px;
+        transform: rotate(45deg);
+    }
+
+    .shape-square {
+        width: 10px;
+        height: 10px;
+    }
+
+    .shape-circle {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .custom-leaflet-icon {
+        border: 1px solid #fff;
+        box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    }
+
+    /* 5. FAQ / SPØRSMÅL OG SVAR */
+    .faq-btn {
+        background: transparent;
+        border: none;
+        width: 100%;
+        text-align: left;
+        padding: 1.5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: "Playfair Display", "Georgia", serif;
+        font-size: 1.3rem;
+        color: #1a3048;
+    }
+
+        .faq-btn .faq-num {
+            font-family: sans-serif;
+            font-size: 0.725rem;
+            font-weight: bold;
+            color: #1a3048;
+            width: 38px;
+        }
+
+    .faq-icon {
+        font-family: sans-serif;
+        font-size: 0.95rem;
+        font-weight: normal;
+        background-color: #1a3048;
+        color: white;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .faq-content {
+        padding-left: 38px;
+        padding-bottom: 1.5rem;
+        color: #5a6572;
+        font-size: 0.925rem;
+        line-height: 1.55;
+    }
+
+    .col-border-right {
+        border-right: 1px solid #e0d8cc;
+    }
+
+    @@media (max-width: 991.98px) {
+        .col-border-right {
+            border-right: none;
+        }
+
+        .display-huge {
+            font-size: 2.6rem;
+        }
+    }
+</style>
+
+<!-- ========================================== -->
+<!-- 1. HERO & KART-SEKSJON                     -->
+<!-- ========================================== -->
+<section class="grid-border-bottom">
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+
+            <!-- Venstre side: Tekst & Tittel -->
+            <div class="col-lg-6 col-border-right d-flex flex-column" style="padding: 4.5rem 3.5rem;">
+                <div class="section-tag">Nasjonal ressursportal for sivil beredskap</div>
+
+                <h1 class="display-huge serif-title mb-3">
+                    Når krisen <br />
+                    kommer, teller <br />
+                    <span class="serif-italic">hver traktor.</span>
+                </h1>
+
+                <p class="fs-6 text-muted-custom mb-4" style="max-width: 450px; line-height: 1.65;">
+                    Totalforsvaret samler det folk og bedrifter kan stille med –
+                    traktorer, aggregater, verktøy, vann og mat – på ett felles kart.
+                    Da ser kommunen og Heimevernet raskt hva som finnes, og
+                    hvem som står nærmest.
+                </p>
+
+                <div class="mt-auto pt-3">
+                    <a asp-controller="Resource" asp-action="Index" class="btn btn-navy d-inline-flex align-items-center gap-3">
+                        Registrer en ressurs <span>&rarr;</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Høyre side: Kart med tegnforklaring -->
+            <div class="col-lg-6 d-flex flex-column position-relative">
+
+                <div class="position-absolute w-100 d-flex justify-content-between p-3" style="z-index: 400; pointer-events: none; font-size: 0.65rem; font-weight: bold; letter-spacing: 2px; color: #5a6572; text-transform: uppercase;">
+                    <span>Utsnitt — Agder, Sør-Norge</span>
+                    <span>1 : 250 000</span>
+                </div>
+
+                <!-- Kartbeholder -->
+                <div id="homeMap" class="flex-grow-1"></div>
+
+                <!-- Kart-tegnforklaring -->
+                <div class="map-legend-bar grid-border-top">
+                    <div class="legend-item">
+                        <span class="shape-diamond" style="background-color: #dc3545;"></span> Akutt behov
+                    </div>
+                    <div class="legend-item">
+                        <span class="shape-diamond" style="background-color: #d4a373;"></span> Planlagt behov
+                    </div>
+                    <div class="legend-item">
+                        <span class="shape-square" style="background-color: #427c62;"></span> Ledig ressurs
+                    </div>
+                    <div class="legend-item">
+                        <span class="shape-square" style="background-color: #a8a8a8;"></span> Utilgjengelig
+                    </div>
+                    <div class="legend-item">
+                        <span class="shape-circle" style="background-color: #0f2b48;"></span> Offentlig aktør
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ========================================== -->
+<!-- 2. HVORFOR (CITAT / HOVEDBUDSKAP)          -->
+<!-- ========================================== -->
+<section class="grid-border-bottom">
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <div class="col-lg-3 col-border-right p-4 p-md-5">
+                <div class="section-tag" style="margin:0;">Hvorfor</div>
+            </div>
+            <div class="col-lg-9 p-4 p-md-5 d-flex align-items-center">
+                <h2 class="fs-2 serif-title mb-0" style="line-height: 1.4; max-width: 880px;">
+                    Beredskap er mer enn uniformer og øvelser. Det er naboen med aggregat, bonden med traktor
+                    <span class="serif-italic" style="color: #6c757d;">
+                        og snekkeren med et lager fullt av materialer.
+                        Totalforsvaret gjør den kapasiteten synlig – før den trengs.
+                    </span>
+                </h2>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================== -->
+<!-- 3. SLIK FUNGERER DET (3 STEG)              -->
+<!-- ========================================== -->
+<section class="grid-border-bottom">
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+
+            <!-- Venstre tittelkolonne -->
+            <div class="col-lg-3 col-border-right p-4 p-md-5">
+                <div class="section-tag">Slik fungerer det</div>
+                <h2 class="fs-2 serif-title mt-3">Tre steg fra<br>garasjen til<br>innsatsen.</h2>
+            </div>
+
+            <!-- Steg 1-3 liste -->
+            <div class="col-lg-9 d-flex flex-column">
+
+                <!-- Steg 1 -->
+                <div class="p-4 p-md-5 grid-border-bottom d-flex flex-wrap align-items-start gap-4">
+                    <span class="fw-bold text-navy" style="font-size: 0.75rem; color: #1a3048; width: 30px;">01</span>
+                    <h3 class="fs-4 serif-title mb-0" style="width: 230px;">Du registrerer</h3>
+                    <p class="text-muted-custom small mb-0 flex-grow-1" style="max-width: 420px; line-height: 1.55;">
+                        Fortell hva du har, hvor det står og når det kan brukes. Plasser det med ett trykk på kartet.
+                    </p>
+                    <span class="text-uppercase fw-bold ms-auto" style="font-size: 0.625rem; letter-spacing: 1.5px; color: #9a948a;">Ressurstilbyder</span>
+                </div>
+
+                <!-- Steg 2 -->
+                <div class="p-4 p-md-5 grid-border-bottom d-flex flex-wrap align-items-start gap-4">
+                    <span class="fw-bold text-navy" style="font-size: 0.75rem; color: #1a3048; width: 30px;">02</span>
+                    <h3 class="fs-4 serif-title mb-0" style="width: 230px;">Behovet meldes</h3>
+                    <p class="text-muted-custom small mb-0 flex-grow-1" style="max-width: 420px; line-height: 1.55;">
+                        Kommuner og offentlige aktører melder inn hva som mangler. Hvert behov vurderes før noe settes i gang.
+                    </p>
+                    <span class="text-uppercase fw-bold ms-auto" style="font-size: 0.625rem; letter-spacing: 1.5px; color: #9a948a;">Offentlig aktør</span>
+                </div>
+
+                <!-- Steg 3 -->
+                <div class="p-4 p-md-5 d-flex flex-wrap align-items-start gap-4">
+                    <span class="fw-bold text-navy" style="font-size: 0.75rem; color: #1a3048; width: 30px;">03</span>
+                    <h3 class="fs-4 serif-title mb-0" style="width: 230px;">Hjelpen kobles</h3>
+                    <p class="text-muted-custom small mb-0 flex-grow-1" style="max-width: 420px; line-height: 1.55;">
+                        Passer ressursen din et behov, blir du ringt opp. Når oppdraget er løst, står den som ledig igjen.
+                    </p>
+                    <span class="text-uppercase fw-bold ms-auto" style="font-size: 0.625rem; letter-spacing: 1.5px; color: #9a948a;">Tildelt &rarr; Løst</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================== -->
+<!-- 4. MER ENN DU TROR (8 KORT/RUTER)          -->
+<!-- ========================================== -->
+<section class="grid-border-bottom">
+    <div class="container-fluid p-0">
+
+        <!-- Seksjonsoverskrift -->
+        <div class="row g-0 grid-border-bottom">
+            <div class="col-lg-3 col-border-right p-4 p-md-5">
+                <div class="section-tag">Hva kan du stille med?</div>
+                <h2 class="fs-2 serif-title mt-2 mb-0">Mer enn<br><span class="serif-italic">du tror.</span></h2>
+            </div>
+            <div class="col-lg-6 col-border-right p-4 p-md-5 d-flex align-items-center">
+                <p class="text-muted-custom mb-0 small" style="max-width: 500px; line-height: 1.65;">
+                    Det er ikke bare traktorer og aggregater som trengs i en krise. Her er åtte ting folk sjelden tenker på – alle kan registreres i dag.
+                </p>
+            </div>
+            <div class="col-lg-3"></div>
+        </div>
+
+        <!-- 8 Ruter -->
+        <div class="row g-0">
+            <!-- 01 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5 col-border-right grid-border-bottom">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">01</span>
+                <h4 class="serif-title fs-4 mb-2">Grus og sand</h4>
+                <p class="text-muted-custom small mb-4">Strøing av glatte veier, og fyll til sandsekker når elva går over.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Materialer &middot; Grus, Sand</span>
+            </div>
+            <!-- 02 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5 col-border-right grid-border-bottom">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">02</span>
+                <h4 class="serif-title fs-4 mb-2">Varme klær</h4>
+                <p class="text-muted-custom small mb-4">Ullgensere, jakker og regntøy til folk som må forlate hjemmet sitt.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Klær &middot; XS - XXL</span>
+            </div>
+            <!-- 03 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5 col-border-right grid-border-bottom">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">03</span>
+                <h4 class="serif-title fs-4 mb-2">Sykkel</h4>
+                <p class="text-muted-custom small mb-4">Kommer frem der veien er stengt, og kan frakte bud og små forsyninger.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Kjøretøy &middot; Sykkel</span>
+            </div>
+            <!-- 04 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5 grid-border-bottom">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">04</span>
+                <h4 class="serif-title fs-4 mb-2">Vann på kanner</h4>
+                <p class="text-muted-custom small mb-4">Rent drikkevann de dagene vannverket ikke leverer.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Provisjon &middot; Vann (Liter)</span>
+            </div>
+
+            <!-- 05 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5 col-border-right">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">05</span>
+                <h4 class="serif-title fs-4 mb-2">Spader og trillebårer</h4>
+                <p class="text-muted-custom small mb-4">Fyller sandsekker og rydder gjørme etter flom og ras.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Verktøy &middot; Hageverktøy</span>
+            </div>
+            <!-- 06 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5 col-border-right">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">06</span>
+                <h4 class="serif-title fs-4 mb-2">Plast og presenning</h4>
+                <p class="text-muted-custom small mb-4">Dekker til knuste tak og holder utstyr tørt i dårlig vær.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Materialer &middot; Plast</span>
+            </div>
+            <!-- 07 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5 col-border-right">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">07</span>
+                <h4 class="serif-title fs-4 mb-2">Jord og stein</h4>
+                <p class="text-muted-custom small mb-4">Forsterker veikanter og demmer opp vann som renner feil vei.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Materialer &middot; Jord, Stein</span>
+            </div>
+            <!-- 08 -->
+            <div class="col-md-6 col-lg-3 p-4 p-md-5">
+                <span class="fw-bold text-navy d-block mb-3" style="font-size: 0.725rem;">08</span>
+                <h4 class="serif-title fs-4 mb-2">Glass</h4>
+                <p class="text-muted-custom small mb-4">Erstatter knuste vinduer på skoler og sykehjem etter storm.</p>
+                <span class="text-uppercase fw-bold" style="font-size: 0.625rem; letter-spacing: 1.2px; color: #9a948a;">Materialer &middot; Glass (m²)</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================== -->
+<!-- 5. SPØRSMÅL OG SVAR (FAQ)                  -->
+<!-- ========================================== -->
+<section class="grid-border-bottom">
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <div class="col-lg-3 col-border-right p-4 p-md-5">
+                <div class="section-tag">Spørsmål og svar</div>
+                <h2 class="fs-2 serif-title mt-2 mb-3">Lurer du<br>på noe?</h2>
+                <p class="text-muted-custom small mb-0" style="max-width: 250px;">
+                    Finner du ikke svaret her, kan du skrive til oss under «Kontakt oss» nederst på siden.
+                </p>
+            </div>
+
+            <div class="col-lg-9">
+
+                <div class="grid-border-bottom px-4 px-md-5">
+                    <button class="faq-btn" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                        <span class="d-flex align-items-center"><span class="faq-num">01</span> Hvem kan registrere ressurser?</span>
+                        <span class="faq-icon">-</span>
+                    </button>
+                    <div id="faq1" class="collapse show faq-content">
+                        Privatpersoner, gårdsbruk, bedrifter og frivillige organisasjoner. Kommuner og andre offentlige aktører får konto fra en administrator.
+                    </div>
+                </div>
+
+                <div class="grid-border-bottom px-4 px-md-5">
+                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                        <span class="d-flex align-items-center"><span class="faq-num">02</span> Forplikter jeg meg til noe når jeg registrerer?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div id="faq2" class="collapse faq-content">
+                        Nei, du står fritt til å takke nei eller frigi ressurser dersom du selv trenger dem når en krise inntreffer.
+                    </div>
+                </div>
+
+                <div class="grid-border-bottom px-4 px-md-5">
+                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                        <span class="d-flex align-items-center"><span class="faq-num">03</span> Hvem kan se informasjonen min?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div id="faq3" class="collapse faq-content">
+                        Kun verifiserte beredskapsaktører i kommunen og offentlige myndigheter har tilgang til detaljert kontaktinformasjon.
+                    </div>
+                </div>
+
+                <div class="grid-border-bottom px-4 px-md-5">
+                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                        <span class="d-flex align-items-center"><span class="faq-num">04</span> Hva skjer hvis jeg mister nettet?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div id="faq4" class="collapse faq-content">
+                        Kommunens kriseledelse laster jevnlig ned lokalt kartunderlag slik at data er tilgjengelig også offline.
+                    </div>
+                </div>
+
+                <div class="grid-border-bottom px-4 px-md-5">
+                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                        <span class="d-flex align-items-center"><span class="faq-num">05</span> Kan jeg endre eller slette det jeg har registrert?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div id="faq5" class="collapse faq-content">
+                        Ja, du har full kontroll og kan oppdatere eller fjerne dine registrerte ressurser når som helst.
+                    </div>
+                </div>
+
+                <div class="px-4 px-md-5">
+                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                        <span class="d-flex align-items-center"><span class="faq-num">06</span> Er dette en nødtjeneste?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div id="faq6" class="collapse faq-content">
+                        Nei, dette er en koordineringsportal for beredskap og sivile ressurser. Ved akutt livsfare skal du alltid ringe nødnummeret (110, 112, 113).
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================== -->
+<!-- 6. BLÅ BANNER                              -->
+<!-- ========================================== -->
+<section style="background-color: #0f2b48;">
+    <div class="container-fluid p-0">
+        <div class="row g-0 align-items-center p-4 p-md-5">
+            <div class="col-lg-8 mb-3 mb-lg-0">
+                <span class="text-uppercase fw-bold d-block mb-2" style="font-size: 0.65rem; letter-spacing: 2px; color: #a4b4c4;">
+                    Bli ressurstilbyder
+                </span>
+                <h2 class="fs-1 serif-title text-white mb-0" style="line-height: 1.15;">
+                    Har du noe som kan hjelpe når <br>det står på?
+                </h2>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a asp-controller="Account" asp-action="Register" class="btn btn-light rounded-0 fw-bold px-4 py-3" style="color: #0f2b48; font-size: 0.725rem; letter-spacing: 2px; text-transform: uppercase;">
+                    Opprett konto <span class="ms-2">&rarr;</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================== -->
+<!-- KART-SKRIPT OG DYNAMISK LASTING            -->
+<!-- ========================================== -->
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // FAQ-ikon veksling
+            const faqButtons = document.querySelectorAll('.faq-btn');
+            faqButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const icon = this.querySelector('.faq-icon');
+                    setTimeout(() => {
+                        if (this.classList.contains('collapsed')) icon.textContent = '+';
+                        else icon.textContent = '-';
+                    }, 10);
+                });
+            });
+
+            // ----------------------------------------------------
+            // LEAFLET KART (STANDARD OSM-LAG)
+            // ----------------------------------------------------
+            var needs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<Prosjekt.Models.ModelView.NeedViewModel>()));
+
+            // Standard OpenStreetMap-lag
+            var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                noWrap: true
+            });
+
+            var map = L.map('homeMap', {
+                center: [58.1467, 7.9956],
+                zoom: 11,
+                layers: [osmKart],
+                zoomControl: false
+            });
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            function lagDiamantIkon(farge) {
+                var html = `<div class="custom-leaflet-icon shape-diamond" style="background-color: ${farge}; width: 12px; height: 12px;"></div>`;
+                return L.divIcon({
+                    html: html,
+                    className: '',
+                    iconSize: [12, 12],
+                    iconAnchor: [6, 6],
+                    popupAnchor: [0, -8]
+                });
+            }
+
+            var ikonAkutt = lagDiamantIkon('#dc3545');
+            var ikonPlanlagt = lagDiamantIkon('#d4a373');
+
+            var bounds = [];
+
+            needs.forEach(function (n) {
+                var lat = parseFloat(n.Latitude);
+                var lng = parseFloat(n.Longitude);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    var ikon = (n.Importance === 0) ? ikonAkutt : ikonPlanlagt;
+
+                    var marker = L.marker([lat, lng], { icon: ikon }).addTo(map);
+
+                    marker.bindPopup(`
+                        <div style="font-size:0.85rem; color:#1a3048;">
+                            <strong style="text-transform:uppercase; font-size:0.65rem; color:${n.Importance === 0 ? '#dc3545' : '#d4a373'}">
+                                ${n.Importance === 0 ? 'Akutt behov' : 'Planlagt behov'}
+                            </strong><br>
+                            <b>${n.Name}</b><br>
+                            <span style="color:#5a6572">${n.Description || ''}</span>
+                        </div>
+                    `);
+
+                    bounds.push([lat, lng]);
+                }
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+            }
+
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 250);
+        });
+    </script>
+}
