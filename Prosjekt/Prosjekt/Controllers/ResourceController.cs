@@ -62,21 +62,84 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            ResourceViewModel createdResourceModel = null;
+            ResourceViewModel? createdResourceModel = null;
 
             for (int i = 0; i < model.ResourceList.Count; i++)
             {
                 var baseResource = model.ResourceList[i];
 
-                // BRUKER NÅ DEN NYE MODELL-EGENSKAPEN DIREKTE I STEDET FOR REQUEST.FORM
                 string extraInfo = "";
-                if (baseResource.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(baseResource.LicensePlate))
+                string? subCategoryValue = null;
+
+                switch (baseResource.Category)
                 {
-                    extraInfo = $"[Reg.nr: {baseResource.LicensePlate}]";
-                }
-                else if (baseResource.Category == ResourceViewModel.ResourceType.Clothing && !string.IsNullOrWhiteSpace(baseResource.Size))
-                {
-                    extraInfo = $"[Size: {baseResource.Size}]";
+                    case ResourceViewModel.ResourceType.Vehicle:
+                        string vehicleTypeStr = !string.IsNullOrWhiteSpace(baseResource.VehicleType)
+                            ? baseResource.VehicleType
+                            : Request.Form[$"ResourceList[{i}].VehicleType"].ToString();
+
+                        string licensePlate = !string.IsNullOrWhiteSpace(baseResource.LicensePlate)
+                            ? baseResource.LicensePlate
+                            : Request.Form[$"ResourceList[{i}].LicensePlate"].ToString();
+
+                        if (!string.IsNullOrWhiteSpace(vehicleTypeStr))
+                        {
+                            subCategoryValue = vehicleTypeStr;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(licensePlate))
+                        {
+                            extraInfo = $"[Reg.nr: {licensePlate}]";
+                        }
+                        break;
+
+                    case ResourceViewModel.ResourceType.Tool:
+                        string toolTypeStr = !string.IsNullOrWhiteSpace(baseResource.ToolType)
+                            ? baseResource.ToolType
+                            : Request.Form[$"ResourceList[{i}].ToolType"].ToString();
+
+                        if (!string.IsNullOrWhiteSpace(toolTypeStr))
+                        {
+                            subCategoryValue = toolTypeStr;
+                        }
+                        break;
+
+                    case ResourceViewModel.ResourceType.Clothing:
+                        string sizeStr = !string.IsNullOrWhiteSpace(baseResource.Size)
+                            ? baseResource.Size
+                            : Request.Form[$"ResourceList[{i}].Size"].ToString();
+
+                        if (!string.IsNullOrWhiteSpace(sizeStr))
+                        {
+                            subCategoryValue = sizeStr;
+                        }
+                        break;
+
+                    case ResourceViewModel.ResourceType.Provision:
+                        string provisionTypeStr = !string.IsNullOrWhiteSpace(baseResource.ProvisionType)
+                            ? baseResource.ProvisionType
+                            : Request.Form[$"ResourceList[{i}].ProvisionType"].ToString();
+
+                        if (!string.IsNullOrWhiteSpace(provisionTypeStr))
+                        {
+                            subCategoryValue = provisionTypeStr;
+                        }
+                        break;
+
+                    case ResourceViewModel.ResourceType.Materials:
+                        string materialTypeStr = !string.IsNullOrWhiteSpace(baseResource.MaterialType)
+                            ? baseResource.MaterialType
+                            : Request.Form[$"ResourceList[{i}].MaterialType"].ToString();
+
+                        if (!string.IsNullOrWhiteSpace(materialTypeStr))
+                        {
+                            subCategoryValue = materialTypeStr;
+                        }
+                        break;
+
+                    default:
+                        subCategoryValue = null;
+                        break;
                 }
 
                 var resourceEntity = new Resource
@@ -86,13 +149,14 @@ namespace Prosjekt.Controllers
                         ? baseResource.Description ?? ""
                         : $"{baseResource.Description} {extraInfo}".Trim(),
                     Category = baseResource.Category.ToString(),
+                    SubCategory = subCategoryValue,
                     IsAvailable = baseResource.Availability,
                     PhoneNumber = baseResource.PhoneNumber,
                     Quantity = baseResource.Quantity,
                     AvailableFrom = baseResource.AvailableFrom,
                     AvailableTo = baseResource.AvailableTo,
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    
+                    CreatedAt = NorwegianTime.Now
                 };
 
                 await _repo.AddAsync(resourceEntity);
@@ -133,6 +197,7 @@ namespace Prosjekt.Controllers
         }
 
         [HttpGet]
+        [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var resource = await _repo.GetByIdAsync(id);
@@ -140,31 +205,25 @@ namespace Prosjekt.Controllers
 
             string description = resource.Description ?? "";
             string licensePlate = "";
-            string size = "";
 
-            // Henter ut [Reg.nr: ...] fra beskrivelsen
-            if (description.Contains("[Reg.nr:"))
+            const string regTag = "[Reg.nr:";
+            int regStart = description.IndexOf(regTag, StringComparison.Ordinal);
+            if (regStart >= 0)
             {
-                var startIndex = description.IndexOf("[Reg.nr:") + 8;
-                var endIndex = description.IndexOf("]", startIndex);
-                if (endIndex > startIndex)
+                int valueStart = regStart + regTag.Length;
+                int regEnd = description.IndexOf(']', valueStart);
+                if (regEnd > valueStart)
                 {
-                    licensePlate = description.Substring(startIndex, endIndex - startIndex).Trim();
-                    description = description.Remove(description.IndexOf("[Reg.nr:"), (endIndex - description.IndexOf("[Reg.nr:")) + 1).Trim();
+                    licensePlate = description.Substring(valueStart, regEnd - valueStart).Trim();
+                    description = description.Remove(regStart, regEnd - regStart + 1).Trim();
                 }
             }
 
-            // Henter ut [Size: ...] fra beskrivelsen
-            if (description.Contains("[Size:"))
-            {
-                var startIndex = description.IndexOf("[Size:") + 6;
-                var endIndex = description.IndexOf("]", startIndex);
-                if (endIndex > startIndex)
-                {
-                    size = description.Substring(startIndex, endIndex - startIndex).Trim();
-                    description = description.Remove(description.IndexOf("[Size:"), (endIndex - description.IndexOf("[Size:")) + 1).Trim();
-                }
-            }
+            var category = Enum.TryParse<ResourceViewModel.ResourceType>(resource.Category, out var cat)
+                ? cat
+                : ResourceViewModel.ResourceType.Other;
+
+            var subCategory = resource.SubCategory?.Trim();
 
             var viewModel = new ResourceViewModel
             {
@@ -176,13 +235,16 @@ namespace Prosjekt.Controllers
                 Availability = resource.IsAvailable,
                 Latitude = resource.Coords.Latitude,
                 Longitude = resource.Coords.Longitude,
-                Category = Enum.TryParse<ResourceViewModel.ResourceType>(resource.Category, out var cat)
-                    ? cat
-                    : ResourceViewModel.ResourceType.Other,
+                Category = category,
                 AvailableFrom = resource.AvailableFrom,
                 AvailableTo = resource.AvailableTo,
                 LicensePlate = licensePlate,
-                Size = size
+
+                VehicleType = category == ResourceViewModel.ResourceType.Vehicle ? subCategory : null,
+                ToolType = category == ResourceViewModel.ResourceType.Tool ? subCategory : null,
+                MaterialType = category == ResourceViewModel.ResourceType.Materials ? subCategory : null,
+                ProvisionType = category == ResourceViewModel.ResourceType.Provision ? subCategory : null,
+                Size = category == ResourceViewModel.ResourceType.Clothing ? subCategory : null
             };
 
             return View(viewModel);
@@ -193,6 +255,13 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Edit(int id, ResourceViewModel model)
         {
             if (id != model.Id) return BadRequest();
+
+            ModelState.Remove(nameof(model.VehicleType));
+            ModelState.Remove(nameof(model.LicensePlate));
+            ModelState.Remove(nameof(model.ToolType));
+            ModelState.Remove(nameof(model.MaterialType));
+            ModelState.Remove(nameof(model.ProvisionType));
+            ModelState.Remove(nameof(model.Size));
 
             if (!model.Latitude.HasValue || !model.Longitude.HasValue)
             {
@@ -207,41 +276,64 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var resourceEntity = await _repo.GetByIdAsync(id);
-                if (resourceEntity == null) return NotFound();
-
-                // BRUKER NÅ MODELLEN DIREKTE VED LAGRING FRA EDIT
-                string extraInfo = "";
-                if (model.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(model.LicensePlate))
-                {
-                    extraInfo = $"[Reg.nr: {model.LicensePlate}]";
-                }
-                else if (model.Category == ResourceViewModel.ResourceType.Clothing && !string.IsNullOrWhiteSpace(model.Size))
-                {
-                    extraInfo = $"[Size: {model.Size}]";
-                }
-
-                string fullDescription = string.IsNullOrWhiteSpace(extraInfo)
-                    ? model.Description ?? ""
-                    : $"{model.Description} {extraInfo}".Trim();
-
-                resourceEntity.Name = model.Name;
-                resourceEntity.Description = fullDescription;
-                resourceEntity.PhoneNumber = model.PhoneNumber;
-                resourceEntity.Quantity = model.Quantity;
-                resourceEntity.IsAvailable = model.Availability;
-                resourceEntity.Category = model.Category.ToString();
-                resourceEntity.Coords = coords;
-                resourceEntity.AvailableFrom = model.AvailableFrom;
-                resourceEntity.AvailableTo = model.AvailableTo;
-
-                await _repo.UpdateAsync(resourceEntity);
-                return RedirectToAction(nameof(Overview));
+                return View(model);
             }
 
-            return View(model);
+            var resourceEntity = await _repo.GetByIdAsync(id);
+            if (resourceEntity == null) return NotFound();
+
+            string extraInfo = "";
+            string? subCategoryValue = null;
+
+            switch (model.Category)
+            {
+                case ResourceViewModel.ResourceType.Vehicle:
+                    if (!string.IsNullOrWhiteSpace(model.VehicleType))
+                        subCategoryValue = model.VehicleType;
+                    if (!string.IsNullOrWhiteSpace(model.LicensePlate))
+                        extraInfo = $"[Reg.nr: {model.LicensePlate.Trim()}]";
+                    break;
+
+                case ResourceViewModel.ResourceType.Tool:
+                    if (!string.IsNullOrWhiteSpace(model.ToolType))
+                        subCategoryValue = model.ToolType;
+                    break;
+
+                case ResourceViewModel.ResourceType.Clothing:
+                    if (!string.IsNullOrWhiteSpace(model.Size))
+                        subCategoryValue = model.Size;
+                    break;
+
+                case ResourceViewModel.ResourceType.Provision:
+                    if (!string.IsNullOrWhiteSpace(model.ProvisionType))
+                        subCategoryValue = model.ProvisionType;
+                    break;
+
+                case ResourceViewModel.ResourceType.Materials:
+                    if (!string.IsNullOrWhiteSpace(model.MaterialType))
+                        subCategoryValue = model.MaterialType;
+                    break;
+            }
+
+            string fullDescription = string.IsNullOrWhiteSpace(extraInfo)
+                ? model.Description ?? ""
+                : $"{model.Description} {extraInfo}".Trim();
+
+            resourceEntity.Name = model.Name;
+            resourceEntity.Description = fullDescription;
+            resourceEntity.PhoneNumber = model.PhoneNumber;
+            resourceEntity.Quantity = model.Quantity;
+            resourceEntity.IsAvailable = model.Availability;
+            resourceEntity.Category = model.Category.ToString();
+            resourceEntity.SubCategory = subCategoryValue?.Trim();
+            resourceEntity.Coords = coords;
+            resourceEntity.AvailableFrom = model.AvailableFrom;
+            resourceEntity.AvailableTo = model.AvailableTo;
+
+            await _repo.UpdateAsync(resourceEntity);
+            return RedirectToAction(nameof(Overview));
         }
 
         [HttpPost]

@@ -1,9 +1,10 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var mariadb = builder.AddMySql("mariadbcontainer", password: builder.AddParameter("password", secret: true))
-                     .WithImage("mariadb", "latest");
+                     .WithImage("mariadb", "latest")
+                     .WithDataVolume();
 
-var kartDb = mariadb.AddDatabase("Mapdb");
+var Mapdb = mariadb.AddDatabase("Mapdb");
 
 builder.AddDockerfile(
     "Prosjekt",
@@ -12,6 +13,6 @@ builder.AddDockerfile(
     .WithHttpEndpoint(
         port: 5027,
         targetPort: 8080)
-    .WithReference(kartDb);
+    .WithReference(Mapdb);
 
 builder.Build().Run();

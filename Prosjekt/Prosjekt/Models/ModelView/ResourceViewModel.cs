@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Prosjekt.Models.ModelView
 {
@@ -64,5 +63,9 @@ namespace Prosjekt.Models.ModelView
 
         public string? LicensePlate { get; init; }
         public string? Size { get; init; }
+        public string? VehicleType { get; set; }
+        public string? ToolType { get; set; }
+        public string? MaterialType { get; set; }
+        public string? ProvisionType { get; set; }
     }
 }
