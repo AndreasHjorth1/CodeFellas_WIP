@@ -1,4 +1,4 @@
-﻿@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model IEnumerable<ResourceViewModel>
 
@@ -6,7 +6,24 @@
     ViewData["Title"] = "Oversikt over ressurser";
 }
 
+<link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
+
 @functions {
+    string RessursIkon(ResourceViewModel.ResourceType kategori) => kategori switch
+    {
+        ResourceViewModel.ResourceType.Vehicle => "vehicle",
+        ResourceViewModel.ResourceType.Tool => "tool",
+        ResourceViewModel.ResourceType.Clothing => "clothing",
+        ResourceViewModel.ResourceType.Provision => "provision",
+        ResourceViewModel.ResourceType.Materials => "materials",
+        _ => "other"
+    };
+
+    string RessursIkonFil(ResourceViewModel.ResourceType kategori, bool tilgjengelig)
+        => RessursIkon(kategori) + (tilgjengelig ? "" : "-unavailable") + ".svg";
+
     string OversettKategori(ResourceViewModel.ResourceType k) => k switch
     {
         ResourceViewModel.ResourceType.Vehicle => "Kjøretøy",
@@ -43,7 +60,14 @@
                                 <strong>@res.Name</strong><br />
                                 <span class="small text-secondary">@res.Description</span>
                             </td>
-                            <td>@OversettKategori(res.Category)</td>
+                            <td>
+                                <span class="resource-category">
+                                    <img class="resource-category-icon"
+                                         src="@Url.Content($"~/images/resources/{RessursIkonFil(res.Category, res.Availability)}")"
+                                         alt="" width="28" height="28" />
+                                    <span>@OversettKategori(res.Category)</span>
+                                </span>
+                            </td>
                             <td>@res.Quantity</td>
                             <td>
                                 @if (res.Availability)
@@ -82,6 +106,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // 1. Initialiser kartet
@@ -92,6 +117,20 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
+            // Samle nærliggende markører. Klikk sprer dem uten å zoome.
+            var resourceMarkers = L.markerClusterGroup({
+                maxClusterRadius: 45,
+                zoomToBoundsOnClick: false,
+                spiderfyOnMaxZoom: false,
+                showCoverageOnHover: false,
+                spiderfyDistanceMultiplier: 1.5,
+                spiderLegPolylineOptions: { weight: 1.5, color: '#164e63', opacity: 0.7 }
+            });
+            map.addLayer(resourceMarkers);
+            resourceMarkers.on('clusterclick', function (event) {
+                event.layer.spiderfy();
+            });
+
             var bounds = [];
 
             // 3. Konverter C#-modellen til et JS-objekt uten kontaktinfo/reg-nr
@@ -100,6 +139,8 @@
                     id = r.Id,
                     name = r.Name,
                     quantity = r.Quantity,
+                    categoryName = OversettKategori(r.Category),
+                    iconUrl = Url.Content($"~/images/resources/{RessursIkonFil(r.Category, r.Availability)}"),
                     isAvailable = r.Availability,
                     lat = r.Latitude,
                     lng = r.Longitude
@@ -107,18 +148,32 @@
 
             // 4. Looper gjennom alle ressurser og oppretter markører med adresseoppslag
             resources.forEach(function (res) {
-                if (res.lat && res.lng) {
+                if (res.lat !== null && res.lng !== null) {
                     var lat = parseFloat(res.lat);
                     var lng = parseFloat(res.lng);
+                    if (!Number.isFinite(lat) || !Number.isFinite(lng) ||
+                        lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
                     var pos = [lat, lng];
 
                     bounds.push(pos);
 
                     var statusBadge = res.isAvailable
                         ? '<span style="color: green; font-weight: bold;">Tilgjengelig</span>'
-                        : '<span style="color: red; font-weight: bold;">Opptatt</span>';
+                        : '<span style="color: red; font-weight: bold;">Ikke tilgjengelig</span>';
 
-                    var marker = L.marker(pos).addTo(map);
+                    var resourceIcon = L.icon({
+                        iconUrl: res.iconUrl,
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20],
+                        popupAnchor: [0, -22],
+                        className: 'resource-map-icon'
+                    });
+
+                    var marker = L.marker(pos, {
+                        icon: resourceIcon,
+                        title: res.categoryName + ': ' + res.name + (res.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig'),
+                        alt: res.categoryName + ': ' + res.name + (res.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig')
+                    }).addTo(resourceMarkers);
 
                     // Sett opp en midlertidig popup mens adressen hentes
                     var basePopupContent = `
