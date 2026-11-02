@@ -14,10 +14,10 @@ namespace Prosjekt.Controllers
         private readonly IResourceRepository _repo;
         private readonly IAllocationRepository _allocationRepo;
 
-        public ResourceController(IResourceRepository repo)
+        public ResourceController(IResourceRepository repo, IAllocationRepository allocationRepo)
         {
             _repo = repo;
-            _allocationRepo = AllocationRepository;
+            _allocationRepo = allocationRepo;
         }
 
         [HttpGet]
@@ -110,7 +110,6 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
-            var resourceEntities = await _repo.GetAllAsync();
             var resourceEntities = await _repo.GetAllAsync();
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
