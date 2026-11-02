@@ -1,9 +1,13 @@
-ï»¿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
+using DotNetEnv;
+
+Env.TraversePath().Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Beskytt serveren mot enorme forespÃ¸rsler (f.eks. maks 30 MB request-stÃ¸rrelse)
+// Beskytt serveren mot enorme forespørsler (f.eks. maks 30 MB request-størrelse)
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = 30 * 1024 * 1024; // 30 MB
@@ -12,10 +16,11 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.AddServiceDefaults();
 
 
-// 1.  Hent tilkoblingsstreng: Aspire sender den inn som ConnectionStrings:Mapdb
-var connectionString = builder.Configuration.GetConnectionString("Mapdb")
-    ?? throw new InvalidOperationException(
-        "Mangler tilkoblingsstrengen 'Mapdb'. Start appen via Prosjekt.AppHost.");
+// 1. Hent tilkoblingsstreng: .env lokalt, Aspire injiserer "Mapdb"
+var connectionString = builder.Configuration["DB_CONNECTION_STRING"]
+    ?? builder.Configuration.GetConnectionString("Mapdb")
+    ?? throw new InvalidOperationException("Mangler tilkoblingsstreng. Lag en .env-fil eller kjør via Aspire.");
+
 
 
 // 2. Registrer repository
