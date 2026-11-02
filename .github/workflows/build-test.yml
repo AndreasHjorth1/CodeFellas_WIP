@@ -27,7 +27,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-           global-json-file: global.json
+          global-json-file: global.json
 
       - name: Restore dependencies
         run: dotnet restore ./Prosjekt/Prosjekt.slnx
@@ -44,8 +44,9 @@ jobs:
           --verbosity normal
           --logger trx
           --collect:"XPlat Code Coverage"
+          --settings ./Prosjekt/coverlet.runsettings
           --results-directory ./TestResults
-          
+
       - name: Generate coverage report
         if: always() && hashFiles('TestResults/**/coverage.cobertura*.xml') != ''
         continue-on-error: true
@@ -84,6 +85,19 @@ jobs:
             code-coverage-results.md
           if-no-files-found: warn
 
+  docker-build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Build context er ./Prosjekt (mappa med Prosjekt.slnx), fordi Dockerfile
+      # kopierer Prosjekt/ og Prosjekt.ServiceDefaults/ relativt til den
+      - name: Build Docker image
+        run: docker build --file Prosjekt/Prosjekt/Dockerfile --tag prosjekt:ci ./Prosjekt
+
   publish-pr-results:
     name: Publish test results to pull request
     needs: build-and-test
@@ -103,15 +117,4 @@ jobs:
           name: test-and-coverage-reports
 
       - name: Publish test results
-        if: always() && hashFiles('**/*.trx') != ''
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        with:
-          files: '**/*.trx'
-          comment_title: Unit Test Results
-
-      - name: Comment coverage summary
-        if: always() && hashFiles('code-coverage-results.md') != ''
-        uses: marocchino/sticky-pull-request-comment@v3
-        with:
-          header: code-coverage
-          path: code-coverage-results.md
+        if: always() &&
