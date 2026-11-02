@@ -155,8 +155,8 @@
             var lat = parseFloat('@Model.Latitude'.replace(',', '.'));
             var lng = parseFloat('@Model.Longitude'.replace(',', '.'));
             var importanceNumber = @((int)Model.Importance);
-            var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                Model.NeedList.Select(n => new { n.Name, n.Phone })));
+            var behov = @Json.Serialize(
+                        Model.NeedList.Select(n => new { name = n.Name, phone = n.Phone }));
 
             // --- KART ---
             if (!isNaN(lat) && !isNaN(lng)) {
@@ -180,7 +180,7 @@
 
                 // Popup med behov + adresse
                 var behovHtml = behov.map(function (b) {
-                    return `<b>${b.Name}</b><br/>📞 Tlf: ${b.Phone || 'Ikke oppgitt'}`;
+                    return `<b>${b.name}</b><br/>📞 Tlf: ${b.phone || 'Ikke oppgitt'}`;
                 }).join('<hr class="my-1"/>');
 
                 marker.bindPopup(behovHtml + '<hr class="my-1"/><div class="small text-muted"><i>Henter adresse...</i></div>');

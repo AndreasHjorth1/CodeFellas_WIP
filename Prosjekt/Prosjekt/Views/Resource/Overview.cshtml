@@ -169,7 +169,7 @@
 
         document.addEventListener("DOMContentLoaded", function () {
             // Konverter C#-modellen til JS uten kontaktinfo/reg-nr
-            var ressurser = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(r => new
+            var ressurser = @Json.Serialize(Model.Select(r => new
             {
                 id = r.Id,
                 name = r.Name,
@@ -177,7 +177,7 @@
                 isAvailable = r.Availability,
                 lat = r.Latitude,
                 lng = r.Longitude
-            })));
+            }));
 
             // Initialiser kartet
             kart = L.map('oversiktRessursKart').setView([58.163, 8.003], 12);

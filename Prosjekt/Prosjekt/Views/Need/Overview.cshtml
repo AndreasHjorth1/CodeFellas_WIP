@@ -192,7 +192,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+            var behov = @Json.Serialize(Model);
 
             // Initialiser kartet
             kart = L.map('oversiktBehovKart').setView([58.163, 8.003], 12);
@@ -213,41 +213,41 @@
             var bounds = [];
 
             behov.forEach(function (b) {
-                var lat = parseFloat(b.Latitude);
-                var lng = parseFloat(b.Longitude);
+                var lat = parseFloat(b.latitude);
+                var lng = parseFloat(b.longitude);
                 if (isNaN(lat) || isNaN(lng)) return;
 
                 bounds.push([lat, lng]);
 
-                // b.Status kommer som tall: 0 = Ny, 1 = Vurderes, 2 = Tildelt, 3 = Løst
-                var statusNavn = ['Ny', 'Vurderes', 'Tildelt', 'Løst'][b.Status] || 'Ny';
-                var statusFarge = ['gray', 'orange', 'blue', 'green'][b.Status] || 'gray';
+                // b.status kommer som tall: 0 = Ny, 1 = Vurderes, 2 = Tildelt, 3 = Løst
+                var statusNavn = ['Ny', 'Vurderes', 'Tildelt', 'Løst'][b.status] || 'Ny';
+                var statusFarge = ['gray', 'orange', 'blue', 'green'][b.status] || 'gray';
                 var statusTekst = `<span style="color: ${statusFarge}; font-weight: bold;">${statusNavn}</span>`;
 
-                var valgtIkon = ikoner[b.Importance] || ikoner[0];
+                var valgtIkon = ikoner[b.importance] || ikoner[0];
                 var marker = L.marker([lat, lng], { icon: valgtIkon }).addTo(kart);
-                markorerMap[b.Id] = marker;
+                markorerMap[b.id] = marker;
 
-                if (b.AreaGeoJson) {
-                    var omrade = L.geoJSON(JSON.parse(b.AreaGeoJson), {
+                if (b.areaGeoJson) {
+                    var omrade = L.geoJSON(JSON.parse(b.areaGeoJson), {
                         style: {
-                            color: b.Importance === 0 ? '#dc3545' : '#fd7e14',
+                            color: b.importance === 0 ? '#dc3545' : '#fd7e14',
                             weight: 2,
                             fillOpacity: 0.12
                         }
                     }).addTo(kart);
 
-                    if (b.AreaSquareMeters) {
+                    if (b.areaSquareMeters) {
                         omrade.bindTooltip(
-                            `${b.Name}: ca. ${b.AreaSquareMeters} m²`,
+                            `${b.name}: ca. ${b.areaSquareMeters} m²`,
                             { sticky: true }
                         );
                     }
                 }
 
                 var toppInnhold = `
-                    <b>${b.Name}</b><br/>
-                    📞 Tlf: ${b.Phone || 'Ikke oppgitt'}<br/>
+                    <b>${b.name}</b><br/>
+                    📞 Tlf: ${b.phone || 'Ikke oppgitt'}<br/>
                     Status: ${statusTekst}<br/>`;
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
