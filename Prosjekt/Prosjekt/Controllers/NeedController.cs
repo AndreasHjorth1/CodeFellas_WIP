@@ -382,7 +382,7 @@ namespace Prosjekt.Controllers
                 await _repo.UpdateAsync(need);
             }
 
-            return RedirectToAction(nameof(Match), new { id });
+            return RedirectToAction(nameof(Overview), new { id });
         }
     }
 }
