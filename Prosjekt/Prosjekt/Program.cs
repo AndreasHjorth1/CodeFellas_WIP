@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
-using Prosjekt.Services;
 using DotNetEnv;
 
 Env.TraversePath().Load();
@@ -27,12 +26,6 @@ var connectionString = builder.Configuration["DB_CONNECTION_STRING"]
 // 2. Registrer repository
 builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
 builder.Services.AddScoped<INeedRepository, NeedRepository>();
-
-// Slår opp fylke og kommune for en ressurs via Kartverket
-builder.Services.AddHttpClient<IStedsoppslag, KartverketStedsoppslag>(c =>
-{
-    c.Timeout = TimeSpan.FromSeconds(5);
-});
 
 
 // 3. Registrer DbContext

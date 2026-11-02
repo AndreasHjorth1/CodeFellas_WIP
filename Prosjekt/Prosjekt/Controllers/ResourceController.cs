@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
-using Prosjekt.Services;
 using Prosjekt.Utils;
 
 namespace Prosjekt.Controllers
@@ -17,12 +16,10 @@ namespace Prosjekt.Controllers
     public class ResourceController : Controller
     {
         private readonly IResourceRepository _repo;
-        private readonly IStedsoppslag _sted;
 
-        public ResourceController(IResourceRepository repo, IStedsoppslag sted)
+        public ResourceController(IResourceRepository repo)
         {
             _repo = repo;
-            _sted = sted;
         }
 
         [HttpGet]
@@ -67,9 +64,6 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            // Alle ressursene i skjemaet deler samme punkt, så vi slår opp stedet én gang
-            var sted = await _sted.FinnStedAsync(coords.Latitude, coords.Longitude);
-
             ResourceViewModel createdResourceModel = null;
 
             for (int i = 0; i < model.ResourceList.Count; i++)
@@ -100,8 +94,6 @@ namespace Prosjekt.Controllers
                     AvailableFrom = baseResource.AvailableFrom,
                     AvailableTo = baseResource.AvailableTo,
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    Fylke = sted?.Fylke,
-                    Kommune = sted?.Kommune
                 };
 
                 await _repo.AddAsync(resourceEntity);
@@ -282,8 +274,7 @@ namespace Prosjekt.Controllers
             return Json(result);
         }
 
-        // Eksport av alle tilgjengelige ressurser, gruppert etter fylke og kommune.
-        // Ment for offentlige aktører. Siden er ikke lenket i menyen ennå.
+        // Eksport av alle tilgjengelige ressurser. Ment for offentlige aktører.
         // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
         [HttpGet]
         public IActionResult Export()
@@ -297,18 +288,17 @@ namespace Prosjekt.Controllers
             var ressurser = await HentTilgjengeligeRessurser();
 
             var sb = new StringBuilder();
-            sb.AppendLine("Fylke;Kommune;Kategori;Navn;Antall;Beskrivelse;Telefon;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
+            sb.AppendLine("Id;Navn;Kategori;Antall;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
 
             foreach (var r in ressurser)
             {
                 sb.AppendLine(string.Join(";",
-                    Csv(r.Fylke ?? "Ukjent"),
-                    Csv(r.Kommune ?? "Ukjent"),
-                    OversettKategori(r.Category),
+                    r.Id,
                     Csv(r.Name),
+                    OversettKategori(r.Category),
                     r.Quantity,
-                    Csv(r.Description),
                     Csv(r.PhoneNumber),
+                    Csv(r.Description),
                     r.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "",
                     r.AvailableTo?.ToString("dd.MM.yyyy HH:mm") ?? "",
                     r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
@@ -325,32 +315,19 @@ namespace Prosjekt.Controllers
         {
             var ressurser = await HentTilgjengeligeRessurser();
 
-            var data = ressurser
-                .GroupBy(r => r.Fylke ?? "Ukjent")
-                .Select(fylke => new
-                {
-                    Fylke = fylke.Key,
-                    AntallRessurser = fylke.Count(),
-                    Kommuner = fylke
-                        .GroupBy(r => r.Kommune ?? "Ukjent")
-                        .Select(kommune => new
-                        {
-                            Kommune = kommune.Key,
-                            AntallRessurser = kommune.Count(),
-                            Ressurser = kommune.Select(r => new
-                            {
-                                Navn = r.Name,
-                                Kategori = OversettKategori(r.Category),
-                                Antall = r.Quantity,
-                                Beskrivelse = r.Description,
-                                Telefon = r.PhoneNumber,
-                                TilgjengeligFra = r.AvailableFrom,
-                                TilgjengeligTil = r.AvailableTo,
-                                Breddegrad = r.Coords.Latitude,
-                                Lengdegrad = r.Coords.Longitude
-                            })
-                        })
-                });
+            var data = ressurser.Select(r => new
+            {
+                r.Id,
+                Navn = r.Name,
+                Kategori = OversettKategori(r.Category),
+                Antall = r.Quantity,
+                Telefon = r.PhoneNumber,
+                Beskrivelse = r.Description,
+                TilgjengeligFra = r.AvailableFrom,
+                TilgjengeligTil = r.AvailableTo,
+                Breddegrad = r.Coords.Latitude,
+                Lengdegrad = r.Coords.Longitude
+            });
 
             var options = new JsonSerializerOptions
             {
@@ -362,16 +339,13 @@ namespace Prosjekt.Controllers
             return File(bytes, "application/json", $"ressurser_{DateTime.Now:yyyy-MM-dd}.json");
         }
 
-        // Kun tilgjengelige ressurser, sortert slik at de kommer gruppert per område
+        // Kun tilgjengelige ressurser, sortert etter Id
         private async Task<List<Resource>> HentTilgjengeligeRessurser()
         {
             var alle = await _repo.GetAllAsync();
             return alle
-                .Where(r => r.IsAvailable && r.Coords != null)
-                .OrderBy(r => r.Fylke ?? "Ukjent")
-                .ThenBy(r => r.Kommune ?? "Ukjent")
-                .ThenBy(r => OversettKategori(r.Category))
-                .ThenBy(r => r.Name)
+                .Where(r => r.IsAvailable)
+                .OrderBy(r => r.Id)
                 .ToList();
         }
 

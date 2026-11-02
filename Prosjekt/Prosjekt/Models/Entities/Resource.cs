@@ -37,13 +37,6 @@ namespace Prosjekt.Models.Entities
 
         public Coordinates Coords { get; set; }
 
-        // Slås opp fra koordinatene når ressursen registreres. Null hvis oppslaget feilet.
-        [MaxLength(100)]
-        public string? Fylke { get; set; }
-
-        [MaxLength(100)]
-        public string? Kommune { get; set; }
-
         public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
     }
 }
