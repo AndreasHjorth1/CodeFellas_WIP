@@ -26,5 +26,16 @@ namespace Prosjekt.Xunit.Test.Fakes
             _allocations.RemoveAll(a => a.Id == id);
             return Task.CompletedTask;
         }
+        public Task DeleteByNeedAsync(int needId)
+        {
+            _allocations.RemoveAll(a => a.NeedId == needId);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteByResourceAsync(int resourceId)
+        {
+            _allocations.RemoveAll(a => a.ResourceId == resourceId);
+            return Task.CompletedTask;
+        }
     }
 }

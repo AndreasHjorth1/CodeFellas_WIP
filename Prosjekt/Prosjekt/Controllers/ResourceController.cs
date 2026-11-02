@@ -341,6 +341,7 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _repo.DeleteAsync(id);
+            await _allocationRepo.DeleteByResourceAsync(id);
             return RedirectToAction(nameof(Overview));
         }
 

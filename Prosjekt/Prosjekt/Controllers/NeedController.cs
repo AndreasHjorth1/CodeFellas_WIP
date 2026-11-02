@@ -224,6 +224,7 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _repo.DeleteAsync(id);
+            await _allocationRepo.DeleteByNeedAsync(id);
             return RedirectToAction(nameof(Overview));
         }
 
@@ -291,6 +292,18 @@ namespace Prosjekt.Controllers
                 .OrderBy(r => r.DistanceMeters)
                 .ToList();
 
+            var resourceNames = all.ToDictionary(r => r.Id, r => r.Name);
+
+            ViewBag.Allocations = allocations
+                .Where(a => a.NeedId == id)
+                .Select(a => new AllocationViewModel
+                {
+                    Id = a.Id,
+                    ResourceName = resourceNames.TryGetValue(a.ResourceId, out var n) ? n : "(ukjent ressurs)",
+                    Quantity = a.Quantity
+                })
+                .ToList();
+
             ViewBag.NeedId = id;
             ViewBag.NeedName = need.Name;
             ViewBag.NeedLat = need.Coords.Latitude;
@@ -333,6 +346,43 @@ namespace Prosjekt.Controllers
             }
 
             return RedirectToAction(nameof(Match), new { id = needId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Deallocate(int allocationId, int needId)
+        {
+            await _allocationRepo.DeleteAsync(allocationId);
+
+            // Står behovet uten tildelinger, går det tilbake til Vurderes
+            var igjen = await _allocationRepo.GetByNeedAsync(needId);
+            if (!igjen.Any())
+            {
+                var need = await _repo.GetByIdAsync(needId);
+                if (need != null && need.Status == EntryStatus.Assigned)
+                {
+                    need.Status = EntryStatus.UnderReview;
+                    await _repo.UpdateAsync(need);
+                }
+            }
+
+            return RedirectToAction(nameof(Match), new { id = needId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Resolve(int id)
+        {
+            var need = await _repo.GetByIdAsync(id);
+            if (need == null) return NotFound();
+
+            if (EntryStatusFlow.CanMove(need.Status, EntryStatus.Resolved))
+            {
+                need.Status = EntryStatus.Resolved;
+                await _repo.UpdateAsync(need);
+            }
+
+            return RedirectToAction(nameof(Match), new { id });
         }
     }
 }

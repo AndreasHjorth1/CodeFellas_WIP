@@ -9,5 +9,7 @@ namespace Prosjekt.DataAccess.Repositories
         Task<IEnumerable<Allocation>> GetByNeedAsync(int needId);
         Task AddAsync(Allocation allocation);
         Task DeleteAsync(int id);
+        Task DeleteByNeedAsync(int needId);
+        Task DeleteByResourceAsync(int resourceId);
     }
 }

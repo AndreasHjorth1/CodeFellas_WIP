@@ -39,5 +39,18 @@ namespace Prosjekt.DataAccess.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+        public async Task DeleteByNeedAsync(int needId)
+        {
+            var rows = _context.Allocations.Where(a => a.NeedId == needId);
+            _context.Allocations.RemoveRange(rows);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteByResourceAsync(int resourceId)
+        {
+            var rows = _context.Allocations.Where(a => a.ResourceId == resourceId);
+            _context.Allocations.RemoveRange(rows);
+            await _context.SaveChangesAsync();
+        }
     }
 }
