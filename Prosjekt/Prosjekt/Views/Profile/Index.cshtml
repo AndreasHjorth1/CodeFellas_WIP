@@ -249,10 +249,7 @@
 <section class="grid-border-bottom">
     <div class="container-fluid p-0">
         <div class="row g-0">
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
-                <div class="section-tag" style="margin: 0;">Min profil</div>
-            </div>
-            <div class="col-lg-9 p-4 p-md-5">
+            <div class="col-12 p-4 p-md-5">
                 <h1 class="display-huge serif-title mb-3">
                     @if (name is null)
                     {
@@ -294,15 +291,7 @@
 <section class="grid-border-bottom">
     <div class="container-fluid p-0">
         <div class="row g-0">
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
-                <div class="section-tag">Kontaktinformasjon</div>
-                <h2 class="fs-2 serif-title mt-2">Slik når<br />vi deg.</h2>
-                <p class="text-muted-custom small mb-0 mt-3" style="line-height: 1.6;">
-                    Mobilnummeret brukes når en av ressursene dine blir tildelt et behov, og til å finne ressursene du har registrert.
-                </p>
-            </div>
-
-            <div class="col-lg-9 p-4 p-md-5">
+            <div class="col-12 p-4 p-md-5">
                 <form asp-controller="Profile" asp-action="Index" method="post" style="max-width: 720px;">
                     <div asp-validation-summary="ModelOnly" class="pf-error mb-3"></div>
 
@@ -361,14 +350,14 @@
 <section class="grid-border-bottom">
     <div class="container-fluid p-0">
         <div class="row g-0">
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
+            <div class="col-12 p-4 p-md-5">
                 <div class="section-tag">Mine ressurser</div>
 
                 @if (Model.HasProfile)
                 {
                     <h2 class="fs-2 serif-title mt-2">@total <span class="serif-italic">registrert.</span></h2>
 
-                    <div class="mt-4">
+                    <div class="mt-4" style="max-width: 360px;">
                         <div class="pf-stat">
                             <span class="d-inline-flex align-items-center gap-2"><span class="shape-square" style="background-color: #427c62;"></span> Ledige</span>
                             <strong>@Model.AvailableCount</strong>
@@ -386,17 +375,11 @@
                         }
                     </div>
                 }
-                else
-                {
-                    <h2 class="fs-2 serif-title mt-2">Alt du har<br />registrert.</h2>
-                }
 
-                <a asp-controller="Resource" asp-action="Index" class="btn btn-navy d-inline-flex align-items-center gap-3 mt-4">
+                <a asp-controller="Resource" asp-action="Index" class="btn btn-navy d-inline-flex align-items-center gap-3 mt-4 mb-5">
                     Registrer ny ressurs <span aria-hidden="true">&rarr;</span>
                 </a>
-            </div>
 
-            <div class="col-lg-9 p-4 p-md-5">
                 @if (!Model.HasProfile)
                 {
                     <div class="pf-empty">
@@ -474,31 +457,6 @@
                         </tbody>
                     </table>
                 }
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ========================================== -->
-<!-- 4. KOMMER MED INNLOGGING                   -->
-<!-- ========================================== -->
-<section class="grid-border-bottom">
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
-                <div class="section-tag">Konto</div>
-                <h2 class="fs-2 serif-title mt-2">Kommer med<br /><span class="serif-italic">innlogging.</span></h2>
-            </div>
-            <div class="col-lg-9 p-4 p-md-5">
-                <p class="text-muted-custom pf-lede mb-3">
-                    Disse funksjonene krever brukerkontoer, og blir tilgjengelige når innlogging er på plass.
-                </p>
-                <div style="max-width: 600px;">
-                    <div class="pf-stat"><span>Endre passord</span><span class="pf-note">Kommer</span></div>
-                    <div class="pf-stat"><span>Logg ut</span><span class="pf-note">Kommer</span></div>
-                    <div class="pf-stat"><span>Slett konto og alle ressursene dine</span><span class="pf-note">Kommer</span></div>
-                    <div class="pf-stat"><span>Se om en ressurs er tildelt et behov («Tildelt», «Løst»)</span><span class="pf-note">Kommer</span></div>
-                </div>
             </div>
         </div>
     </div>
