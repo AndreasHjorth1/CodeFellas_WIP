@@ -360,6 +360,9 @@ namespace Prosjekt.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("UserId")
+                        .HasColumnType("varchar(255)");
+
                     b.ComplexProperty<Dictionary<string, object>>("Coords", "Prosjekt.Models.Entities.Resource.Coords#Coordinates", b1 =>
                         {
                             b1.Property<double>("Latitude")
@@ -372,6 +375,8 @@ namespace Prosjekt.Migrations
                         });
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Resources");
                 });
@@ -425,6 +430,14 @@ namespace Prosjekt.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Prosjekt.Models.Entities.Resource", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 #pragma warning restore 612, 618
         }
