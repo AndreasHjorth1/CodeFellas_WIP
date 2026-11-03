@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Prosjekt.Models.Entities;
 
 namespace Prosjekt.DataAccess
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     {
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
@@ -13,6 +15,8 @@ namespace Prosjekt.DataAccess
 
         // Her er tabellen for need / behov
         public DbSet<Need> Needs { get; set; }
+
+        public DbSet<Allocation> Allocations { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

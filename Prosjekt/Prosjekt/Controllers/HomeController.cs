@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Models.ModelView;
 
@@ -6,6 +7,7 @@ namespace Prosjekt.Controllers;
 
 public class HomeController : Controller
 {
+    [Authorize]
     public IActionResult Index()
     {
         return View();
@@ -25,6 +27,10 @@ public class HomeController : Controller
         return View();
     }
     public IActionResult UserInstruction()
+    {
+        return View();
+    }
+    public IActionResult CrisisInformation()
     {
         return View();
     }

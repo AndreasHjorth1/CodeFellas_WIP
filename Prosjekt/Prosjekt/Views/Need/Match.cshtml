@@ -1,0 +1,169 @@
+﻿@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.Enums
+@model List<ResourceMatchViewModel>
+
+@{
+    ViewData["Title"] = "Passende ressurser";
+    var allocations = ViewBag.Allocations as List<AllocationViewModel> ?? new List<AllocationViewModel>();
+}
+
+@functions {
+    // Viser avstand i meter under 1 km, ellers kilometer
+    string FormatDistance(double meters) =>
+        meters < 1000
+            ? $"{Math.Round(meters)} m"
+            : $"{(meters / 1000):0.0} km".Replace(".", ",");
+}
+
+<h1 class="mb-1">Passende ressurser</h1>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+<p class="text-muted mb-3">
+    For behovet <strong>@ViewBag.NeedName</strong> — nærmeste først
+</p>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        @if (allocations.Any())
+        {
+            <div class="border rounded p-3 mb-3 bg-light">
+                <h5 class="mb-2">Allerede tildelt</h5>
+                @foreach (var a in allocations)
+                {
+                    <form asp-action="Deallocate" method="post" class="d-flex align-items-center gap-2 mb-1">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="allocationId" value="@a.Id" />
+                        <input type="hidden" name="needId" value="@ViewBag.NeedId" />
+                        <span class="flex-grow-1">@a.Quantity × @a.ResourceName</span>
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Fjern</button>
+                    </form>
+                }
+            </div>
+        }
+        @if (!Model.Any())
+        {
+            <div class="alert alert-warning">
+                Ingen tilgjengelige ressurser passer dette behovet.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive bg-white p-3 shadow-sm border rounded">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Navn</th>
+                            <th>Ledig</th>
+                            <th>Avstand</th>
+                            <th>Tildel</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@m.Name</strong><br />
+                                    <small class="text-secondary">@m.Description</small><br />
+                                    <small class="text-muted">📞 @m.PhoneNumber</small>
+                                    @if (m.AllocatedToThisNeed > 0)
+                                    {
+                                        <br /><span class="badge bg-success">@m.AllocatedToThisNeed tildelt dette behovet</span>
+                                    }
+                                </td>
+                                <td class="small">@m.Available av @m.Quantity</td>
+                                <td><span class="badge bg-primary">@FormatDistance(m.DistanceMeters)</span></td>
+                                <td class="text-nowrap">
+                                    @if (m.Available > 0)
+                                    {
+                                        <form asp-action="Allocate" method="post" class="d-flex gap-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="needId" value="@ViewBag.NeedId" />
+                                            <input type="hidden" name="resourceId" value="@m.Id" />
+                                            <input type="number" name="quantity" value="1" min="1" max="@m.Available"
+                                                   class="form-control form-control-sm" style="max-width: 70px;" />
+                                            <button type="submit" class="btn btn-sm btn-success">Tildel</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Opptatt</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="d-flex gap-2 mt-3">
+            <a asp-action="Overview" class="btn btn-secondary">Tilbake til oversikten</a>
+            @if (ViewBag.NeedStatus == EntryStatus.Resolved)
+            {
+                <form asp-action="Unresolve" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@ViewBag.NeedId" />
+                    <button type="submit" class="btn btn-outline-warning">Gjenåpne behovet</button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="Resolve" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@ViewBag.NeedId" />
+                    <button type="submit" class="btn btn-success">Marker som løst</button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div id="matchKart" class="rounded shadow-sm" style="height: 60vh; min-height: 400px;"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var needLat = @ViewBag.NeedLat;
+        var needLng = @ViewBag.NeedLng;
+        var matches = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+
+        var kart = L.map('matchKart').setView([needLat, needLng], 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(kart);
+
+        // Behovet selv - rød sirkel i midten
+        L.circleMarker([needLat, needLng], {
+            radius: 10, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 0.8
+        }).addTo(kart).bindPopup('<b>@ViewBag.NeedName</b><br/>Behovet');
+
+        var punkter = [[needLat, needLng]];
+
+        matches.forEach(function (m) {
+            L.circleMarker([m.Latitude, m.Longitude], {
+                radius: 7, color: '#198754', fillColor: '#198754', fillOpacity: 0.7
+            }).addTo(kart).bindPopup(
+                `<b>${m.Name}</b><br/>Antall: ${m.Quantity}<br/>📞 ${m.PhoneNumber}`
+            );
+
+            // Strek fra behovet til ressursen
+            L.polyline([[needLat, needLng], [m.Latitude, m.Longitude]], {
+                color: '#198754', weight: 1, opacity: 0.4, dashArray: '4 4'
+            }).addTo(kart);
+
+            punkter.push([m.Latitude, m.Longitude]);
+        });
+
+        if (punkter.length > 1) {
+            kart.fitBounds(punkter, { padding: [30, 30] });
+        }
+    </script>
+}

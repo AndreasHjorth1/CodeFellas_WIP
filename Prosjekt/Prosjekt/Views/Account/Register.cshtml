@@ -1,0 +1,39 @@
+﻿```cshtml
+@model Prosjekt.Models.ModelView.Account.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Registrer deg";
+}
+
+<h1>Opprett bruker</h1>
+
+<form asp-action="Register" method="post" class="col-md-6">
+
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label">E-postadresse</label>
+        <input asp-for="Email" class="form-control" autocomplete="email" placeholder="Skriv inn e-postadresse" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label">Passord</label>
+        <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" placeholder="Opprett et passord" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ConfirmPassword" class="form-label">Bekreft passord</label>
+        <input asp-for="ConfirmPassword" type="password" class="form-control" autocomplete="new-password" placeholder="Gjenta passordet" />
+        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Opprett bruker</button>
+
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+```

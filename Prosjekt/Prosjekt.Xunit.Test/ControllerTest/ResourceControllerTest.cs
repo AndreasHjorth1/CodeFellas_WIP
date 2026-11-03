@@ -18,7 +18,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = controller.Index();
@@ -34,7 +34,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             controller.ModelState.AddModelError("Latitude", "Required");
 
             var model = new ResourceCreatorViewModel
@@ -59,7 +59,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             var model = new ResourceCreatorViewModel
             {
@@ -83,7 +83,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             var model = new ResourceCreatorViewModel
             {
@@ -110,7 +110,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             var model = new ResourceCreatorViewModel
             {
@@ -142,7 +142,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Båt", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.Overview();
@@ -160,7 +160,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.Edit(99);
@@ -175,7 +175,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.Edit(1);
@@ -193,7 +193,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             var model = new ResourceViewModel { Id = 2, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956 };
 
             // Act
@@ -208,7 +208,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             var model = new ResourceViewModel { Id = 1, Name = "Aggregat" };
 
             // Act
@@ -225,7 +225,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             var model = new ResourceViewModel { Id = 99, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956 };
 
             // Act
@@ -241,7 +241,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -272,7 +272,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.Delete(1);
@@ -288,7 +288,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             controller.ModelState.AddModelError("ResourceList[0].Latitude", "Required");
             controller.ModelState.AddModelError("ResourceList[0].Longitude", "Required");
 
@@ -318,7 +318,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Sett opp HttpContext med et tomt FormCollection for å unngå NullReferenceException på Request.Form
             var httpContext = new DefaultHttpContext();
@@ -355,7 +355,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             var model = new ResourceCreatorViewModel
             {
@@ -395,7 +395,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = "Vehicle",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.Edit(1);
@@ -422,7 +422,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 SubCategory = "L",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.Edit(1);
@@ -446,7 +446,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Aggregat",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -476,7 +476,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Aggregat",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             controller.ModelState.AddModelError("PhoneNumber", "Required");
             var model = new ResourceViewModel
             {
@@ -506,7 +506,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Lastebil",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -537,7 +537,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Jakke",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -578,7 +578,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Båt",
                 Coords = new Coordinates(59.9, 10.7)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.GetInformasjon();
@@ -607,7 +607,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = "FinnesIkke",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.GetInformasjon();
@@ -625,7 +625,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", Quantity = 1, PhoneNumber = "98765432", Coords = new Coordinates(58.1467, 7.9956) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.ExportCsv();
@@ -647,7 +647,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", Quantity = 1, Coords = new Coordinates(58.1467, 7.9956) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Quantity = 2, Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.ExportCsv(bareTilgjengelige: false);
@@ -669,7 +669,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             repo.Resources.Add(new Resource { Id = 3, Name = "Båt", IsAvailable = true, Coords = new Coordinates(59.9, 10.7) });
             repo.Resources.Add(new Resource { Id = 1, Name = "Presenning", IsAvailable = true, Coords = new Coordinates(58.1467, 7.9956) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Traktor", IsAvailable = true, Coords = new Coordinates(58.46, 8.77) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.ExportCsv();
@@ -687,7 +687,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Description = "Diesel; 5 kW", IsAvailable = true, Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.ExportCsv();
@@ -705,7 +705,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", PhoneNumber = "98765432", Coords = new Coordinates(58.46, 8.77) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.ExportJson();
@@ -731,7 +731,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Coords = new Coordinates(58.46, 8.77) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo);
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
             var result = await controller.ExportJson(bareTilgjengelige: false);
