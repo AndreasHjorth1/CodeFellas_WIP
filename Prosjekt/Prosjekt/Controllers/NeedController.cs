@@ -384,5 +384,22 @@ namespace Prosjekt.Controllers
 
             return RedirectToAction(nameof(Overview), new { id });
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unresolve(int id)
+        {
+            var need = await _repo.GetByIdAsync(id);
+            if (need == null) return NotFound();
+
+            if (need.Status != EntryStatus.Resolved) return RedirectToAction(nameof(Overview));
+
+            // Tilbake til Tildelt hvis noe er tildelt, ellers Vurderes
+            var allocations = await _allocationRepo.GetByNeedAsync(id);
+            need.Status = allocations.Any() ? EntryStatus.Assigned : EntryStatus.UnderReview;
+
+            await _repo.UpdateAsync(need);
+            return RedirectToAction(nameof(Overview));
+        }
     }
 }
