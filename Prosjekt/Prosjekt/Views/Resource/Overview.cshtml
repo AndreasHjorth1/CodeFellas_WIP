@@ -3,7 +3,9 @@
 @model IEnumerable<ResourceViewModel>
 
 @{
-    ViewData["Title"] = "Oversikt over ressurser";
+    // Vanlige brukere ser bare sine egne ressurser
+    var erAdmin = User.IsInRole("Admin");
+    ViewData["Title"] = erAdmin ? "Oversikt over ressurser" : "Mine ressurser";
 }
 
 <link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
@@ -96,7 +98,7 @@
     }
 </style>
 
-<h1 class="mb-3">Oversikt over ressurser</h1>
+<h1 class="mb-3">@ViewData["Title"]</h1>
 
 <div class="resizable-container" id="splitWrapper">
     <!-- Tabell-seksjon (Ressursoversikt) -->
@@ -199,7 +201,7 @@
                     }
                     else
                     {
-                        <tr><td colspan="6" class="text-muted text-center py-4">Ingen ressurser registrert ennå.</td></tr>
+                        <tr><td colspan="6" class="text-muted text-center py-4">@(erAdmin ? "Ingen ressurser registrert ennå." : "Du har ikke registrert noen ressurser ennå.")</td></tr>
                     }
                 </tbody>
             </table>

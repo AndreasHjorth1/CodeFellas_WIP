@@ -205,8 +205,10 @@
                 }
 
                 // 5. Hent behov (Inkludert inntegnede figurer/områder)
-                const needResponse = await fetch('/Need/GetInformasjon');
-                if (needResponse.ok) {
+                // Behov er bare tilgjengelig for Admin
+                const erAdmin = @Json.Serialize(User.IsInRole("Admin"));
+                const needResponse = erAdmin ? await fetch('/Need/GetInformasjon') : null;
+                if (needResponse && needResponse.ok) {
                     const needsData = await needResponse.json();
 
                     needsData.forEach(function (need) {
