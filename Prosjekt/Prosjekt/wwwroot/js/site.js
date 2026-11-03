@@ -1,4 +1,14 @@
-﻿// Formatering av areal og lengde fra kartet. Brukes av flere views.
+﻿// Koder tekst fra brukere før den settes inn som HTML, for eksempel i kart-popuper.
+function escapeHtml(verdi) {
+    return String(verdi ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Formatering av areal og lengde fra kartet. Brukes av flere views.
 function formaterAreal(m2) {
     if (m2 === null || m2 === undefined) { return ''; }
     if (m2 < 10000) {

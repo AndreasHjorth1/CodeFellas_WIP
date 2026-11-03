@@ -280,7 +280,7 @@
                 markorerMap[r.id] = marker;
 
                 var toppInnhold = `
-                    <b>${r.name}</b> (${r.quantity} stk)<br/>
+                    <b>${escapeHtml(r.name)}</b> (${r.quantity} stk)<br/>
                     Status: ${statusTekst}<br/>`;
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
@@ -290,7 +290,7 @@
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
+                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(address)}</small>`);
                     })
                     .catch(function () {
                         marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
