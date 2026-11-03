@@ -394,12 +394,14 @@ namespace Prosjekt.Controllers
 
         // Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
         // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
+        [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public IActionResult Export()
         {
             return View();
         }
 
+        [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
         {
@@ -429,6 +431,7 @@ namespace Prosjekt.Controllers
             return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
         }
 
+        [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public async Task<IActionResult> ExportJson(bool bareTilgjengelige = true)
         {
