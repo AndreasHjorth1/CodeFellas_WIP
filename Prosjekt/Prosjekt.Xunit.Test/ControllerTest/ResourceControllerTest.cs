@@ -576,7 +576,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task GetInformasjon_ReturnsJsonWithAllResources()
+        public async Task GetInformation_ReturnsJsonWithAllResources()
         {
             // Arrange
             var repo = new FakeResourceRepository();
@@ -598,7 +598,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var controller = CreateController(repo, isAdmin: true);
 
             // Act
-            var result = await controller.GetInformasjon();
+            var result = await controller.GetInformation();
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
@@ -613,7 +613,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task GetInformasjon_UnknownCategory_UsesOther()
+        public async Task GetInformation_UnknownCategory_UsesOther()
         {
             // Arrange
             var repo = new FakeResourceRepository();
@@ -627,7 +627,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var controller = CreateController(repo, isAdmin: true);
 
             // Act
-            var result = await controller.GetInformasjon();
+            var result = await controller.GetInformation();
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);

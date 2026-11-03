@@ -1,14 +1,37 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Controllers;
+using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.Enums;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Xunit.Test.Fakes;
+using System.Security.Claims;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
 {
     public class NeedControllerTest
     {
+        private static NeedController CreateSignedInController(FakeNeedRepository repo, bool isAdmin)
+        {
+            var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user-1") };
+            if (isAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, RoleNames.Admin));
+            }
+
+            return new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository())
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"))
+                    }
+                }
+            };
+        }
+
         [Fact]
         public void Index_ReturnsViewWithOneEmptyNeed()
         {
@@ -486,7 +509,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task GetInformasjon_ReturnsJsonWithAllNeeds()
+        public async Task GetInformation_Admin_ReturnsJsonWithAllNeeds()
         {
             // Arrange
             var repo = new FakeNeedRepository();
@@ -505,10 +528,10 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Traktor",
                 Coords = new Coordinates(59.9, 10.7)
             });
-            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository());
+            var controller = CreateSignedInController(repo, isAdmin: true);
 
             // Act
-            var result = await controller.GetInformasjon();
+            var result = await controller.GetInformation();
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
@@ -524,7 +547,7 @@ Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value).ToList();
         }
 
         [Fact]
-        public async Task GetInformasjon_UnknownCategoryAndPriority_UsesOtherAndPlanned()
+        public async Task GetInformation_UnknownCategoryAndPriority_UsesOtherAndPlanned()
         {
             // Arrange
             var repo = new FakeNeedRepository();
@@ -536,10 +559,10 @@ Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value).ToList();
                 Priority = "FinnesIkke",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository());
+            var controller = CreateSignedInController(repo, isAdmin: true);
 
             // Act
-            var result = await controller.GetInformasjon();
+            var result = await controller.GetInformation();
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
@@ -547,6 +570,43 @@ Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value).ToList();
 Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value));
             Assert.Equal(NeedViewModel.NeedType.Other, need.Type);
             Assert.Equal(ImportanceLevel.Planned, need.Importance);
+        }
+
+        [Fact]
+        public async Task GetInformation_NotSignedIn_ReturnsChallenge()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need { Id = 1, Name = "Vann", Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository())
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+            };
+
+            // Act
+            var result = await controller.GetInformation();
+
+            // Assert
+            Assert.IsType<ChallengeResult>(result);
+        }
+
+        [Fact]
+        public async Task GetInformation_RegularUser_HidesPhoneAndResolvedNeeds()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need { Id = 1, Name = "Vann", PhoneNumber = "12345678", Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Needs.Add(new Need { Id = 2, Name = "Traktor", Status = EntryStatus.Resolved, Coords = new Coordinates(59.9, 10.7) });
+            var controller = CreateSignedInController(repo, isAdmin: false);
+
+            // Act
+            var result = await controller.GetInformation();
+
+            // Assert
+            var jsonResult = Assert.IsType<JsonResult>(result);
+            var need = Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value));
+            Assert.Equal("Vann", need.Name);
+            Assert.Equal(string.Empty, need.Phone);
         }
     }
 }

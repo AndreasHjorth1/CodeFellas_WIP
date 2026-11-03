@@ -177,7 +177,7 @@
 
             try {
                 // 4. Hent ressurser
-                const resResponse = await fetch('/Resource/GetInformasjon');
+                const resResponse = await fetch('/Resource/GetInformation');
                 if (resResponse.ok) {
                     const resourcesData = await resResponse.json();
 
@@ -205,10 +205,8 @@
                 }
 
                 // 5. Hent behov (Inkludert inntegnede figurer/områder)
-                // Behov er bare tilgjengelig for Admin
-                const erAdmin = @Json.Serialize(User.IsInRole("Admin"));
-                const needResponse = erAdmin ? await fetch('/Need/GetInformasjon') : null;
-                if (needResponse && needResponse.ok) {
+                const needResponse = await fetch('/Need/GetInformation');
+                if (needResponse.ok) {
                     const needsData = await needResponse.json();
 
                     needsData.forEach(function (need) {
@@ -225,7 +223,7 @@
                                 <b>${need.name || need.Name || 'Uten navn'}</b><br/>
                                 ${(need.description || need.Description) ? (need.description || need.Description) + '<br/>' : ''}
                                 ${areaSquareMeters ? '<b>Areal:</b> ca. ' + formaterAreal(areaSquareMeters) + '<br/>' : ''}
-                                📞 Tlf: ${need.phone || need.Phone || 'Ikke oppgitt'}
+                                ${(need.phone || need.Phone) ? '📞 Tlf: ' + (need.phone || need.Phone) : ''}
                             </div>
                         `;
 

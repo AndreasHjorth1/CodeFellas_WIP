@@ -231,29 +231,35 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
+        [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> GetInformasjon()
+        public async Task<IActionResult> GetInformation()
         {
-            var behov = await _repo.GetAllAsync();
+            if (User.Identity?.IsAuthenticated != true) return Challenge();
 
-            var result = behov.Select(n => new NeedViewModel
-            {
-                Id = n.Id,
-                Name = n.Name,
-                Phone = n.PhoneNumber,
-                Description = n.Description,
-                Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
-                    ? cat
-                    : NeedViewModel.NeedType.Other,
-                Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
-                    ? prio
-                    : ImportanceLevel.Planned,
-                Status = n.Status,
-                Latitude = n.Coords.Latitude,
-                Longitude = n.Coords.Longitude,
-                AreaGeoJson = n.AreaGeoJson,
-                AreaSquareMeters = n.AreaSquareMeters
-            });
+            var isAdmin = User.IsInRole(RoleNames.Admin);
+            var needs = await _repo.GetAllAsync();
+
+            var result = needs
+                .Where(n => isAdmin || n.Status != EntryStatus.Resolved)
+                .Select(n => new NeedViewModel
+                {
+                    Id = n.Id,
+                    Name = n.Name,
+                    Phone = isAdmin ? n.PhoneNumber : string.Empty,
+                    Description = n.Description,
+                    Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
+                        ? cat
+                        : NeedViewModel.NeedType.Other,
+                    Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
+                        ? prio
+                        : ImportanceLevel.Planned,
+                    Status = n.Status,
+                    Latitude = n.Coords.Latitude,
+                    Longitude = n.Coords.Longitude,
+                    AreaGeoJson = n.AreaGeoJson,
+                    AreaSquareMeters = n.AreaSquareMeters
+                });
 
             return Json(result);
         }

@@ -361,13 +361,13 @@ namespace Prosjekt.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetInformasjon()
+        public async Task<IActionResult> GetInformation()
         {
-            var ressurser = User.IsInRole(RoleNames.Admin)
+            var resources= User.IsInRole(RoleNames.Admin)
                 ? await _repo.GetAllAsync()
                 : await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            var result = ressurser.Select(r => new ResourceViewModel
+            var result = resources.Select(r => new ResourceViewModel
             {
                 Id = r.Id,
                 Name = r.Name,
