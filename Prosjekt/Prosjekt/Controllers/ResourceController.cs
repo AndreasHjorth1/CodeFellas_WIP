@@ -1,14 +1,16 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Prosjekt.Controllers
 {
+    [Authorize]
     public class ResourceController : Controller
     {
         private readonly IResourceRepository _repo;

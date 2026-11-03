@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 <html lang="no">
 <head>
     <meta charset="utf-8" />
@@ -14,135 +15,210 @@
     <link rel="stylesheet" href="~/Prosjekt.styles.css" asp-append-version="true" />
 
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: #f7f5f0;
-            color: #1a3048;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                background-color: #f7f5f0;
+                color: #1a3048;
+                font-family: system-ui, -apple-system, sans-serif;
+            }
 
-        /* 1. Mørkeblå toppstripe med rød topplinje og svart bunnlinje */
-        .top-alert-bar {
-            background-color: #0b2238;
-            color: #ffffff;
-            font-size: 0.72rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-weight: 600;
-            border-top: 3px solid #d9534f;
-            border-bottom: 2px solid #000000;
-        }
-        .alert-dot {
-            width: 7px;
-            height: 7px;
-            background-color: #20c997;
-            border-radius: 50%;
-            display: inline-block;
-        }
+            /* 1. Mørkeblå toppstripe med rød topplinje og svart bunnlinje */
+            .top-alert-bar {
+                background-color: #0b2238;
+                color: #ffffff;
+                font-size: 0.72rem;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                font-weight: 600;
+                border-top: 3px solid #d9534f;
+                border-bottom: 2px solid #000000;
+            }
 
-        /* 2. Hoved-Navbar */
-        .custom-navbar {
-            background-color: #f7f5f0;
-            padding: 0.8rem 0;
-        }
-        .logo-line { height: 2px; width: 15px; }
-        .logo-line-red { background-color: #d9534f; }
-        .logo-line-blue { background-color: #5b768d; }
-        .logo-text { font-family: Georgia, serif; font-size: 1.4rem; }
+            .alert-dot {
+                width: 7px;
+                height: 7px;
+                background-color: #20c997;
+                border-radius: 50%;
+                display: inline-block;
+            }
 
-        /* Knapper */
-        .btn-custom-outline, .btn-custom-dark {
-            border-radius: 2px;
-            padding: 0.45rem 1.25rem;
-            font-weight: 600;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-decoration: none;
-        }
-        .btn-custom-outline {
-            border: 1px solid #1a3048;
-            color: #1a3048;
-            background-color: transparent;
-        }
-        .btn-custom-outline:hover { background-color: #e9e5dd; color: #1a3048; }
-        .btn-custom-dark {
-            background-color: #0b2238;
-            color: #ffffff !important;
-            border: none;
-        }
-        .btn-custom-dark:hover { background-color: #061424; color: #ffffff; }
+            /* 2. Hoved-Navbar */
+            .custom-navbar {
+                background-color: #f7f5f0;
+                padding: 0.8rem 0;
+            }
 
-        /* Tydelig og tykk skillelinje under hele navbaren */
-        .grid-border-bottom { 
-            border-bottom: 2px solid #1a3048 !important; 
-        }
-        .grid-border-right { border-right: 1px solid #e2d9cc; }
-        .menu-header-text { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
-        .footer-header-text { font-size: 0.7rem; letter-spacing: 1.5px; }
+            .logo-line {
+                height: 2px;
+                width: 15px;
+            }
 
-        main { padding-bottom: 0 !important; margin-bottom: 0 !important; background-color: #f7f5f0; }
+            .logo-line-red {
+                background-color: #d9534f;
+            }
 
-        footer.footer-light {
-            background-color: #f7f5f0;
-            color: #1a3048;
-            border-top: 4px solid #0b2238;
-        }
+            .logo-line-blue {
+                background-color: #5b768d;
+            }
+
+            .logo-text {
+                font-family: Georgia, serif;
+                font-size: 1.4rem;
+            }
+
+            /* Knapper */
+            .btn-custom-outline, .btn-custom-dark {
+                border-radius: 2px;
+                padding: 0.45rem 1.25rem;
+                font-weight: 600;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-decoration: none;
+            }
+
+            .btn-custom-outline {
+                border: 1px solid #1a3048;
+                color: #1a3048;
+                background-color: transparent;
+            }
+
+                .btn-custom-outline:hover {
+                    background-color: #e9e5dd;
+                    color: #1a3048;
+                }
+
+            .btn-custom-dark {
+                background-color: #0b2238;
+                color: #ffffff !important;
+                border: none;
+            }
+
+                .btn-custom-dark:hover {
+                    background-color: #061424;
+                    color: #ffffff;
+                }
+
+            /* Skillelinjer */
+            .grid-border-bottom {
+                border-bottom: 2px solid #1a3048 !important;
+            }
+
+            .grid-border-right {
+                border-right: 1px solid #e2d9cc;
+            }
+
+            .menu-header-text {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .footer-header-text {
+                font-size: 0.7rem;
+                letter-spacing: 1.5px;
+            }
+
+            main {
+                padding-bottom: 0 !important;
+                margin-bottom: 0 !important;
+                background-color: #f7f5f0;
+            }
+
+            footer.footer-light {
+                background-color: #f7f5f0;
+                color: #1a3048;
+                border-top: 4px solid #0b2238;
+            }
     </style>
 </head>
+
 <body class="d-flex flex-column min-vh-100">
 
     <header class="sticky-top">
+
         <!-- 1. Øverste mørkeblå stripe -->
         <div class="top-alert-bar py-2 px-4">
             <div class="container-fluid d-flex justify-content-between align-items-center p-0">
+
                 <div class="d-flex align-items-center gap-2">
                     <span class="alert-dot"></span>
                     <span>Ingen nasjonale varsler akkurat nå</span>
                 </div>
+
                 <div class="d-none d-md-flex align-items-center gap-3">
                     <span class="opacity-75">Ved akutt fare</span>
                     <span>Brann <strong class="text-white">110</strong></span>
                     <span>Politi <strong class="text-white">112</strong></span>
                     <span>Ambulanse <strong class="text-white">113</strong></span>
                 </div>
+
             </div>
         </div>
 
-        <!-- 2. Hoved-Navbar med tykk bunnlinje -->
+        <!-- 2. Hoved-Navbar -->
         <nav class="navbar navbar-expand-lg custom-navbar grid-border-bottom">
             <div class="container-fluid px-4 d-flex justify-content-between">
+
                 <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-custom-outline btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+
+                    <button class="btn btn-custom-outline btn-sm"
+                            type="button"
+                            data-bs-toggle="offcanvas"
+                            data-bs-target="#offcanvasMenu"
+                            aria-controls="offcanvasMenu">
+
                         <i class="fa-solid fa-bars me-1"></i> Meny
                     </button>
-                    
-                    <a class="navbar-brand fw-bold text-dark mb-0 h4 d-flex align-items-center gap-2 me-3" asp-area="" asp-controller="Home" asp-action="Index">
+
+                    <a class="navbar-brand fw-bold text-dark mb-0 h4 d-flex align-items-center gap-2 me-3"
+                       asp-area=""
+                       asp-controller="Home"
+                       asp-action="Index">
+
                         <div class="logo-line logo-line-red"></div>
                         <span class="logo-text">Totalforsvaret</span>
                         <div class="logo-line logo-line-blue"></div>
+
                     </a>
                 </div>
 
                 <div class="d-flex align-items-center gap-2 ms-auto">
+
                     @if (User.Identity != null && User.Identity.IsAuthenticated)
                     {
                         <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-custom-outline">Logg ut (@User.Identity.Name)</button>
+
+                            <button type="submit" class="btn btn-custom-outline">
+                                Logg ut (@User.Identity.Name)
+                            </button>
                         </form>
                     }
                     else
                     {
-                        <a class="btn btn-custom-outline" asp-area="" asp-controller="Account" asp-action="Login">Logg inn</a>
-                        <a class="btn btn-custom-dark" asp-area="" asp-controller="Account" asp-action="Register">Registrer ressurs</a>
+                        <a class="btn btn-custom-outline"
+                           asp-area=""
+                           asp-controller="Account"
+                           asp-action="Login">
+                            Logg inn
+                        </a>
+
+                        <a class="btn btn-custom-dark"
+                           asp-area=""
+                           asp-controller="Account"
+                           asp-action="Register">
+                            Opprett bruker
+                        </a>
                     }
+
                 </div>
             </div>
         </nav>
     </header>
+
 
     <!-- HOVEDINNHOLD -->
     <div class="container-fluid flex-grow-1 d-flex flex-column p-0">
@@ -151,88 +227,249 @@
         </main>
     </div>
 
+
     <!-- BOOTSTRAP OFFCANVAS MENY -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel" style="background-color: #f7f5f0;">
+    <div class="offcanvas offcanvas-start"
+         tabindex="-1"
+         id="offcanvasMenu"
+         aria-labelledby="offcanvasMenuLabel"
+         style="background-color: #f7f5f0;">
+
         <div class="offcanvas-header border-bottom border-secondary-subtle">
-            <h5 class="offcanvas-title fw-bold" id="offcanvasMenuLabel">Meny</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <h5 class="offcanvas-title fw-bold" id="offcanvasMenuLabel">
+                Meny
+            </h5>
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="offcanvas"
+                    aria-label="Lukk">
+            </button>
         </div>
 
         <div class="offcanvas-body p-0">
             <div class="list-group list-group-flush bg-transparent">
-                <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">Generelt</div>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Home" asp-action="Index">Hjem</a>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Home" asp-action="Privacy">Personvern</a>
 
-                <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">Registrering</div>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Resource" asp-action="Index">Registrer Ressurs</a>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Need" asp-action="Index">Registrer Behov</a>
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <!-- ADMINMENY -->
 
-                <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">Oversikt</div>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Resource" asp-action="Overview">Oversikt over ressurser</a>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Need" asp-action="Overview">Oversikt over behov</a>
+                        <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                            Generelt
+                        </div>
 
-                <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">Informasjon & Kart</div>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="CrisisInformation" asp-action="Index">Kriseinformasjon</a>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Settings" asp-action="Index">Innstillinger</a>
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Home" asp-action="Index">
+                            Hjem
+                        </a>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Home" asp-action="Privacy">
+                            Personvern
+                        </a>
+
+                        <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                            Registrering
+                        </div>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Resource" asp-action="Index">
+                            Registrer ressurs
+                        </a>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Need" asp-action="Index">
+                            Registrer behov
+                        </a>
+
+                        <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                            Oversikt
+                        </div>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Resource" asp-action="Overview">
+                            Oversikt over ressurser
+                        </a>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Need" asp-action="Overview">
+                            Oversikt over behov
+                        </a>
+                    }
+                    else
+                    {
+                        <!-- VANLIG BRUKER -->
+
+                        <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                            Generelt
+                        </div>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Home" asp-action="Index">
+                            Hjem
+                        </a>
+
+                        <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                            Registrering
+                        </div>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Resource" asp-action="Index">
+                            Registrer ressurs
+                        </a>
+
+                        <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                            Oversikt
+                        </div>
+
+                        <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                           asp-controller="Resource" asp-action="Overview">
+                            Oversikt over ressurser
+                        </a>
+                    }
+                }
+                else
+                {
+                    <!-- IKKE INNLOGGET -->
+
+                    <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                        Generelt
+                    </div>
+
+                    <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                       asp-controller="Home" asp-action="Privacy">
+                        Personvern
+                    </a>
+                }
+
+                <!-- FELLES MENYVALG FOR ALLE -->
+
+                <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
+                    Informasjon og kart
+                </div>
+
+                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                   asp-controller="Home" asp-action="CrisisInformation">
+                    Kriseinformasjon
+                </a>
+
+                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                   asp-controller="Settings" asp-action="Index">
+                    Innstillinger
+                </a>
+
+                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
+                   asp-controller="Home" asp-action="UserInstruction">
+                    Brukerinstruks
+                </a>
+
             </div>
         </div>
     </div>
 
+
     <!-- 3. FOOTER -->
     <footer class="footer-light mt-auto">
+
         <div class="container-fluid p-0">
+
             <div class="row g-0 border-top border-secondary-subtle">
+
                 <div class="col-lg-6 p-4 p-md-5 grid-border-right">
+
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <div class="logo-line logo-line-red"></div>
                         <h5 class="mb-0 fw-bold logo-text">Totalforsvaret</h5>
                     </div>
-                    <p class="small text-muted mb-0" style="max-width: 420px; line-height: 1.6;">
+
+                    <p class="small text-muted mb-0"
+                       style="max-width: 420px; line-height: 1.6;">
                         En nasjonal portal for å registrere sivile ressurser og koble dem med behov i en krise. Utviklet for Kartverket og Heimevernet.
                     </p>
                 </div>
 
+
                 <div class="col-lg-3 p-4 p-md-5 grid-border-right">
-                    <span class="text-uppercase extra-small fw-bold text-muted d-block mb-3 footer-header-text">OM</span>
+
+                    <span class="text-uppercase extra-small fw-bold text-muted d-block mb-3 footer-header-text">
+                        OM
+                    </span>
+
                     <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
-                        <li><a asp-controller="Home" asp-action="Privacy" class="text-dark text-decoration-none">Personvern</a></li>
-                        <li><a asp-controller="Home" asp-action="UserInstruction" class="text-dark text-decoration-none">Brukerinstruks</a></li>
-                        <li><a asp-controller="Home" asp-action="AboutUs" class="text-dark text-decoration-none">Om oss</a></li>
+
+                        <li>
+                            <a asp-controller="Home" asp-action="Privacy"
+                               class="text-dark text-decoration-none">
+                                Personvern
+                            </a>
+                        </li>
+
+                        <li>
+                            <a asp-controller="Home" asp-action="UserInstruction"
+                               class="text-dark text-decoration-none">
+                                Brukerinstruks
+                            </a>
+                        </li>
+
+                        <li>
+                            <a asp-controller="Home" asp-action="AboutUs"
+                               class="text-dark text-decoration-none">
+                                Om oss
+                            </a>
+                        </li>
+
                     </ul>
                 </div>
 
+
                 <div class="col-lg-3 p-4 p-md-5">
-                    <span class="text-uppercase extra-small fw-bold text-danger d-block mb-3 footer-header-text">VED AKUTT FARE</span>
+
+                    <span class="text-uppercase extra-small fw-bold text-danger d-block mb-3 footer-header-text">
+                        VED AKUTT FARE
+                    </span>
+
                     <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-secondary-subtle small">
                         <span>Brann</span>
                         <strong class="text-danger fw-bold fs-6">110</strong>
                     </div>
+
                     <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-secondary-subtle small">
                         <span>Politi</span>
                         <strong class="text-danger fw-bold fs-6">112</strong>
                     </div>
+
                     <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-secondary-subtle small">
                         <span>Ambulanse</span>
                         <strong class="text-danger fw-bold fs-6">113</strong>
                     </div>
+
                     <div class="d-flex justify-content-between align-items-center py-1 small pt-2">
                         <span>Legevakt</span>
                         <strong class="text-danger fw-bold fs-6">116 117</strong>
                     </div>
+
                 </div>
             </div>
 
-            <div class="row g-0 px-4 px-md-5 py-3 text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+
+            <div class="row g-0 px-4 px-md-5 py-3 text-muted"
+                 style="font-size: 0.7rem; letter-spacing: 0.5px;">
+
                 <div class="col-md-6 mb-1 mb-md-0">
                     © 2026 TOTALFORSVARET • PROTOTYPE, IS-202, UNIVERSITETET I AGDER
                 </div>
+
                 <div class="col-md-6 text-md-end">
                     KARTDATA © KARTVERKET • VÆRDATA © MET NORWAY
                 </div>
+
+
             </div>
         </div>
     </footer>
+
 
     <!-- SKRIPTER -->
     <script src="~/lib/leaflet/leaflet.js"></script>
@@ -243,5 +480,6 @@
     <script src="~/js/leaflet-draw-no.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>
