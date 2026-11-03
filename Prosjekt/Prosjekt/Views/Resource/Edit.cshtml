@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model ResourceViewModel
@@ -57,6 +58,7 @@
                         <option value="Tool">Verktøy</option>
                         <option value="Other">Annet</option>
                     </select>
+                    <div id="ressursSymbolPreview" class="map-symbol-preview" aria-live="polite"></div>
                 </div>
 
                 <div id="seksjonKjøretøy" class="kategori-seksjon mb-3" style="display:none;">
@@ -152,6 +154,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
     <script>
         // Lagrede underkategorier fra serveren (JSON-kodet)
         var lagredeVerdier = {
@@ -213,18 +216,19 @@
             oppdaterSkjemavisning();
         });
 
-        function getIkon(fargeNavn) {
-            return new L.Icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-            });
+        function hentRessursIkon() {
+            return MapSymbols.resourceIcon(document.getElementById('kategoriVelger').value, document.getElementById('inputAvailability').checked);
         }
 
-        var ikonGronn = getIkon('green');
+        function oppdaterRessursSymbol() {
+            const select = document.getElementById('kategoriVelger');
+            const available = document.getElementById('inputAvailability').checked;
+            document.getElementById('ressursSymbolPreview').innerHTML =
+                MapSymbols.image(MapSymbols.resourceUrl(select.value, available)) + '<span>' +
+                MapSymbols.escape(select.options[select.selectedIndex].text) + (available ? ' – Tilgjengelig' : ' – Ikke tilgjengelig') + '</span>';
+            drawnItems.eachLayer(layer => layer.setIcon(hentRessursIkon()));
+            drawControl.setDrawingOptions({marker:{icon:hentRessursIkon()}});
+        }
 
         var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
         var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
@@ -242,23 +246,26 @@
         map.addLayer(drawnItems);
 
         if (harPosisjon) {
-            var existingMarker = L.marker(startPunkt, { icon: ikonGronn });
+            var existingMarker = L.marker(startPunkt, { icon: hentRessursIkon() });
             drawnItems.addLayer(existingMarker);
         }
 
         var drawControl = new L.Control.Draw({
             draw: {
                 polygon: false, polyline: false, circle: false, rectangle: false,
-                marker: { icon: ikonGronn }
+                marker: { icon: hentRessursIkon() }
             },
             edit: { featureGroup: drawnItems, remove: true }
         });
         map.addControl(drawControl);
+        document.getElementById('kategoriVelger').addEventListener('change', oppdaterRessursSymbol);
+        document.getElementById('inputAvailability').addEventListener('change', oppdaterRessursSymbol);
+        oppdaterRessursSymbol();
 
         map.on('draw:created', function (e) {
             var layer = e.layer;
             drawnItems.clearLayers();
-            layer.setIcon(ikonGronn);
+            layer.setIcon(hentRessursIkon());
             drawnItems.addLayer(layer);
 
             var latlng = layer.getLatLng();
