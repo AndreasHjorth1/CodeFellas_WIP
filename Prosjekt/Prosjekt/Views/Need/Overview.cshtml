@@ -1,3 +1,6 @@
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 ﻿@using Prosjekt.Models.ModelView
 @using Prosjekt.Models.Enums
 @using System.Globalization
@@ -234,16 +237,17 @@
 </div>
 
 @section Scripts {
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
+
     <script>
         var kart;
         var markorerMap = {};
+        var symbolMarkers;
         var omraderMap = {};
 
         function fokuserPaBehov(id, lat, lng) {
-            if (lat && lng && markorerMap[id]) {
-                kart.flyTo([lat, lng], 15, { duration: 1 });
-                markorerMap[id].openPopup();
-            }
+            MapSymbols.focus(symbolMarkers, markorerMap[id]);
         }
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -272,8 +276,9 @@
             }).addTo(kart);
 
             var bounds = [];
+            symbolMarkers = MapSymbols.createCluster(kart);
            
-            var kjorFilter = settOppFilter(kart, [markorerMap, omraderMap]);
+            var kjorFilter = settOppFilter(kart, [markorerMap, omraderMap], [symbolMarkers, kart]);
             settOppStedssok(kart, kjorFilter);
             settOppRadiusSok(kart, kjorFilter);
 
@@ -300,7 +305,7 @@
                     icon: valgtIkon,
                     title: b.typeName + ': ' + b.name + ' – ' + b.importanceName,
                     alt: b.typeName + ': ' + b.name + ' – ' + b.importanceName
-                }).addTo(kart);
+                }).addTo(symbolMarkers);
                 markorerMap[b.id] = marker;
 
                 if (b.areaGeoJson) {
@@ -311,7 +316,7 @@
                             fillOpacity: 0.12
                         }
                     }).addTo(kart);
-                    omraderMap[b.Id] = omrade;
+                    omraderMap[b.id] = omrade;
 
                     if (b.areaSquareMeters) {
                         omrade.bindTooltip(

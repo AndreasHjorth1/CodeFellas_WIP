@@ -61,7 +61,7 @@ var radiusSenter = null;
 var radiusMeter = 5000;
 var radiusSirkel = null;
 var velgerPunkt = false;
-function settOppFilter(kart, lagRegistre) {
+function settOppFilter(kart, lagRegistre, lagGrupper = []) {
     var sokeFelt = document.getElementById('sokeFelt');
     var typeFilter = document.getElementById('typeFilter');
     if (!sokeFelt || !typeFilter) return function () { };
@@ -84,10 +84,11 @@ function settOppFilter(kart, lagRegistre) {
 
             rad.classList.toggle('d-none', !vis);
 
-            lagRegistre.forEach(function (register) {
+            lagRegistre.forEach(function (register, index) {
                 var lag = register[rad.dataset.id];
                 if (!lag) return;
-                if (vis) { kart.addLayer(lag); } else { kart.removeLayer(lag); }
+                var eier = lagGrupper[index] || kart;
+                if (vis) { eier.addLayer(lag); } else { eier.removeLayer(lag); }
             });
         });
     }

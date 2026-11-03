@@ -1,0 +1,8 @@
+
+.map-symbol-preview { display:flex; gap:.5rem; align-items:center; margin-top:.5rem; }
+.map-symbol-inline { display:inline-flex; gap:.4rem; align-items:center; }
+.map-symbol-small { width:28px; height:28px; flex-shrink:0; vertical-align:middle; }
+.map-symbol-marker { filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+.need-map-icon { border-radius:50%; outline:3px solid; outline-offset:1px; }
+.need-map-acute { outline-color:#dc3545; }
+.need-map-planned { outline-color:#ffc107; }
