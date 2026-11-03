@@ -19,6 +19,11 @@ namespace Prosjekt.DataAccess.Repositories
             return await _context.Resources.ToListAsync();
         }
 
+        public async Task<IEnumerable<Resource>> GetByUserIdAsync(string userId)
+        {
+            return await _context.Resources.Where(r => r.UserId == userId).ToListAsync();
+        }
+
         public async Task<Resource?> GetByIdAsync(int id)
         {
             return await _context.Resources.FindAsync(id);

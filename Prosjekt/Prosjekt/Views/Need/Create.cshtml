@@ -185,7 +185,8 @@
                 // Slå opp adressen én gang for alle behov på samme sted.
                 fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng)
                     .then(response => response.ok ? response.json() : null)
-                    .then(data => leggTilAdresse(data && data.display_name ? data.display_name : 'Adresse ikke funnet'))
+              
+                                  .then(data => leggTilAdresse(data && data.display_name ? data.display_name : 'Adresse ikke funnet'))
                     .catch(() => leggTilAdresse('Ikke tilgjengelig'));
                 function leggTilAdresse(address) {
                     receiptMarkers.forEach(function (entry, index) {

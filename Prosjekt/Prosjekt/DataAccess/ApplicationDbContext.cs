@@ -33,6 +33,11 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
                 entity.Property(e => e.IsAvailable).HasDefaultValue(true);
 
+                entity.HasOne<IdentityUser>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.ComplexProperty(e => e.Coords, coord =>
                 {
                     coord.Property(c => c.Latitude).HasColumnName("Latitude").IsRequired();

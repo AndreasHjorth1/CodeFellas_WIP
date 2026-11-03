@@ -320,15 +320,15 @@
 
                     if (b.areaSquareMeters) {
                         omrade.bindTooltip(
-                            `${b.name}: ca. ${b.areaSquareMeters} m²`,
+                            `${escapeHtml(b.name)}: ca. ${b.areaSquareMeters} m²`,
                             { sticky: true }
                         );
                     }
                 }
 
                 var toppInnhold = `
-                    <b>${b.name}</b><br/>
-                    📞 Tlf: ${b.phone || 'Ikke oppgitt'}<br/>
+                    <b>${escapeHtml(b.name)}</b><br/>
+                    📞 Tlf: ${escapeHtml(b.phone || 'Ikke oppgitt')}<br/>
                     Status: ${statusTekst}<br/>`;
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
@@ -338,7 +338,7 @@
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
+                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(address)}</small>`);
                     })
                     .catch(function () {
                         marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');

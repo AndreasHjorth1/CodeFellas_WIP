@@ -168,7 +168,9 @@
 
             try {
                 // 4. Hent ressurser
-                const resResponse = await fetch('@Url.Action("GetInformasjon", "Resource")');
+              
+              const resResponse = await fetch('@Url.Action("GetInformation", "Resource")');
+              
                 if (resResponse.ok) {
                     const resourcesData = await resResponse.json();
 
@@ -186,8 +188,8 @@
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
-                                    <b>${res.name || res.Name || 'Uten navn'}</b> (${res.quantity || res.Quantity || 1} stk)<br/>
-                                    📞 Tlf: ${res.phoneNumber || res.PhoneNumber || 'Ikke oppgitt'}<br/>
+                                    <b>${escapeHtml(res.name || res.Name || 'Uten navn')}</b> (${res.quantity || res.Quantity || 1} stk)<br/>
+                                    📞 Tlf: ${escapeHtml(res.phoneNumber || res.PhoneNumber || 'Ikke oppgitt')}<br/>
                                     Status: ${status}
                                 </div>
                             `);
@@ -197,7 +199,9 @@
                 }
 
                 // 5. Hent behov (Inkludert inntegnede figurer/områder)
-                const needResponse = await fetch('@Url.Action("GetInformasjon", "Need")');
+              
+              const needResponse = await fetch('@Url.Action("GetInformation", "Need")');
+              
                 if (needResponse.ok) {
                     const needsData = await needResponse.json();
 
@@ -212,10 +216,10 @@
                         var popupInnhold = `
                             <div style="font-size: 0.9rem;">
                                 <strong style="color: #dc3545;">🆘 BEHOV</strong><br/>
-                                <b>${need.name || need.Name || 'Uten navn'}</b><br/>
-                                ${(need.description || need.Description) ? (need.description || need.Description) + '<br/>' : ''}
+                                <b>${escapeHtml(need.name || need.Name || 'Uten navn')}</b><br/>
+                                ${(need.description || need.Description) ? escapeHtml(need.description || need.Description) + '<br/>' : ''}
                                 ${areaSquareMeters ? '<b>Areal:</b> ca. ' + formaterAreal(areaSquareMeters) + '<br/>' : ''}
-                                📞 Tlf: ${need.phone || need.Phone || 'Ikke oppgitt'}
+                                ${(need.phone || need.Phone) ? '📞 Tlf: ' + escapeHtml(need.phone || need.Phone) : ''}
                             </div>
                         `;
 
@@ -239,7 +243,7 @@
 
                                 if (areaSquareMeters) {
                                     omrade.bindTooltip(
-                                        `${need.name || need.Name || 'Område'}: ca. ${formaterAreal(areaSquareMeters)}`,
+                                        `${escapeHtml(need.name || need.Name || 'Område')}: ca. ${formaterAreal(areaSquareMeters)}`,
                                         { sticky: true }
                                     );
                                 }

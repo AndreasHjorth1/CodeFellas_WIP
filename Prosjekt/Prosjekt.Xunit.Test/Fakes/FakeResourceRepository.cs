@@ -29,6 +29,11 @@ namespace Prosjekt.Xunit.Test.Fakes
             return Task.FromResult<IEnumerable<Resource>>(Resources);
         }
 
+        public Task<IEnumerable<Resource>> GetByUserIdAsync(string userId)
+        {
+            return Task.FromResult<IEnumerable<Resource>>(Resources.Where(r => r.UserId == userId).ToList());
+        }
+
         public Task<Resource?> GetByIdAsync(int id)
         {
             var resource = Resources.FirstOrDefault(n => n.Id == id);

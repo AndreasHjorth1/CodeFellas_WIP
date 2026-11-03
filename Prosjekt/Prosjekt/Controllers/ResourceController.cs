@@ -1,11 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
+using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
+using System.Security.Claims;
 using System;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Prosjekt.Controllers
@@ -20,6 +26,12 @@ namespace Prosjekt.Controllers
         {
             _repo = repo;
             _allocationRepo = allocationRepo;
+        }
+
+        private bool CanModify(Resource resource)
+        {
+            return User.IsInRole(RoleNames.Admin)
+                || resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
         [HttpGet]
@@ -158,7 +170,8 @@ namespace Prosjekt.Controllers
                     AvailableFrom = baseResource.AvailableFrom,
                     AvailableTo = baseResource.AvailableTo,
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    CreatedAt = NorwegianTime.Now
+                    CreatedAt = NorwegianTime.Now,
+                    UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(resourceEntity);
@@ -176,7 +189,9 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
-            var resourceEntities = await _repo.GetAllAsync();
+            var resourceEntities = User.IsInRole(RoleNames.Admin)
+                ? await _repo.GetAllAsync()
+                : await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
             var resourceViewModels = resourceEntities.Select(r => new ResourceViewModel
@@ -199,11 +214,11 @@ namespace Prosjekt.Controllers
         }
 
         [HttpGet]
-        [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var resource = await _repo.GetByIdAsync(id);
             if (resource == null) return NotFound();
+            if (!CanModify(resource)) return Forbid();
 
             string description = resource.Description ?? "";
             string licensePlate = "";
@@ -285,6 +300,7 @@ namespace Prosjekt.Controllers
 
             var resourceEntity = await _repo.GetByIdAsync(id);
             if (resourceEntity == null) return NotFound();
+            if (!CanModify(resourceEntity)) return Forbid();
 
             string extraInfo = "";
             string? subCategoryValue = null;
@@ -342,17 +358,23 @@ namespace Prosjekt.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
+            var resource = await _repo.GetByIdAsync(id);
+            if (resource == null) return NotFound();
+            if (!CanModify(resource)) return Forbid();
+
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByResourceAsync(id);
             return RedirectToAction(nameof(Overview));
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetInformasjon()
+        public async Task<IActionResult> GetInformation()
         {
-            var ressurser = await _repo.GetAllAsync();
+            var resources= User.IsInRole(RoleNames.Admin)
+                ? await _repo.GetAllAsync()
+                : await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            var result = ressurser.Select(r => new ResourceViewModel
+            var result = resources.Select(r => new ResourceViewModel
             {
                 Id = r.Id,
                 Name = r.Name,
@@ -368,6 +390,113 @@ namespace Prosjekt.Controllers
             });
 
             return Json(result);
+        }
+
+        // Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
+        // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
+        [Authorize(Roles = RoleNames.Admin)]
+        [HttpGet]
+        public IActionResult Export()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = RoleNames.Admin)]
+        [HttpGet]
+        public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
+        {
+            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Id;Navn;Kategori;Antall;Tilgjengelig;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
+
+            foreach (var r in ressurser)
+            {
+                sb.AppendLine(string.Join(";",
+                    r.Id,
+                    Csv(r.Name),
+                    OversettKategori(r.Category),
+                    r.Quantity,
+                    r.IsAvailable ? "Ja" : "Nei",
+                    Csv(r.PhoneNumber),
+                    Csv(r.Description),
+                    r.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    r.AvailableTo?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
+                    r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            // BOM gjør at Excel viser æ, ø og å riktig
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
+        }
+
+        [Authorize(Roles = RoleNames.Admin)]
+        [HttpGet]
+        public async Task<IActionResult> ExportJson(bool bareTilgjengelige = true)
+        {
+            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
+
+            var data = ressurser.Select(r => new
+            {
+                r.Id,
+                Navn = r.Name,
+                Kategori = OversettKategori(r.Category),
+                Antall = r.Quantity,
+                Tilgjengelig = r.IsAvailable,
+                Telefon = r.PhoneNumber,
+                Beskrivelse = r.Description,
+                TilgjengeligFra = r.AvailableFrom,
+                TilgjengeligTil = r.AvailableTo,
+                Breddegrad = r.Coords.Latitude,
+                Lengdegrad = r.Coords.Longitude
+            });
+
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // skriver æøå som vanlig tekst
+            };
+
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
+            return File(bytes, "application/json", $"{Filnavn(bareTilgjengelige)}.json");
+        }
+
+        // Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
+        private async Task<List<Resource>> HentRessurserForEksport(bool bareTilgjengelige)
+        {
+            var alle = await _repo.GetAllAsync();
+            return alle
+                .Where(r => !bareTilgjengelige || r.IsAvailable)
+                .OrderBy(r => r.Id)
+                .ToList();
+        }
+
+        // Ulike filnavn så de to eksportene ikke blandes sammen
+        private static string Filnavn(bool bareTilgjengelige)
+        {
+            var navn = bareTilgjengelige ? "ressurser_tilgjengelige" : "ressurser_alle";
+            return $"{navn}_{DateTime.Now:yyyy-MM-dd}";
+        }
+
+        // Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
+        private static string OversettKategori(string category) => category switch
+        {
+            nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
+            nameof(ResourceViewModel.ResourceType.Clothing) => "Klær",
+            nameof(ResourceViewModel.ResourceType.Tool) => "Verktøy",
+            nameof(ResourceViewModel.ResourceType.Vehicle) => "Kjøretøy",
+            nameof(ResourceViewModel.ResourceType.Materials) => "Materialer",
+            _ => "Annet"
+        };
+
+        // Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
+        private static string Csv(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
         }
     }
 }

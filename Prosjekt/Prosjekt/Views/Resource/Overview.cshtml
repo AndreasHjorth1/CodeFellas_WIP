@@ -6,7 +6,9 @@
 @model IEnumerable<ResourceViewModel>
 
 @{
-    ViewData["Title"] = "Oversikt over ressurser";
+    // Vanlige brukere ser bare sine egne ressurser
+    var erAdmin = User.IsInRole("Admin");
+    ViewData["Title"] = erAdmin ? "Oversikt over ressurser" : "Mine ressurser";
 }
 
 <link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
@@ -99,7 +101,13 @@
     }
 </style>
 
-<h1 class="mb-3">Oversikt over ressurser</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">@ViewData["Title"]</h1>
+    @if (User.IsInRole(Prosjekt.Models.Authorization.RoleNames.Admin))
+    {
+        <a asp-controller="Resource" asp-action="Export" class="btn btn-outline-success">Eksporter ressurser</a>
+    }
+</div>
 
 <div class="resizable-container" id="splitWrapper">
     <!-- Tabell-seksjon (Ressursoversikt) -->
@@ -202,7 +210,7 @@
                     }
                     else
                     {
-                        <tr><td colspan="6" class="text-muted text-center py-4">Ingen ressurser registrert ennå.</td></tr>
+                        <tr><td colspan="6" class="text-muted text-center py-4">@(erAdmin ? "Ingen ressurser registrert ennå." : "Du har ikke registrert noen ressurser ennå.")</td></tr>
                     }
                 </tbody>
             </table>
@@ -283,7 +291,7 @@
                 markorerMap[r.id] = marker;
 
                 var toppInnhold = `
-                    <b>${r.name}</b> (${r.quantity} stk)<br/>
+                    <b>${escapeHtml(r.name)}</b> (${r.quantity} stk)<br/>
                     Status: ${statusTekst}<br/>`;
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
@@ -293,7 +301,7 @@
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
+                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(address)}</small>`);
                     })
                     .catch(function () {
                         marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
