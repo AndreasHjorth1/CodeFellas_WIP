@@ -16,6 +16,8 @@ namespace Prosjekt.DataAccess
         // Her er tabellen for need / behov
         public DbSet<Need> Needs { get; set; }
 
+        public DbSet<Allocation> Allocations { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -33,6 +33,11 @@ namespace Prosjekt.Models.ModelView
         [Range(1, 10000, ErrorMessage = "Antall må være minst 1.")]
         public int Quantity { get; init; } = 1;
 
+        // Hvor mange av totalen som er tildelt behov. Regnes ut, lagres ikke.
+        public int Allocated { get; init; } = 0;
+
+        public int Available => Quantity - Allocated;
+
         [Display(Name = "Tilgjengelighet")]
         public bool Availability { get; init; } = true;
 

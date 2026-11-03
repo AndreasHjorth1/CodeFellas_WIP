@@ -78,9 +78,9 @@
         position: relative;
     }
 
-    /* Behovsoversikten starter på 70 % av bredden */
+    /* Behovsoversikten starter på 45 % av bredden */
     .table-section {
-        flex: 0 0 70%;
+        flex: 0 0 45%;
         min-width: 250px;
         overflow-y: auto;
         padding-right: 10px;
@@ -138,6 +138,35 @@
     <!-- Tabell-seksjon (Behovsoversikt) -->
     <div class="table-section" id="tableBox">
         <div class="table-responsive bg-white p-3 shadow-sm border rounded h-100">
+            <div class="row g-2 mb-3">
+                <div class="col-md-7">
+                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk i navn, beskrivelse eller telefon" />
+                </div>
+                <div class="col-md-5">
+                    <select id="typeFilter" class="form-select">
+                        <option value="">Alle typer</option>
+                        @foreach (var t in Enum.GetValues<NeedViewModel.NeedType>())
+                        {
+                            <option value="@t">@OversettNeedType(t)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <input type="search" id="stedsFelt" class="form-control" placeholder="Søk på sted, f.eks. Kristiansand - trykk Enter" />
+                </div>
+                <div class="col-md-12">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                        🖨️ Skriv ut listen
+                    </button>
+                </div>
+                <div class="col-md-6 d-flex gap-2 align-items-center">
+                    <button type="button" id="velgPunktBtn" class="btn btn-outline-primary btn-sm text-nowrap">
+                        Velg punkt
+                    </button>
+                    <input type="number" id="radiusFelt" class="form-control form-control-sm" value="5" min="1" max="500" step="1" style="max-width: 90px;" />
+                    <span class="small text-muted">km</span>
+                </div>
+            </div>
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
                     <tr>
@@ -155,8 +184,8 @@
                     {
                         @foreach (var item in Model)
                         {
-                            <tr class="table-row-clickable"
-                                onclick="fokuserPaBehov('@item.Id', @((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
+                            <tr class="table-row-clickable" data-lat="@((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture))" data-lng="@((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture))"
+                                data-id="@item.Id" data-type="@item.Type" data-sok="@(($"{item.Name} {item.Description} {item.Phone}").ToLower())" onclick="fokuserPaBehov('@item.Id', @((item.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((item.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
                                 <td>
                                     <strong>@item.Name</strong><br />
                                     <small class="text-secondary">@item.Description</small>
@@ -175,6 +204,7 @@
                                 <td><span class="badge" style="@($"background-color: {Farge(item.Importance)}")">@OversettViktighet(item.Importance)</span></td>
                                 <td class="text-nowrap" onclick="event.stopPropagation();">
                                     <div class="d-flex gap-1">
+                                        <a asp-controller="Need" asp-action="Match" asp-route-id="@item.Id" class="btn btn-sm btn-success">🔗 Finn ressurser</a>
                                         <a asp-controller="Need" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Rediger</a>
                                         <form asp-controller="Need" asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
                                             @Html.AntiForgeryToken()
@@ -207,6 +237,7 @@
     <script>
         var kart;
         var markorerMap = {};
+        var omraderMap = {};
 
         function fokuserPaBehov(id, lat, lng) {
             if (lat && lng && markorerMap[id]) {
@@ -241,6 +272,10 @@
             }).addTo(kart);
 
             var bounds = [];
+           
+            var kjorFilter = settOppFilter(kart, [markorerMap, omraderMap]);
+            settOppStedssok(kart, kjorFilter);
+            settOppRadiusSok(kart, kjorFilter);
 
             behov.forEach(function (b) {
                 var lat = parseFloat(b.latitude);
@@ -276,6 +311,7 @@
                             fillOpacity: 0.12
                         }
                     }).addTo(kart);
+                    omraderMap[b.Id] = omrade;
 
                     if (b.areaSquareMeters) {
                         omrade.bindTooltip(
