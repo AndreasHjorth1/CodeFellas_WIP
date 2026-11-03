@@ -143,7 +143,7 @@
         // Behovet selv - rød sirkel i midten
         L.circleMarker([needLat, needLng], {
             radius: 10, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 0.8
-        }).addTo(kart).bindPopup('<b>@ViewBag.NeedName</b><br/>Behovet');
+        }).addTo(kart).bindPopup('<b>' + escapeHtml(@Json.Serialize((string)ViewBag.NeedName)) + '</b><br/>Behovet');
 
         var punkter = [[needLat, needLng]];
 
@@ -151,7 +151,7 @@
             L.circleMarker([m.Latitude, m.Longitude], {
                 radius: 7, color: '#198754', fillColor: '#198754', fillOpacity: 0.7
             }).addTo(kart).bindPopup(
-                `<b>${m.Name}</b><br/>Antall: ${m.Quantity}<br/>📞 ${m.PhoneNumber}`
+                `<b>${escapeHtml(m.Name)}</b><br/>Antall: ${m.Quantity}<br/>📞 ${escapeHtml(m.PhoneNumber)}`
             );
 
             // Strek fra behovet til ressursen

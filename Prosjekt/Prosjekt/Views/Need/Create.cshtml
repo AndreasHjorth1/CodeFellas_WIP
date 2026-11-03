@@ -180,7 +180,7 @@
 
                 // Popup med behov + adresse
                 var behovHtml = behov.map(function (b) {
-                    return `<b>${b.name}</b><br/>📞 Tlf: ${b.phone || 'Ikke oppgitt'}`;
+                    return `<b>${escapeHtml(b.name)}</b><br/>📞 Tlf: ${escapeHtml(b.phone || 'Ikke oppgitt')}`;
                 }).join('<hr class="my-1"/>');
 
                 marker.bindPopup(behovHtml + '<hr class="my-1"/><div class="small text-muted"><i>Henter adresse...</i></div>');
@@ -189,7 +189,7 @@
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        marker.setPopupContent(behovHtml + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
+                        marker.setPopupContent(behovHtml + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(address)}</small>`);
                     })
                     .catch(function () {
                         marker.setPopupContent(behovHtml + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');

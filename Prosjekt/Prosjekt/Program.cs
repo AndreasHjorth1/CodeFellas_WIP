@@ -70,6 +70,7 @@ switch (dataAccessProvider.ToUpperInvariant())
         identityBuilder.AddEntityFrameworkStores<ApplicationDbContext>();
         builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
         builder.Services.AddScoped<INeedRepository, NeedRepository>();
+        builder.Services.AddScoped<IAllocationRepository, AllocationRepository>();
         break;
     default:
         throw new InvalidOperationException(

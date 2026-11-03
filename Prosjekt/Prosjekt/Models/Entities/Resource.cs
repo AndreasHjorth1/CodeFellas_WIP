@@ -39,5 +39,7 @@ namespace Prosjekt.Models.Entities
         public Coordinates Coords { get; set; }
 
         public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
+
+        public string? UserId { get; set; }
     }
 }

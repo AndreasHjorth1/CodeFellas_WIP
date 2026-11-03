@@ -157,14 +157,14 @@
                 marker = L.marker([lat, lng], { icon: getIkon('green') }).addTo(kart);
 
                 // Popup med ressurs + adresse
-                var toppInnhold = `<b>${navn}</b> (${antall} stk)`;
+                var toppInnhold = `<b>${escapeHtml(navn)}</b> (${antall} stk)`;
                 marker.bindPopup(toppInnhold + '<hr class="my-1"/><div class="small text-muted"><i>Henter adresse...</i></div>');
 
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
+                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(address)}</small>`);
                         marker.openPopup();
                     })
                     .catch(function () {

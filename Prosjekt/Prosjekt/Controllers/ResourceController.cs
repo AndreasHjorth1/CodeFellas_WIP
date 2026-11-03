@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
+using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
+using System.Security.Claims;
 using System;
 using System.Globalization;
 using System.Linq;
@@ -24,6 +26,12 @@ namespace Prosjekt.Controllers
         {
             _repo = repo;
             _allocationRepo = allocationRepo;
+        }
+
+        private bool CanModify(Resource resource)
+        {
+            return User.IsInRole(RoleNames.Admin)
+                || resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
         [HttpGet]
@@ -162,7 +170,8 @@ namespace Prosjekt.Controllers
                     AvailableFrom = baseResource.AvailableFrom,
                     AvailableTo = baseResource.AvailableTo,
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    CreatedAt = NorwegianTime.Now
+                    CreatedAt = NorwegianTime.Now,
+                    UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(resourceEntity);
@@ -180,7 +189,9 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
-            var resourceEntities = await _repo.GetAllAsync();
+            var resourceEntities = User.IsInRole(RoleNames.Admin)
+                ? await _repo.GetAllAsync()
+                : await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
             var resourceViewModels = resourceEntities.Select(r => new ResourceViewModel
@@ -203,11 +214,11 @@ namespace Prosjekt.Controllers
         }
 
         [HttpGet]
-        [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var resource = await _repo.GetByIdAsync(id);
             if (resource == null) return NotFound();
+            if (!CanModify(resource)) return Forbid();
 
             string description = resource.Description ?? "";
             string licensePlate = "";
@@ -289,6 +300,7 @@ namespace Prosjekt.Controllers
 
             var resourceEntity = await _repo.GetByIdAsync(id);
             if (resourceEntity == null) return NotFound();
+            if (!CanModify(resourceEntity)) return Forbid();
 
             string extraInfo = "";
             string? subCategoryValue = null;
@@ -346,17 +358,23 @@ namespace Prosjekt.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
+            var resource = await _repo.GetByIdAsync(id);
+            if (resource == null) return NotFound();
+            if (!CanModify(resource)) return Forbid();
+
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByResourceAsync(id);
             return RedirectToAction(nameof(Overview));
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetInformasjon()
+        public async Task<IActionResult> GetInformation()
         {
-            var ressurser = await _repo.GetAllAsync();
+            var resources= User.IsInRole(RoleNames.Admin)
+                ? await _repo.GetAllAsync()
+                : await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-            var result = ressurser.Select(r => new ResourceViewModel
+            var result = resources.Select(r => new ResourceViewModel
             {
                 Id = r.Id,
                 Name = r.Name,
@@ -376,12 +394,14 @@ namespace Prosjekt.Controllers
 
         // Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
         // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
+        [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public IActionResult Export()
         {
             return View();
         }
 
+        [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
         {
@@ -411,6 +431,7 @@ namespace Prosjekt.Controllers
             return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
         }
 
+        [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public async Task<IActionResult> ExportJson(bool bareTilgjengelige = true)
         {
