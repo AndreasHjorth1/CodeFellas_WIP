@@ -29,7 +29,7 @@ namespace Prosjekt.Models.Entities
 
         public DateTime? NeededBy { get; set; }
 
-        // MANGLET: Feltet for om behovet er oppfylt
+        // Hvor i statusflyten behovet er. Ny => Vurderes => Tildelt => Løst
         public EntryStatus Status {get; set;} = EntryStatus.New;
 
         public Coordinates Coords { get; set; } = new Coordinates(0, 0);

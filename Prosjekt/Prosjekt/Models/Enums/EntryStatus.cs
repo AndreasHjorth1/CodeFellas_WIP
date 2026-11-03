@@ -2,8 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Prosjekt.Models.Enums;
 
-///Statusen en tildeling kan ha.
-/// 
+///Stadiene en oppføring går gjennom, status flyt
 public enum EntryStatus
 {
     [Display(Name = "Ny")] New,
