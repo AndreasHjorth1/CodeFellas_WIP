@@ -8,6 +8,7 @@ namespace Prosjekt.DataAccess.Repositories
     {
         Task<IEnumerable<Resource>> GetAllAsync();
         Task<Resource?> GetByIdAsync(int id);
+        Task<IEnumerable<Resource>> GetByUserIdAsync(string userId);
         Task AddAsync(Resource resource);
         Task UpdateAsync(Resource resource);
         Task DeleteAsync(int id);
