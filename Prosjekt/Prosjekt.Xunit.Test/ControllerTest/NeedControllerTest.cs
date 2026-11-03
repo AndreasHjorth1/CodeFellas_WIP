@@ -591,12 +591,12 @@ Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Val
         }
 
         [Fact]
-        public async Task GetInformation_RegularUser_HidesPhoneAndResolvedNeeds()
+        public async Task GetInformation_RegularUser_HidesPhoneButKeepsArea()
         {
             // Arrange
+            const string area = "{\"type\":\"Polygon\",\"coordinates\":[]}";
             var repo = new FakeNeedRepository();
-            repo.Needs.Add(new Need { Id = 1, Name = "Vann", PhoneNumber = "12345678", Coords = new Coordinates(58.1467, 7.9956) });
-            repo.Needs.Add(new Need { Id = 2, Name = "Traktor", Status = EntryStatus.Resolved, Coords = new Coordinates(59.9, 10.7) });
+            repo.Needs.Add(new Need { Id = 1, Name = "Vann", PhoneNumber = "12345678", AreaGeoJson = area, Status = EntryStatus.Resolved, Coords = new Coordinates(58.1467, 7.9956) });
             var controller = CreateSignedInController(repo, isAdmin: false);
 
             // Act
@@ -605,7 +605,7 @@ Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Val
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
             var need = Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value));
-            Assert.Equal("Vann", need.Name);
+            Assert.Equal(area, need.AreaGeoJson);
             Assert.Equal(string.Empty, need.Phone);
         }
     }

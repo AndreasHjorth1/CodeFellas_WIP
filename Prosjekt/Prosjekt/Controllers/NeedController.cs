@@ -241,7 +241,6 @@ namespace Prosjekt.Controllers
             var needs = await _repo.GetAllAsync();
 
             var result = needs
-                .Where(n => isAdmin || n.Status != EntryStatus.Resolved)
                 .Select(n => new NeedViewModel
                 {
                     Id = n.Id,
