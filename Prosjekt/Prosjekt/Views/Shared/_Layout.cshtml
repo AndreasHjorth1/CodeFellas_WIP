@@ -1,5 +1,4 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="no">
 <head>
     <meta charset="utf-8" />
@@ -371,33 +370,33 @@
 
 
     <!-- 3. FOOTER -->
-    <footer class="footer-light mt-auto">
+<footer class="footer-light mt-auto">
 
         <div class="container-fluid p-0">
 
             <div class="row g-0 border-top border-secondary-subtle">
 
-                <div class="col-lg-6 p-4 p-md-5 grid-border-right">
+                <div class="col-lg-6 px-4 px-md-5 py-3 grid-border-right">
 
-                    <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-1">
                         <div class="logo-line logo-line-red"></div>
-                        <h5 class="mb-0 fw-bold logo-text">Totalforsvaret</h5>
+                        <h5 class="mb-0 fw-bold logo-text" style="font-size: 1.15rem;">Totalforsvaret</h5>
                     </div>
 
-                    <p class="small text-muted mb-0"
-                       style="max-width: 420px; line-height: 1.6;">
+                    <p class="text-muted mb-0"
+                       style="max-width: 420px; line-height: 1.4; font-size: 0.8rem;">
                         En nasjonal portal for å registrere sivile ressurser og koble dem med behov i en krise. Utviklet for Kartverket og Heimevernet.
                     </p>
                 </div>
 
 
-                <div class="col-lg-3 p-4 p-md-5 grid-border-right">
+                <div class="col-lg-3 px-4 px-md-5 py-3 grid-border-right">
 
-                    <span class="text-uppercase extra-small fw-bold text-muted d-block mb-3 footer-header-text">
+                    <span class="text-uppercase extra-small fw-bold text-muted d-block mb-1 footer-header-text">
                         OM
                     </span>
 
-                    <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+                    <ul class="list-unstyled d-flex flex-column gap-1 mb-0" style="font-size: 0.8rem;">
 
                         <li>
                             <a asp-controller="Home" asp-action="Privacy"
@@ -424,47 +423,50 @@
                 </div>
 
 
-                <div class="col-lg-3 p-4 p-md-5">
+                <div class="col-lg-3 px-4 px-md-5 py-3">
 
-                    <span class="text-uppercase extra-small fw-bold text-danger d-block mb-3 footer-header-text">
+                    <span class="text-uppercase extra-small fw-bold text-danger d-block mb-1 footer-header-text">
                         VED AKUTT FARE
                     </span>
 
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-secondary-subtle small">
+                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary-subtle"
+                         style="font-size: 0.8rem; padding: 2px 0;">
                         <span>Brann</span>
-                        <strong class="text-danger fw-bold fs-6">110</strong>
+                        <strong class="text-danger fw-bold">110</strong>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-secondary-subtle small">
+                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary-subtle"
+                         style="font-size: 0.8rem; padding: 2px 0;">
                         <span>Politi</span>
-                        <strong class="text-danger fw-bold fs-6">112</strong>
+                        <strong class="text-danger fw-bold">112</strong>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-secondary-subtle small">
+                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary-subtle"
+                         style="font-size: 0.8rem; padding: 2px 0;">
                         <span>Ambulanse</span>
-                        <strong class="text-danger fw-bold fs-6">113</strong>
+                        <strong class="text-danger fw-bold">113</strong>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center py-1 small pt-2">
+                    <div class="d-flex justify-content-between align-items-center"
+                         style="font-size: 0.8rem; padding: 2px 0;">
                         <span>Legevakt</span>
-                        <strong class="text-danger fw-bold fs-6">116 117</strong>
+                        <strong class="text-danger fw-bold">116 117</strong>
                     </div>
 
                 </div>
             </div>
 
 
-            <div class="row g-0 px-4 px-md-5 py-3 text-muted"
-                 style="font-size: 0.7rem; letter-spacing: 0.5px;">
+            <div class="row g-0 px-4 px-md-5 py-1 text-muted align-items-center border-top border-secondary-subtle"
+                 style="font-size: 0.62rem; letter-spacing: 0.5px; line-height: 1.2;">
 
-                <div class="col-md-6 mb-1 mb-md-0">
+                <div class="col-md-6">
                     © 2026 TOTALFORSVARET • PROTOTYPE, IS-202, UNIVERSITETET I AGDER
                 </div>
 
                 <div class="col-md-6 text-md-end">
                     KARTDATA © KARTVERKET • VÆRDATA © MET NORWAY
                 </div>
-
 
             </div>
         </div>
@@ -482,4 +484,4 @@
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>
-</html>
+</html> 
