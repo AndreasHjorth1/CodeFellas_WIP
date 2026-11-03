@@ -2,7 +2,7 @@
 @model NeedCreatorViewModel
 
 @{
-    ViewData["Title"] = "Opprett behov";
+    ViewData["Title"] = "Meld behov";
 }
 
 <div class="position-relative w-100 overflow-hidden" style="height: calc(100vh - 80px); min-height: 500px;">
@@ -10,113 +10,129 @@
     <div id="map" class="w-100 h-100"></div>
 
     <!-- Sidemeny på HØYRE side -->
-    <div id="sideMeny" class="position-absolute top-0 end-0 h-100 bg-white shadow-lg p-4 rounded-start d-none"
-         style="z-index: 1000; width: 480px; max-width: 100%; overflow-y: auto;">
+    <aside id="sideMeny" class="position-absolute top-0 end-0 h-100 tf-panel d-none" aria-labelledby="panelTittel"
+           style="z-index: 1000; width: 480px; max-width: 100%; overflow-y: auto;">
 
-        <button type="button" class="btn-close float-end mb-2" id="lukkMenyBtn" aria-label="Lukk"></button>
-        <div class="clearfix"></div>
+        <div class="tf-panel-head">
+            <div>
+                <p class="tf-kicker">Ny registrering</p>
+                <h2 id="panelTittel" class="tf-title fs-2">Meld <em>behov.</em></h2>
+                <p class="tf-lede">Klikk på kartet eller tegn et område. Alle behov i listen får samme plassering, viktighet og frist.</p>
+            </div>
+            <button type="button" class="tf-close" id="lukkMenyBtn" aria-label="Lukk panelet">Lukk <span aria-hidden="true">✕</span></button>
+        </div>
 
-        <h2 class="mb-1">Registrer Behov</h2>
-        <p class="text-muted small">Klikk på kartet eller bruk tegneverktøyet for å sette posisjon.</p>
-        <hr />
-
-        <form asp-controller="Need" asp-action="Create" method="post" autocomplete="off" id="hovedSkjema">
+        <form asp-controller="Need" asp-action="Create" method="post" autocomplete="off" id="hovedSkjema" class="tf-form" novalidate>
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+            <div asp-validation-summary="All" class="tf-error mb-3"></div>
 
-            <!-- Felles stedsdata, viktighet og tidsfrist -->
-            <div class="border p-3 mb-3 rounded bg-light">
-                <div class="form-group mb-3">
-                    <label asp-for="Importance" class="fw-bold">Viktighet</label>
-                    <select id="viktighetSelect" asp-for="Importance" asp-items="Html.GetEnumSelectList<ImportanceLevel>()" class="form-select"></select>
-                </div>
-
-                <div class="form-group mb-3">
-                    <label asp-for="Deadline" class="fw-bold">Felles tidsfrist *</label>
-                    <input asp-for="Deadline" type="datetime-local" class="form-control" required />
-                    <span asp-validation-for="Deadline" class="text-danger small"></span>
-                </div>
+            <!-- Steg 1: felles for alle behovene -->
+            <section class="tf-block" aria-labelledby="steg1">
+                <p class="tf-step" id="steg1"><span>01</span> Hvor mye haster det?</p>
 
                 <div class="row g-2">
                     <div class="col-6">
-                        <label asp-for="Latitude" class="form-label small mb-1 fw-bold">Breddegrad *</label>
-                        <input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required />
+                        <label for="viktighetSelect">Viktighet</label>
+                        <select id="viktighetSelect" asp-for="Importance" asp-items="Html.GetEnumSelectList<ImportanceLevel>()" class="form-select"></select>
                     </div>
                     <div class="col-6">
-                        <label asp-for="Longitude" class="form-label small mb-1 fw-bold">Lengdegrad *</label>
-                        <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
+                        <label asp-for="Deadline">Frist<span class="tf-req" aria-hidden="true">*</span></label>
+                        <input asp-for="Deadline" type="datetime-local" class="form-control" required />
                     </div>
                 </div>
-                <div id="omradeInfo" class="small text-muted mt-2 d-none">
-                    Område: ca. <span id="omradeAreal"></span> &middot; omkrets ca. <span id="omradeOmkrets"></span>
+                <span asp-validation-for="Deadline" class="tf-error d-block mt-1"></span>
+                <span class="tf-hint">Akutt betyr at liv, helse eller viktig infrastruktur er truet nå.</span>
+            </section>
+
+            <!-- Steg 2: beskriv hvert behov -->
+            <section class="tf-block" aria-labelledby="steg2">
+                <p class="tf-step" id="steg2"><span>02</span> Hva trengs?</p>
+
+                <div class="tf-subcard">
+                    <div class="mb-3">
+                        <label for="inputType">Behovstype</label>
+                        <select id="inputType" class="form-select">
+                            <option value="Food">Mat/Vann</option>
+                            <option value="Medicine">Medisiner</option>
+                            <option value="Transport">Transport</option>
+                            <option value="PowerGenerator">Strøm/aggregat</option>
+                            <option value="SnowRemoval">Snørydding</option>
+                            <option value="SandGravel">Sand/grus</option>
+                            <option value="Machinery">Maskiner</option>
+                            <option value="Evacuation">Evakuering</option>
+                            <option value="Communication">Samband</option>
+                            <option value="Personnel">Mannskap</option>
+                            <option value="Other">Annet</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputName">Kort navn<span class="tf-req" aria-hidden="true">*</span></label>
+                        <input id="inputName" class="form-control" placeholder="F.eks. Aggregat til sykehjem" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputDescription">Beskrivelse<span class="tf-req" aria-hidden="true">*</span></label>
+                        <textarea id="inputDescription" class="form-control" rows="2" placeholder="Hvor mye, hvor lenge, og hvem det gjelder."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputPhone">Telefon til kontaktperson<span class="tf-req" aria-hidden="true">*</span></label>
+                        <input id="inputPhone" type="tel" inputmode="tel" autocomplete="tel" class="form-control" placeholder="912 34 567" />
+                    </div>
+
+                    <p id="skjemaFeil" class="tf-error mb-3" role="alert" aria-live="assertive"></p>
+
+                    <button type="button" class="tf-btn tf-btn--ghost w-100" onclick="leggTilIListe()">+ Legg i listen</button>
                 </div>
+            </section>
 
-                <input asp-for="AreaGeoJson" id="AreaGeoJson" type="hidden" />
-                <input asp-for="AreaSquareMeters" id="AreaSquareMeters" type="hidden" />
-                <input asp-for="PerimeterMeters" id="PerimeterMeters" type="hidden" />
-            </div>
-
-            <!-- Boks for å fylle inn enkeltbehov -->
-            <div class="border p-3 mb-4 rounded bg-light">
-                <h5 class="mb-3">Legg til behov i listen</h5>
-
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Navn *</label>
-                    <input id="inputName" class="form-control" placeholder="F.eks. Snørydding, Førstehjelpsutstyr" />
-                </div>
-
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Telefonnummer *</label>
-                    <input id="inputPhone" class="form-control" placeholder="F.eks. 98765432" />
-                </div>
-
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Behovstype</label>
-                    <select id="inputType" class="form-select">
-                        <option value="Food">Mat/Vann</option>
-                        <option value="Medicine">Medisiner</option>
-                        <option value="Transport">Transport</option>
-                        <option value="PowerGenerator">Strøm/aggregat</option>
-                        <option value="SnowRemoval">Snørydding</option>
-                        <option value="SandGravel">Sand/grus</option>
-                        <option value="Machinery">Maskiner</option>
-                        <option value="Evacuation">Evakuering</option>
-                        <option value="Communication">Samband</option>
-                        <option value="Personnel">Mannskap</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                </div>
-
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Beskrivelse *</label>
-                    <textarea id="inputDescription" class="form-control" rows="2" placeholder="Utdypende informasjon..."></textarea>
-                </div>
-
-                <button type="button" class="btn btn-secondary w-100" onclick="leggTilIListe()">+ Legg i listen</button>
-            </div>
-
-            <!-- Tabell for oversikt over behov -->
-            <h6 class="fw-bold">Behov som blir registrert:</h6>
-            <div class="table-responsive mb-3">
-                <table class="table table-sm table-bordered" id="behovTabell">
-                    <thead class="table-light">
+            <!-- Steg 3: kontroller listen -->
+            <section class="tf-block" aria-labelledby="steg3">
+                <p class="tf-step" id="steg3"><span>03</span> Kontroller listen</p>
+                <table class="tf-table tf-table--compact" id="behovTabell">
+                    <thead>
                         <tr>
-                            <th>Navn</th>
-                            <th>Type</th>
-                            <th>Telefon</th>
-                            <th>Handling</th>
+                            <th scope="col">Navn</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Telefon</th>
+                            <th scope="col"><span class="visually-hidden">Handling</span></th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
-            </div>
+                <p id="tomListe" class="tf-meta mt-2">Ingen behov i listen ennå. Fyll inn steg 2 og trykk «Legg i listen».</p>
 
-            <!-- Skjulte felter for binding mot NeedList -->
-            <div id="skjulteInputFelter"></div>
+                <!-- Skjulte felter for binding mot NeedList -->
+                <div id="skjulteInputFelter"></div>
+            </section>
 
-            <button type="submit" class="btn btn-primary w-100" onclick="return validerInnsending()">Opprett alle behov</button>
+            <!-- Steg 4: plassering og innsending -->
+            <section class="tf-block" aria-labelledby="steg4">
+                <p class="tf-step" id="steg4"><span>04</span> Plassering</p>
+                <div class="row g-2 mb-1">
+                    <div class="col-6">
+                        <label asp-for="Latitude">Breddegrad</label>
+                        <input asp-for="Latitude" id="Latitude" class="form-control" readonly required />
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="Longitude">Lengdegrad</label>
+                        <input asp-for="Longitude" id="Longitude" class="form-control" readonly required />
+                    </div>
+                </div>
+                <div id="omradeInfo" class="tf-meta mt-1 d-none">
+                    Område: ca. <span id="omradeAreal"></span> &middot; omkrets ca. <span id="omradeOmkrets"></span>
+                </div>
+                <span class="tf-hint mb-4">Klikk et annet sted på kartet, eller tegn et nytt område, for å flytte.</span>
+
+                <input asp-for="AreaGeoJson" id="AreaGeoJson" type="hidden" />
+                <input asp-for="AreaSquareMeters" id="AreaSquareMeters" type="hidden" />
+                <input asp-for="PerimeterMeters" id="PerimeterMeters" type="hidden" />
+
+                <button type="submit" id="opprettKnapp" class="tf-btn w-100" onclick="return validerInnsending()">Opprett behov <span aria-hidden="true">&rarr;</span></button>
+            </section>
         </form>
-    </div>
+    </aside>
 </div>
 
 @section Scripts {

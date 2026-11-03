@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/editorial.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Prosjekt.styles.css" asp-append-version="true" />
 
     <style>
@@ -119,7 +120,7 @@
                         <i class="fa-solid fa-bars me-1"></i> Meny
                     </button>
                     
-                    <a class="navbar-brand fw-bold text-dark mb-0 h4 d-flex align-items-center gap-2 me-3" asp-area="" asp-controller="Home" asp-action="Index">
+                    <a class="navbar-brand fw-bold text-dark mb-0 h4 d-flex align-items-center gap-2 me-3" asp-area="" asp-controller="Home" asp-action="FrontPage">
                         <div class="logo-line logo-line-red"></div>
                         <span class="logo-text">Totalforsvaret</span>
                         <div class="logo-line logo-line-blue"></div>
@@ -136,7 +137,7 @@
                     }
                     else
                     {
-                        <a class="btn btn-custom-outline" asp-area="" asp-controller="Profile" asp-action="Index">Logg inn</a>
+                        <a class="btn btn-custom-outline" asp-area="" asp-controller="Account" asp-action="Login">Logg inn</a>
                         <a class="btn btn-custom-dark" asp-area="" asp-controller="Account" asp-action="Register">Registrer ressurs</a>
                     }
                 </div>
@@ -161,7 +162,8 @@
         <div class="offcanvas-body p-0">
             <div class="list-group list-group-flush bg-transparent">
                 <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">Generelt</div>
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Home" asp-action="Index">Hjem</a>
+                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Home" asp-action="FrontPage">Hjem</a>
+                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Home" asp-action="Index">Kart</a>
                 <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" asp-controller="Home" asp-action="Privacy">Personvern</a>
 
                 <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">Registrering</div>
@@ -179,6 +181,8 @@
         </div>
     </div>
 
+    @if (ViewData["HideFooter"] as bool? != true)
+    {
     <!-- 3. FOOTER -->
     <footer class="footer-light mt-auto">
         <div class="container-fluid p-0">
@@ -233,6 +237,7 @@
             </div>
         </div>
     </footer>
+    }
 
     <!-- SKRIPTER -->
     <script src="~/lib/leaflet/leaflet.js"></script>

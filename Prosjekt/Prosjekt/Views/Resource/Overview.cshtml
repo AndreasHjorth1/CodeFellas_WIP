@@ -50,6 +50,23 @@
         padding-right: 10px;
     }
 
+    .resource-overview-form {
+        padding-top: 0.25rem;
+    }
+
+    .resource-overview-table .tf-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 1rem;
+        flex-wrap: wrap;
+        min-width: 170px;
+    }
+
+    .resource-overview-table .tf-actions form {
+        margin: 0;
+    }
+
     /* Kartet tar resten av bredden */
     .map-section {
         flex: 1 1 0;
@@ -96,25 +113,58 @@
     }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Oversikt over ressurser</h1>
-    @* TODO: vis kun for offentlige aktører når innlogging er på plass: @if (User.IsInRole("Offentlig")) *@
-    <a asp-controller="Resource" asp-action="Export" class="btn btn-outline-success">Eksporter ressurser</a>
-</div>
+<header class="tf-page-head">
+    <div>
+        <p class="tf-kicker">Ressurser</p>
+        <h1 class="tf-title" style="font-size: clamp(2rem, 3.2vw, 2.75rem);">Oversikt over <em>ressurser.</em></h1>
+        <p class="tf-lede mb-0"><span class="tf-num">@(Model?.Count() ?? 0)</span> registrert. Klikk på en rad for å se den på kartet.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="tf-btn tf-btn--ghost tf-btn--sm" onclick="window.print()">Skriv ut listen</button>
+        <a asp-controller="Resource" asp-action="Index" class="tf-btn tf-btn--sm">Registrer ressurs <span aria-hidden="true">&rarr;</span></a>
+    </div>
+</header>
 
-<div class="resizable-container" id="splitWrapper">
+<div class="resizable-container tf-split" id="splitWrapper">
     <!-- Tabell-seksjon (Ressursoversikt) -->
     <div class="table-section" id="tableBox">
-        <div class="table-responsive bg-white p-3 shadow-sm border rounded h-100">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
+        <div class="tf-form resource-overview-form">
+            <div class="tf-toolbar" role="search" aria-label="Filtrer listen">
+                <div>
+                    <label for="sokeFelt">Søk</label>
+                    <input type="search" id="sokeFelt" class="form-control" placeholder="Navn eller beskrivelse" />
+                </div>
+                <div>
+                    <label for="typeFilter">Kategori</label>
+                    <select id="typeFilter" class="form-select">
+                        <option value="">Alle kategorier</option>
+                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+                        {
+                            <option value="@k">@OversettKategori(k)</option>
+                        }
+                    </select>
+                </div>
+                <div class="tf-full">
+                    <label for="stedsFelt">Sted</label>
+                    <input type="search" id="stedsFelt" class="form-control" placeholder="F.eks. Kristiansand, trykk Enter" />
+                </div>
+                <div class="tf-full">
+                    <label for="radiusFelt">Avstand fra et punkt</label>
+                    <div class="tf-radius">
+                        <button type="button" id="velgPunktBtn" class="tf-btn tf-btn--ghost tf-btn--sm text-nowrap">Velg punkt</button>
+                        <input type="number" id="radiusFelt" class="form-control tf-num" value="5" min="1" max="500" step="1" inputmode="numeric" />
+                        <span class="tf-meta mt-0">km</span>
+                    </div>
+                </div>
+            </div>
+            <table class="tf-table tf-table--cards resource-overview-table">
+                <thead>
                     <tr>
-                        <th>Navn / Beskrivelse</th>
-                        <th>Kategori</th>
-                        <th>Antall</th>
-                        <th>Status</th>
-                        <th>Tidsrom</th>
-                        <th>Handlinger</th>
+                        <th scope="col">Ressurs</th>
+                        <th scope="col">Kategori</th>
+                        <th scope="col">Antall</th>
+                        <th scope="col">Status</th>
+                        <th scope="col"><span class="visually-hidden">Handlinger</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -122,50 +172,56 @@
                     {
                         @foreach (var res in Model)
                         {
-                            <tr class="table-row-clickable"
-                                onclick="fokuserPaRessurs('@res.Id', @((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
-                                <td>
-                                    <strong>@res.Name</strong><br />
-                                    <small class="text-secondary">@res.Description</small>
+                            var ledig = res.Availability;
+                            <tr class="table-row-clickable" tabindex="0" data-lat="@((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture))" data-lng="@((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture))"
+                                data-id="@res.Id" data-type="@res.Category" data-sok="@(($"{res.Name} {res.Description}").ToLower())"
+                                onclick="fokuserPaRessurs('@res.Id', @((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))"
+                                onkeydown="if (event.key === 'Enter') { this.click(); }">
+                                <td class="tf-first">
+                                    <span class="tf-name">@res.Name</span>
+                                    <span class="tf-meta">@res.Description</span>
                                 </td>
-                                <td>
-                                    <span class="resource-category">
+                                <td data-label="Kategori">
+                                    <span class="d-inline-flex align-items-center gap-2">
                                         <img class="resource-category-icon"
                                              src="@Url.Content($"~/images/resources/{RessursIkonFil(res.Category, res.Availability)}")"
-                                             width="28" height="28" alt="" />
-                                        <span class="badge bg-secondary">@OversettKategori(res.Category)</span>
+                                             width="24" height="24" alt="" />
+                                        <span class="tf-chip">@OversettKategori(res.Category)</span>
                                     </span>
                                 </td>
-                                <td>@res.Quantity</td>
-                                <td>
-                                    @if (res.Availability)
-                                    {
-                                        <span class="badge bg-success">Tilgjengelig</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">Ikke tilgjengelig</span>
-                                    }
+                                <td data-label="Antall" class="tf-num">
+                                    <span>
+                                        @res.Quantity
+                                        @if (!res.Availability)
+                                        {
+                                            <span class="tf-meta">Utilgjengelig</span>
+                                        }
+                                    </span>
                                 </td>
-                                <td class="small">
-                                    Fra: @(res.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "-")<br />
-                                    Til: @(res.AvailableTo?.ToString("dd.MM.yyyy HH:mm") ?? "-")
+                                <td data-label="Status">
+                                    <span>
+                                        <span class="tf-status">
+                                            <span class="tf-shape" style="background-color: @(ledig ? "var(--tf-available)" : "var(--tf-unavailable)");"></span>
+                                            @(ledig ? "Ledig" : "Utilgjengelig")
+                                        </span>
+                                        <span class="tf-meta tf-num">
+                                            @(res.AvailableFrom?.ToString("dd.MM.yy HH:mm") ?? "–") – @(res.AvailableTo?.ToString("dd.MM.yy HH:mm") ?? "–")
+                                        </span>
+                                    </span>
                                 </td>
-                                <td class="text-nowrap" onclick="event.stopPropagation();">
-                                    <div class="d-flex gap-1">
-                                        <a asp-action="Edit" asp-route-id="@res.Id" class="btn btn-sm btn-warning">Rediger</a>
-                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @res.Name?');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-danger">Slett</button>
-                                        </form>
-                                    </div>
+                                <td class="tf-actions" onclick="event.stopPropagation();" onkeydown="event.stopPropagation();">
+                                    <a asp-action="Edit" asp-route-id="@res.Id" class="tf-link">Rediger</a>
+                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" onsubmit="return confirm('Slette denne ressursen? Dette kan ikke angres.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="tf-link tf-link--danger">Slett</button>
+                                    </form>
                                 </td>
                             </tr>
                         }
                     }
                     else
                     {
-                        <tr><td colspan="6" class="text-muted text-center py-4">Ingen ressurser registrert ennå.</td></tr>
+                        <tr><td colspan="5" class="tf-empty">Ingen ressurser registrert ennå.</td></tr>
                     }
                 </tbody>
             </table>

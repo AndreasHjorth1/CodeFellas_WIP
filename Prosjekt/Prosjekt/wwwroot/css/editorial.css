@@ -1,0 +1,145 @@
+/* =========================================================================
+   Totalforsvaret – felles redaksjonell stil
+   Brukes av skjema-panelene (Resource/Index, Need/Index), oversiktene
+   (Resource/Overview, Need/Overview) og kartet på forsiden. Klasser starter med "tf-".
+   ========================================================================= */
+
+:root {
+    --tf-bg: #f7f5f0;
+    --tf-surface: #ffffff;
+    --tf-ink: #1a3048;
+    --tf-navy: #0f2b48;
+    --tf-navy-hover: #1d4670;
+    --tf-red: #d9534f;          /* dekorlinjer, ikke brødtekst */
+    --tf-error: #b02a37;        /* feiltekst: 6:1 kontrast */
+    --tf-line: #e0d8cc;
+    --tf-field: #8a8983;        /* feltkanter: 3.2:1 */
+    --tf-muted: #5a6572;
+
+    /* Status: form + farge + tekst, aldri bare farge */
+    --tf-acute: #dc3545;
+    --tf-planned: #a8742a;      /* mørkere enn før for 3:1 kontrast */
+    --tf-available: #427c62;
+    --tf-unavailable: #8c8c8c;
+    --tf-public: #0f2b48;
+
+    --tf-serif: "Playfair Display", Georgia, serif;
+}
+
+/* ---------- Typografi ---------- */
+.tf-kicker { display: inline-flex; align-items: center; gap: 10px; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--tf-ink); margin: 0 0 0.75rem; }
+    .tf-kicker::before { content: ""; width: 22px; height: 1px; background: var(--tf-red); flex-shrink: 0; }
+.tf-title { font-family: var(--tf-serif); font-weight: 400; letter-spacing: -0.5px; color: var(--tf-ink); line-height: 1.1; margin: 0; }
+    .tf-title em { font-style: italic; color: #6c757d; }
+.tf-lede { color: var(--tf-muted); font-size: 0.9rem; line-height: 1.6; margin: 0.5rem 0 0; }
+.tf-step { display: flex; align-items: baseline; gap: 0.75rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--tf-ink); margin: 0 0 1rem; }
+    .tf-step span { color: var(--tf-muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- Sidepanel over kartet ---------- */
+.tf-panel { background: var(--tf-bg); border-left: 2px solid var(--tf-ink); padding: 1.5rem 1.5rem 2rem; }
+.tf-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding-bottom: 1.25rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--tf-ink); }
+.tf-close { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 0.25rem; background: none; border: 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tf-ink); flex-shrink: 0; }
+    .tf-close:hover { text-decoration: underline; }
+.tf-block { padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--tf-line); }
+    .tf-block:last-of-type { border-bottom: 0; }
+
+/* ---------- Skjema ---------- */
+.tf-form .form-label,
+.tf-form label:not(.form-check-label) { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tf-muted); margin-bottom: 0.35rem; }
+.tf-req { color: var(--tf-error); margin-left: 2px; }
+.tf-form .form-control,
+.tf-form .form-select { min-height: 44px; font-size: 1rem; color: var(--tf-ink); background-color: var(--tf-surface); border: 1px solid var(--tf-field); border-radius: 2px; box-shadow: none; }
+.tf-form textarea.form-control { min-height: 88px; }
+.tf-form .form-control::placeholder { color: #8a8983; }
+.tf-form .form-control:focus,
+.tf-form .form-select:focus { border-color: var(--tf-navy); box-shadow: 0 0 0 2px var(--tf-bg), 0 0 0 4px var(--tf-navy); }
+.tf-form .form-control[readonly] { background: transparent; border-style: dashed; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85rem; color: var(--tf-muted); }
+.tf-form .form-check { display: flex; align-items: center; gap: 0.6rem; min-height: 44px; padding-left: 0; }
+.tf-form .form-check-input { float: none; margin: 0; width: 1.25rem; height: 1.25rem; border: 1px solid var(--tf-field); border-radius: 2px; }
+    .tf-form .form-check-input:checked { background-color: var(--tf-navy); border-color: var(--tf-navy); }
+.tf-form .form-check-label { font-size: 0.95rem; color: var(--tf-ink); }
+.tf-hint { display: block; font-size: 0.75rem; color: var(--tf-muted); margin-top: 0.3rem; }
+.tf-form .text-danger, .tf-error { color: var(--tf-error) !important; font-size: 0.85rem; }
+.tf-subcard { background: var(--tf-surface); border: 1px solid var(--tf-line); padding: 1.25rem; }
+
+/* ---------- Knapper og lenker ---------- */
+.tf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; min-height: 48px; padding: 0.75rem 1.5rem; border: 1px solid var(--tf-navy); border-radius: 2px; background: var(--tf-navy); color: #fff; font-size: 0.75rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; transition: background-color 0.15s; }
+    .tf-btn:hover, .tf-btn:focus-visible { background: var(--tf-navy-hover); color: #fff; }
+.tf-btn--ghost { background: transparent; color: var(--tf-ink); border-color: var(--tf-ink); }
+    .tf-btn--ghost:hover, .tf-btn--ghost:focus-visible { background: #e9e5dd; color: var(--tf-ink); }
+.tf-btn--sm { min-height: 40px; padding: 0.5rem 1rem; font-size: 0.7rem; letter-spacing: 1.5px; }
+.tf-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0; background: none; border: 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tf-ink); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+    .tf-link:hover { color: var(--tf-navy-hover); }
+.tf-link--danger { color: var(--tf-error); }
+.tf-btn:focus-visible, .tf-link:focus-visible, .tf-close:focus-visible { outline: 2px solid var(--tf-navy); outline-offset: 2px; }
+
+/* ---------- Status og kategori ---------- */
+.tf-status { display: inline-flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--tf-ink); white-space: nowrap; }
+.tf-shape { width: 10px; height: 10px; display: inline-block; flex-shrink: 0; }
+.tf-shape--diamond { transform: rotate(45deg); width: 9px; height: 9px; }
+.tf-shape--circle { border-radius: 50%; }
+.tf-chip { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--tf-ink); border: 1px solid var(--tf-line); background: var(--tf-surface); padding: 0.2rem 0.5rem; white-space: nowrap; }
+.tf-meta { display: block; font-size: 0.8rem; color: var(--tf-muted); margin-top: 0.15rem; line-height: 1.45; }
+
+/* ---------- Tabeller ---------- */
+.tf-table { width: 100%; border-collapse: collapse; margin: 0; }
+    .tf-table th { position: sticky; top: 0; z-index: 2; background: var(--tf-bg); font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tf-muted); text-align: left; padding: 0.75rem 0.75rem 0.6rem 0; border-bottom: 2px solid var(--tf-ink); white-space: nowrap; }
+    .tf-table td { padding: 0.9rem 0.75rem 0.9rem 0; border-bottom: 1px solid var(--tf-line); vertical-align: top; font-size: 0.9rem; color: var(--tf-ink); }
+    .tf-table tbody tr.table-row-clickable { cursor: pointer; transition: background-color 0.15s; }
+    .tf-table tbody tr.table-row-clickable:hover { background: var(--tf-surface); }
+    .tf-table tbody tr.table-row-clickable:focus-visible { outline: 2px solid var(--tf-navy); outline-offset: -2px; }
+.tf-name { font-family: var(--tf-serif); font-size: 1.05rem; line-height: 1.25; display: block; }
+.tf-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tf-actions { white-space: nowrap; }
+    .tf-actions > * + * { margin-left: 1rem; }
+    .tf-actions form { display: inline; }
+.tf-empty { text-align: center; color: var(--tf-muted); padding: 2.5rem 1rem !important; }
+.tf-table--compact th { position: static; padding: 0.4rem 0.5rem 0.4rem 0; }
+.tf-table--compact td { padding: 0.55rem 0.5rem 0.55rem 0; font-size: 0.85rem; }
+
+/* ---------- Oversiktssider (tabell + kart) ---------- */
+.tf-page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem; flex-wrap: wrap; padding: 2rem 2rem 1.5rem; border-bottom: 2px solid var(--tf-ink); }
+.tf-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; padding: 1.25rem 0; border-bottom: 1px solid var(--tf-line); margin-bottom: 0.5rem; }
+    .tf-toolbar .tf-full { grid-column: 1 / -1; }
+.tf-radius { display: flex; align-items: center; gap: 0.5rem; }
+    .tf-radius .form-control { max-width: 90px; }
+.tf-split { height: calc(100vh - 230px) !important; min-height: 520px; }
+.tf-split .table-section { padding: 0 1.5rem 0 2rem !important; }
+.tf-split .map-section { border-left: 1px solid var(--tf-ink); }
+.tf-split .map-section > div { border-radius: 0 !important; border: 0 !important; box-shadow: none !important; }
+.tf-split .resizer { width: 9px !important; margin: 0 !important; border-radius: 0 !important; background: var(--tf-bg) !important; border-left: 1px solid var(--tf-line); }
+    .tf-split .resizer::after { color: var(--tf-muted) !important; }
+    .tf-split .resizer:hover, .tf-split .resizer.dragging { background: var(--tf-ink) !important; }
+    .tf-split .resizer:hover::after, .tf-split .resizer.dragging::after { color: #fff !important; }
+
+/* ---------- Forside: kartillustrasjon ---------- */
+.tf-map-wrap { position: relative; width: 100%; min-height: 460px; overflow: hidden; background: var(--tf-bg); }
+.tf-map-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.tf-map-cta { position: absolute; right: 1rem; bottom: 4.25rem; z-index: 2; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0 1rem; background: var(--tf-bg); border: 1px solid var(--tf-ink); border-radius: 2px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tf-ink); text-decoration: none; }
+    .tf-map-cta:hover, .tf-map-cta:focus-visible { background: var(--tf-ink); color: #fff; }
+
+/* ---------- Mobil ---------- */
+@media (max-width: 767.98px) {
+    .tf-panel { border-left: 0; border-top: 2px solid var(--tf-ink); padding: 1.25rem 1rem 2rem; }
+    .tf-page-head { padding: 1.5rem 1rem 1rem; }
+    .tf-toolbar { grid-template-columns: 1fr; }
+    .tf-split { flex-direction: column; height: auto !important; }
+    .tf-split .table-section { flex: none !important; width: 100% !important; padding: 0 1rem !important; overflow: visible; }
+    .tf-split .resizer { display: none !important; }
+    .tf-split .map-section { height: 60vh; border-left: 0; border-top: 2px solid var(--tf-ink); }
+
+    .tf-table--cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .tf-table--cards, .tf-table--cards tbody, .tf-table--cards tr, .tf-table--cards td { display: block; width: 100%; }
+    .tf-table--cards tr { padding: 0.75rem 0; border-bottom: 1px solid var(--tf-ink); }
+    .tf-table--cards tr.d-none { display: none !important; }
+    .tf-table--cards td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.3rem 0; text-align: right; }
+    .tf-table--cards td::before { content: attr(data-label); font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tf-muted); text-align: left; }
+    .tf-table--cards td.tf-first { display: block; text-align: left; }
+    .tf-table--cards td.tf-first::before, .tf-table--cards td.tf-actions::before, .tf-table--cards td.tf-empty::before { content: none; }
+    .tf-table--cards td.tf-actions { justify-content: flex-start; }
+}
+
+@media print {
+    .tf-page-head .tf-btn, .tf-toolbar, .tf-actions { display: none !important; }
+    .tf-table th { position: static; background: #fff; }
+}

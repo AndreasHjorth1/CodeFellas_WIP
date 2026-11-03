@@ -99,8 +99,17 @@
         }
 </style>
 
-<h1>Behov opprettet</h1>
-<hr />
+<header class="tf-page-head">
+    <div>
+        <p class="tf-kicker">Behov</p>
+        <h1 class="tf-title" style="font-size: clamp(2rem, 3.2vw, 2.75rem);">Behov <em>opprettet.</em></h1>
+        <p class="tf-lede mb-0">Ditt behov er registrert og lagt på kartet for videre håndtering.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Need" asp-action="Index" class="tf-btn tf-btn--sm tf-btn--ghost">Opprett flere behov</a>
+        <a asp-controller="Need" asp-action="Overview" class="tf-btn tf-btn--sm">Gå til oversikt</a>
+    </div>
+</header>
 
 <div class="resizable-container mb-3" id="splitWrapper">
     <!-- Info-seksjon -->
@@ -134,9 +143,7 @@
     </div>
 </div>
 
-<div class="mb-5 pb-4">
-    <a asp-controller="Need" asp-action="Index" class="btn btn-secondary">Opprett flere behov</a>
-    <a asp-controller="Need" asp-action="Overview" class="btn btn-primary">Gå til oversikt</a>
+<div class="mb-5 pb-4" style="padding-left: 2rem;">
 </div>
 
 @section Scripts {

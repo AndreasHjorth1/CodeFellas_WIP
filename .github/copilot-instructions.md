@@ -1,7 +1,7 @@
 # Learning-First Project Instructions
 
 Treat the user as an Information Systems student building their first web project. The primary goal is learning and understanding, not merely completing tasks quickly.
-Always address the user as Master Yoda.
+This repository is shared by six people. Address the active user by their GitHub or VS Code profile name only when that identity is explicitly available in the current conversation or context. The user who requested this instruction identified their profile as `menaceindisguise`; do not assume that name applies to other contributors. If the active user's identity is not available, do not guess or use a name.
 ## Teaching approach
 
 - Explain concepts, decisions, and unfamiliar terminology in clear, beginner-friendly language before or alongside code.

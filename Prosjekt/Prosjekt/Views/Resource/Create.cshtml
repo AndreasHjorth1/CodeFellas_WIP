@@ -89,8 +89,17 @@
         }
 </style>
 
-<h1>Ressurs opprettet</h1>
-<hr />
+<header class="tf-page-head">
+    <div>
+        <p class="tf-kicker">Ressurser</p>
+        <h1 class="tf-title" style="font-size: clamp(2rem, 3.2vw, 2.75rem);">Ressurs <em>opprettet.</em></h1>
+        <p class="tf-lede mb-0">Ressursen er registrert og ligger nå på kartet på riktig sted.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Resource" asp-action="Index" class="tf-btn tf-btn--sm tf-btn--ghost">Opprett enda en ressurs</a>
+        <a asp-controller="Resource" asp-action="Overview" class="tf-btn tf-btn--sm">Gå til oversikten</a>
+    </div>
+</header>
 
 <div class="resizable-container mb-3" id="splitWrapper">
     <!-- Info-seksjon -->
@@ -115,9 +124,7 @@
     </div>
 </div>
 
-<div class="mb-5 pb-4 d-flex flex-wrap gap-2">
-    <a asp-controller="Resource" asp-action="Index" class="btn btn-secondary">Opprett enda en ressurs</a>
-    <a asp-controller="Resource" asp-action="Overview" class="btn btn-primary">Gå til oversikten</a>
+<div class="mb-5 pb-4" style="padding-left: 2rem;">
 </div>
 
 @section Scripts {

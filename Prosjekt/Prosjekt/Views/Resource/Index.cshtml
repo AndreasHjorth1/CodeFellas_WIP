@@ -1,154 +1,190 @@
 ﻿@using Prosjekt.Models.ModelView
 @model ResourceCreatorViewModel
 
-@{ ViewData["Title"] = "Opprett Ressurser"; }
+@{ ViewData["Title"] = "Registrer ressurser"; }
 
 <div class="position-relative w-100 overflow-hidden" style="height: calc(100vh - 80px); min-height: 500px;">
     <!-- Kart -->
     <div id="map" class="w-100 h-100"></div>
 
     <!-- Sidemeny -->
-    <div id="sideMeny" class="position-absolute top-0 end-0 h-100 bg-white shadow-lg p-4 rounded-start d-none" style="z-index: 1000; width: 420px; max-width: 100%; overflow-y: auto;">
-        <button type="button" class="btn-close float-end mb-2" id="lukkMenyBtn" aria-label="Lukk"></button>
-        <div class="clearfix"></div>
-        <h2 class="mb-1">Registrer Ressurser</h2>
-        <p class="text-muted small">Fyll inn ressurser for den valgte posisjonen på kartet.</p>
-        <hr />
+    <aside id="sideMeny" class="position-absolute top-0 end-0 h-100 tf-panel d-none" aria-labelledby="panelTittel"
+           style="z-index: 1000; width: 440px; max-width: 100%; overflow-y: auto;">
 
-        <form asp-controller="Resource" asp-action="Create" method="post" autocomplete="off" id="hovedSkjema">
-            @Html.AntiForgeryToken()
-            <div asp-validation-summary="All" class="text-danger mb-3"></div>
-
-            <div class="border p-3 mb-4 rounded bg-light">
-                <h5 class="mb-3">Legg til ressurs i listen</h5>
-                
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Navn *</label>
-                    <input id="inputName" class="form-control" placeholder="F.eks. Lastebil, Skrutrekker" />
-                </div>
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Beskrivelse *</label>
-                    <textarea id="inputDescription" class="form-control" rows="2"></textarea>
-                </div>
-
-                <!-- Kontaktpunkt og Tilgjengelighet -->
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Telefonnummer (Kontaktpunkt) *</label>
-                    <input id="inputPhoneNumber" class="form-control" placeholder="F.eks. 98765432" />
-                </div>
-                
-                <div class="form-check mb-3">
-                    <input id="inputAvailability" class="form-check-input" type="checkbox" checked />
-                    <label class="form-check-label fw-bold" for="inputAvailability">Er tilgjengelig for oppdrag</label>
-                </div>
-
-                <!-- Tidspunkt / Frister -->
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="form-label small fw-bold mb-1">Tilgjengelig fra *</label>
-                        <input id="inputAvailableFrom" type="datetime-local" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label small fw-bold mb-1">Tilgjengelig til *</label>
-                        <input id="inputAvailableTo" type="datetime-local" class="form-control form-control-sm" />
-                    </div>
-                </div>
-
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Kategori *</label>
-                    <select id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
-                        <option value="Vehicle">Kjøretøy</option>
-                        <option value="Provision">Provisjon</option>
-                        <option value="Materials">Materialer</option>
-                        <option value="Clothing">Klær</option>
-                        <option value="Tool">Verktøy</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Kjøretøy -->
-                <div id="seksjonKjøretøy" class="kategori-seksjon mb-3">
-                    <label class="fw-bold">Kjøretøytype *</label>
-                    <select id="inputVehicleType" class="form-select mb-2">
-                        <option value="Car">Bil</option><option value="Bus">Buss</option>
-                        <option value="Bicycle">Sykkel</option><option value="Motorcycle">Motorsykkel</option>
-                        <option value="Tractor">Traktor</option><option value="Truck">Lastebil</option>
-                        <option value="Dozer">Doser</option><option value="Excavator">Gravemaskin</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                    <label class="fw-bold">Skiltnummer *</label>
-                    <input id="inputLicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
-                </div>
-
-                <!-- Underkategori: Verktøy -->
-                <div id="seksjonVerktøy" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Verktøytype *</label>
-                    <select id="inputToolType" class="form-select mb-2">
-                        <option value="HandTool">Håndverktøy</option><option value="PowerTool">Elektroverktøy</option>
-                        <option value="GardenTool">Hageverktøy</option><option value="MeasuringTool">Måleverktøy</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Materialer -->
-                <div id="seksjonMaterialer" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Materialtype *</label>
-                    <select id="inputMaterialType" class="form-select">
-                        <option value="Wood">Treverk (meter)</option><option value="Metal">Metall (kg/meter)</option>
-                        <option value="Plastic">Plast (kg/meter)</option><option value="Glass">Glass (m*2)</option>
-                        <option value="Gravel">Grus (Kg)</option><option value="Stone">Stein (Kg)</option>
-                        <option value="Soil">Jord (Kg)</option><option value="Sand">Sand (Kg)</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Klær -->
-                <div id="seksjonKlær" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Størrelse *</label>
-                    <select id="inputSize" class="form-select">
-                        <option value="XS">XS</option><option value="S">S</option><option value="M">M</option>
-                        <option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option>
-                    </select>
-                </div>
-
-                <!-- Underkategori: Provisjon -->
-                <div id="seksjonProvisjon" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Provisjonstype *</label>
-                    <select id="inputProvisionType" class="form-select">
-                        <option value="Water">Vann</option><option value="FoodOnePortion">Mat (1 porsjon)</option>
-                    </select>
-                </div>
-
-                <div class="form-group mb-3">
-                    <label class="fw-bold">Antall *</label>
-                    <input id="inputQuantity" type="number" min="1" value="1" class="form-control" />
-                </div>
-                <button type="button" class="btn btn-secondary w-100" onclick="leggTilIListe()">+ Legg i listen</button>
+        <div class="tf-panel-head">
+            <div>
+                <p class="tf-kicker">Ny registrering</p>
+                <h2 id="panelTittel" class="tf-title fs-2">Registrer <em>ressurser.</em></h2>
+                <p class="tf-lede">Du har valgt et punkt på kartet. Legg til én eller flere ressurser som står her.</p>
             </div>
+            <button type="button" class="tf-close" id="lukkMenyBtn" aria-label="Lukk panelet">Lukk <span aria-hidden="true">✕</span></button>
+        </div>
 
-            <h6 class="fw-bold">Ressurser som blir registrert:</h6>
-            <div class="table-responsive mb-3">
-                <table class="table table-sm table-bordered" id="ressursTabell">
-                    <thead class="table-light"><tr><th>Navn</th><th>Antall</th><th>Kategori</th><th>Handling</th></tr></thead>
+        <form asp-controller="Resource" asp-action="Create" method="post" autocomplete="off" id="hovedSkjema" class="tf-form" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="tf-error mb-3"></div>
+
+            <!-- Steg 1: beskriv ressursen -->
+            <section class="tf-block" aria-labelledby="steg1">
+                <p class="tf-step" id="steg1"><span>01</span> Beskriv ressursen</p>
+
+                <div class="tf-subcard">
+                    <div class="mb-3">
+                        <label for="kategoriVelger">Kategori<span class="tf-req" aria-hidden="true">*</span></label>
+                        <select id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
+                            <option value="Vehicle">Kjøretøy</option>
+                            <option value="Provision">Provisjon</option>
+                            <option value="Materials">Materialer</option>
+                            <option value="Clothing">Klær</option>
+                            <option value="Tool">Verktøy</option>
+                            <option value="Other">Annet</option>
+                        </select>
+                    </div>
+
+                    <!-- Underkategori: Kjøretøy -->
+                    <div id="seksjonKjøretøy" class="kategori-seksjon mb-3">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="inputVehicleType">Kjøretøytype<span class="tf-req" aria-hidden="true">*</span></label>
+                                <select id="inputVehicleType" class="form-select">
+                                    <option value="Car">Bil</option><option value="Bus">Buss</option>
+                                    <option value="Bicycle">Sykkel</option><option value="Motorcycle">Motorsykkel</option>
+                                    <option value="Tractor">Traktor</option><option value="Truck">Lastebil</option>
+                                    <option value="Dozer">Doser</option><option value="Excavator">Gravemaskin</option>
+                                    <option value="Other">Annet</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label for="inputLicensePlate">Skiltnummer<span class="tf-req" aria-hidden="true">*</span></label>
+                                <input id="inputLicensePlate" class="form-control" placeholder="EL 12345" autocapitalize="characters" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Underkategori: Verktøy -->
+                    <div id="seksjonVerktøy" class="kategori-seksjon mb-3" style="display:none;">
+                        <label for="inputToolType">Verktøytype<span class="tf-req" aria-hidden="true">*</span></label>
+                        <select id="inputToolType" class="form-select">
+                            <option value="HandTool">Håndverktøy</option><option value="PowerTool">Elektroverktøy</option>
+                            <option value="GardenTool">Hageverktøy</option><option value="MeasuringTool">Måleverktøy</option>
+                            <option value="Other">Annet</option>
+                        </select>
+                    </div>
+
+                    <!-- Underkategori: Materialer -->
+                    <div id="seksjonMaterialer" class="kategori-seksjon mb-3" style="display:none;">
+                        <label for="inputMaterialType">Materialtype<span class="tf-req" aria-hidden="true">*</span></label>
+                        <select id="inputMaterialType" class="form-select">
+                            <option value="Wood">Treverk (meter)</option><option value="Metal">Metall (kg/meter)</option>
+                            <option value="Plastic">Plast (kg/meter)</option><option value="Glass">Glass (m²)</option>
+                            <option value="Gravel">Grus (kg)</option><option value="Stone">Stein (kg)</option>
+                            <option value="Soil">Jord (kg)</option><option value="Sand">Sand (kg)</option>
+                            <option value="Other">Annet</option>
+                        </select>
+                    </div>
+
+                    <!-- Underkategori: Klær -->
+                    <div id="seksjonKlær" class="kategori-seksjon mb-3" style="display:none;">
+                        <label for="inputSize">Størrelse<span class="tf-req" aria-hidden="true">*</span></label>
+                        <select id="inputSize" class="form-select">
+                            <option value="XS">XS</option><option value="S">S</option><option value="M">M</option>
+                            <option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option>
+                        </select>
+                    </div>
+
+                    <!-- Underkategori: Provisjon -->
+                    <div id="seksjonProvisjon" class="kategori-seksjon mb-3" style="display:none;">
+                        <label for="inputProvisionType">Provisjonstype<span class="tf-req" aria-hidden="true">*</span></label>
+                        <select id="inputProvisionType" class="form-select">
+                            <option value="Water">Vann</option><option value="FoodOnePortion">Mat (1 porsjon)</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-8">
+                            <label for="inputName">Navn<span class="tf-req" aria-hidden="true">*</span></label>
+                            <input id="inputName" class="form-control" placeholder="F.eks. Traktor med frontlaster" />
+                        </div>
+                        <div class="col-4">
+                            <label for="inputQuantity">Antall<span class="tf-req" aria-hidden="true">*</span></label>
+                            <input id="inputQuantity" type="number" min="1" value="1" inputmode="numeric" class="form-control tf-num" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputDescription">Beskrivelse<span class="tf-req" aria-hidden="true">*</span></label>
+                        <textarea id="inputDescription" class="form-control" rows="2" placeholder="Hva den kan brukes til, og hva som trengs for å bruke den."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputPhoneNumber">Telefon til kontaktperson<span class="tf-req" aria-hidden="true">*</span></label>
+                        <input id="inputPhoneNumber" type="tel" inputmode="tel" autocomplete="tel" class="form-control" placeholder="912 34 567" />
+                        <span class="tf-hint">Vises først når ressursen er tildelt et behov.</span>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input id="inputAvailability" class="form-check-input" type="checkbox" checked />
+                        <label class="form-check-label" for="inputAvailability">Kan brukes i oppdrag nå</label>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="inputAvailableFrom">Tilgjengelig fra<span class="tf-req" aria-hidden="true">*</span></label>
+                            <input id="inputAvailableFrom" type="datetime-local" class="form-control" />
+                        </div>
+                        <div class="col-6">
+                            <label for="inputAvailableTo">Tilgjengelig til<span class="tf-req" aria-hidden="true">*</span></label>
+                            <input id="inputAvailableTo" type="datetime-local" class="form-control" />
+                        </div>
+                    </div>
+
+                    <p id="skjemaFeil" class="tf-error mb-3" role="alert" aria-live="assertive"></p>
+
+                    <button type="button" class="tf-btn tf-btn--ghost w-100" onclick="leggTilIListe()">+ Legg i listen</button>
+                </div>
+            </section>
+
+            <!-- Steg 2: kontroller listen -->
+            <section class="tf-block" aria-labelledby="steg2">
+                <p class="tf-step" id="steg2"><span>02</span> Kontroller listen</p>
+                <table class="tf-table tf-table--compact" id="ressursTabell">
+                    <thead><tr><th scope="col">Navn</th><th scope="col">Antall</th><th scope="col">Kategori</th><th scope="col"><span class="visually-hidden">Handling</span></th></tr></thead>
                     <tbody></tbody>
                 </table>
-            </div>
+                <p id="tomListe" class="tf-meta mt-2">Ingen ressurser i listen ennå. Fyll inn steg 1 og trykk «Legg i listen».</p>
 
-            <!-- Her blir de skjulte input-feltene fra mekortListe lagt til -->
-            <div id="skjulteInputFelter"></div>
+                <!-- Her blir de skjulte input-feltene fra mekortListe lagt til -->
+                <div id="skjulteInputFelter"></div>
+            </section>
 
-            <div class="row g-2 mb-4">
-                <div class="col-6"><label asp-for="Latitude" class="form-label small mb-1 fw-bold">Breddegrad *</label><input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required /></div>
-                <div class="col-6"><label asp-for="Longitude" class="form-label small mb-1 fw-bold">Lengdegrad *</label><input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required /></div>
-            </div>
-            
-            <button type="submit" class="btn btn-primary w-100" onclick="return validerInnsending()">Opprett alle ressurser</button>
+            <!-- Steg 3: plassering og innsending -->
+            <section class="tf-block" aria-labelledby="steg3">
+                <p class="tf-step" id="steg3"><span>03</span> Plassering</p>
+                <div class="row g-2 mb-1">
+                    <div class="col-6"><label asp-for="Latitude">Breddegrad</label><input asp-for="Latitude" id="Latitude" class="form-control" readonly required /></div>
+                    <div class="col-6"><label asp-for="Longitude">Lengdegrad</label><input asp-for="Longitude" id="Longitude" class="form-control" readonly required /></div>
+                </div>
+                <span class="tf-hint mb-4">Klikk et annet sted på kartet for å flytte punktet.</span>
+
+                <button type="submit" id="opprettKnapp" class="tf-btn w-100" onclick="return validerInnsending()">Opprett ressurser <span aria-hidden="true">&rarr;</span></button>
+            </section>
         </form>
-    </div>
+    </aside>
 </div>
 
 @section Scripts {
     <script>
+                // Escaper tekst før den settes inn som HTML, så navn med < > " ' ikke ødelegger siden
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // Viser feilmelding i skjemaet i stedet for alert(), og flytter fokus til feltet
+        function visFeil(melding, feltId) {
+            var boks = document.getElementById('skjemaFeil');
+            if (boks) boks.textContent = melding;
+            if (feltId) { var felt = document.getElementById(feltId); if (felt) felt.focus(); }
+        }
         let mekortListe = [];
         var sideMeny = document.getElementById('sideMeny');
 
@@ -284,13 +320,13 @@
             let provisionType = document.getElementById('inputProvisionType') ? document.getElementById('inputProvisionType').value : '';
 
             // Sjekk at alle felt for ressursen er fylt ut før den legges til
-            if (!name) { alert("Vennligst fyll ut 'Navn'."); document.getElementById('inputName').focus(); return; }
-            if (!description) { alert("Vennligst fyll ut 'Beskrivelse'."); document.getElementById('inputDescription').focus(); return; }
-            if (!phoneNumber) { alert("Vennligst fyll ut 'Telefonnummer'."); document.getElementById('inputPhoneNumber').focus(); return; }
-            if (!availableFrom) { alert("Vennligst velg 'Tilgjengelig fra'."); document.getElementById('inputAvailableFrom').focus(); return; }
-            if (!availableTo) { alert("Vennligst velg 'Tilgjengelig til'."); document.getElementById('inputAvailableTo').focus(); return; }
-            if (!quantity || quantity <= 0) { alert("Vennligst fyll ut et gyldig 'Antall'."); document.getElementById('inputQuantity').focus(); return; }
-            if (category === "Vehicle" && !licensePlate) { alert("Vennligst fyll ut 'Skiltnummer'."); document.getElementById('inputLicensePlate').focus(); return; }
+                        if (!name) { visFeil("Vennligst fyll ut 'Navn'.", 'inputName'); return; }
+            if (!description) { visFeil("Vennligst fyll ut 'Beskrivelse'.", 'inputDescription'); return; }
+            if (!phoneNumber) { visFeil("Vennligst fyll ut 'Telefonnummer'.", 'inputPhoneNumber'); return; }
+            if (!availableFrom) { visFeil("Vennligst velg 'Tilgjengelig fra'.", 'inputAvailableFrom'); return; }
+            if (!availableTo) { visFeil("Vennligst velg 'Tilgjengelig til'.", 'inputAvailableTo'); return; }
+            if (!quantity || quantity <= 0) { visFeil("Vennligst fyll ut et gyldig 'Antall'.", 'inputQuantity'); return; }
+            if (category === "Vehicle" && !licensePlate) { visFeil("Vennligst fyll ut 'Skiltnummer'.", 'inputLicensePlate'); return; }
 
             mekortListe.push({ 
                 name, description, phoneNumber, availability, availableFrom, availableTo, 
@@ -310,45 +346,47 @@
             oppdaterTabell();
         }
 
-        function oppdaterTabell() {
+                function oppdaterTabell() {
             let tbody = document.querySelector('#ressursTabell tbody');
             let skjulteInputs = document.getElementById('skjulteInputFelter');
             tbody.innerHTML = ''; skjulteInputs.innerHTML = '';
 
             mekortListe.forEach((item, index) => {
-                tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${item.categoryNameNO}</td><td><button type="button" class="btn btn-danger btn-sm" onclick="fjernFraListe(${index})">X</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${esc(item.name)}</td><td>${esc(item.quantity)}</td><td>${esc(item.categoryNameNO)}</td><td class="text-end"><button type="button" class="tf-link tf-link--danger" onclick="fjernFraListe(${index})" aria-label="Fjern ${esc(item.name)} fra listen">Fjern</button></td></tr>`;
 
                 let inputs = `
-                    <input type="hidden" name="ResourceList[${index}].Name" value="${item.name}" />
-                    <input type="hidden" name="ResourceList[${index}].Description" value="${item.description}" />
-                    <input type="hidden" name="ResourceList[${index}].PhoneNumber" value="${item.phoneNumber}" />
-                    <input type="hidden" name="ResourceList[${index}].Availability" value="${item.availability}" />
-                    <input type="hidden" name="ResourceList[${index}].AvailableFrom" value="${item.availableFrom}" />
-                    <input type="hidden" name="ResourceList[${index}].AvailableTo" value="${item.availableTo}" />
-                    <input type="hidden" name="ResourceList[${index}].Quantity" value="${item.quantity}" />
-                    <input type="hidden" name="ResourceList[${index}].Category" value="${item.category}" />
+                    <input type="hidden" name="ResourceList[${index}].Name" value="${esc(item.name)}" />
+                    <input type="hidden" name="ResourceList[${index}].Description" value="${esc(item.description)}" />
+                    <input type="hidden" name="ResourceList[${index}].PhoneNumber" value="${esc(item.phoneNumber)}" />
+                    <input type="hidden" name="ResourceList[${index}].Availability" value="${esc(item.availability)}" />
+                    <input type="hidden" name="ResourceList[${index}].AvailableFrom" value="${esc(item.availableFrom)}" />
+                    <input type="hidden" name="ResourceList[${index}].AvailableTo" value="${esc(item.availableTo)}" />
+                    <input type="hidden" name="ResourceList[${index}].Quantity" value="${esc(item.quantity)}" />
+                    <input type="hidden" name="ResourceList[${index}].Category" value="${esc(item.category)}" />
                 `;
 
                 if (item.category === "Vehicle") {
-                    inputs += `<input type="hidden" name="ResourceList[${index}].VehicleType" value="${item.vehicleType}" /><input type="hidden" name="ResourceList[${index}].LicensePlate" value="${item.licensePlate}" />`;
+                    inputs += `<input type="hidden" name="ResourceList[${index}].VehicleType" value="${esc(item.vehicleType)}" /><input type="hidden" name="ResourceList[${index}].LicensePlate" value="${esc(item.licensePlate)}" />`;
                 } else if (item.category === "Tool") {
-                    inputs += `<input type="hidden" name="ResourceList[${index}].ToolType" value="${item.toolType}" />`;
+                    inputs += `<input type="hidden" name="ResourceList[${index}].ToolType" value="${esc(item.toolType)}" />`;
                 } else if (item.category === "Materials") {
-                    inputs += `<input type="hidden" name="ResourceList[${index}].MaterialType" value="${item.materialType}" />`;
+                    inputs += `<input type="hidden" name="ResourceList[${index}].MaterialType" value="${esc(item.materialType)}" />`;
                 } else if (item.category === "Clothing") {
-                    inputs += `<input type="hidden" name="ResourceList[${index}].Size" value="${item.size}" />`;
+                    inputs += `<input type="hidden" name="ResourceList[${index}].Size" value="${esc(item.size)}" />`;
                 } else if (item.category === "Provision") {
-                    inputs += `<input type="hidden" name="ResourceList[${index}].ProvisionType" value="${item.provisionType}" />`;
+                    inputs += `<input type="hidden" name="ResourceList[${index}].ProvisionType" value="${esc(item.provisionType)}" />`;
                 }
                 skjulteInputs.innerHTML += inputs;
             });
+            var antall = mekortListe.length;
+            document.getElementById('tomListe').style.display = antall ? 'none' : 'block';
+            document.getElementById('opprettKnapp').innerHTML = (antall ? 'Opprett ' + antall + ' ' + (antall === 1 ? 'ressurs' : 'ressurser') : 'Opprett ressurser') + ' <span aria-hidden="true">&rarr;</span>';
+            visFeil('');
         }
 
-        // Funksjon for å sjekke at det finnes minst 1 ressurs i listen når bruker trykker "Opprett alle ressurser"
         function validerInnsending() {
             if (mekortListe.length === 0) {
-                alert("Du må legge til minst én ressurs i listen før du kan opprette!");
-                return false;
+                visFeil("Du må legge til minst én ressurs i listen før du kan opprette!", null); return false;
             }
             return true;
         }
@@ -357,7 +395,3 @@
         setTimeout(function () { map.invalidateSize(); }, 200);
     </script>
 }
-
-<style>
-    #sideMeny { box-shadow: -4px 0 15px rgba(0,0,0,0.15) !important; }
-</style>

@@ -1,0 +1,359 @@
+@{
+    ViewData["Title"] = "Logg inn";
+    ViewData["HideFooter"] = true;
+}
+
+<style>
+    body {
+        background-color: #f4efe8;
+        color: #1a3048;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .account-shell {
+        min-height: calc(100svh - 7rem);
+        background: #f4efe8;
+    }
+
+    .main-panel {
+        width: 100%;
+        min-height: inherit;
+        background: #f4efe8;
+    }
+
+    .map-panel {
+        background: #f4efe8;
+        border-right: 1px solid #d3cabd;
+        min-height: calc(100svh - 7rem);
+        padding: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .map-surface {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+    }
+
+    .map-art {
+        position: absolute;
+        inset: -4%;
+        width: 108%;
+        height: 108%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .map-coordinate {
+        position: absolute;
+        z-index: 1;
+        top: 1.6rem;
+        left: 2rem;
+        color: #5a6572;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+
+    .login-panel {
+        background: #f4efe8;
+        padding: 4rem clamp(2rem, 5vw, 6rem);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .login-content {
+        width: min(100%, 35rem);
+        margin-inline: auto;
+    }
+
+    .map-caption {
+        position: absolute;
+        z-index: 1;
+        left: 3rem;
+        bottom: 3rem;
+        width: min(82%, 43rem);
+        padding: 2rem;
+        border: 1px solid #d3cabd;
+        background: rgba(247, 245, 240, 0.95);
+    }
+
+    .map-caption-tag {
+        display: block;
+        margin-bottom: 0.7rem;
+        color: #5a6572;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+    }
+
+    .map-caption h2 {
+        margin: 0;
+        color: #1a3048;
+        font-family: Georgia, serif;
+        font-size: 3.6rem;
+        font-weight: 400;
+        line-height: 1;
+    }
+
+    .map-caption em {
+        color: #777a78;
+        font-weight: 400;
+    }
+
+    .crumbs {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        font-size: 0.7rem;
+        color: #5a6572;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+
+    .crumbs .active {
+        color: #1a3048;
+    }
+
+    .login-title {
+        font-family: Georgia, serif;
+        font-size: clamp(2.5rem, 4vw, 4.5rem);
+        line-height: 0.95;
+        letter-spacing: -0.06em;
+        color: #1a3048;
+        margin: 0 0 2rem;
+    }
+
+    .login-title em {
+        font-style: italic;
+        color: #6c757d;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.45rem;
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #1a3048;
+        font-weight: 700;
+    }
+
+    .login-field {
+        width: 100%;
+        border: none;
+        border-bottom: 1px solid #8b8d92;
+        background: transparent;
+        padding: 0.5rem 0 0.7rem;
+        font-size: 1rem;
+        color: #1a3048;
+        outline: none;
+    }
+
+    .login-field:focus {
+        border-bottom-color: #0f2b48;
+    }
+
+    .password-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .input-wrap {
+        position: relative;
+        margin-bottom: 1.25rem;
+    }
+
+    .forgot-link {
+        color: #1a3048;
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 1.25px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .remember-row {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin-bottom: 1.25rem;
+        color: #1a3048;
+        font-size: 0.9rem;
+    }
+
+    .remember-row input {
+        width: 1.1rem;
+        height: 1.1rem;
+        accent-color: #0f2b48;
+    }
+
+    .login-btn {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        border: none;
+        background: #0f2b48;
+        color: #fff;
+        min-height: 52px;
+        padding: 0.8rem 1.5rem;
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+        font-weight: 700;
+        text-transform: uppercase;
+        text-decoration: none;
+        transition: background 0.15s ease;
+    }
+
+    .login-btn:hover {
+        background: #1d4670;
+        color: #fff;
+    }
+
+    .info-box {
+        margin-top: 1.25rem;
+        padding: 1.25rem 1rem;
+        border: 1px solid #d3cabd;
+        background: rgba(255,255,255,0.1);
+        color: #5a6572;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .register-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        font-size: 0.95rem;
+        color: #1a3048;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .register-link:hover {
+        text-decoration: underline;
+    }
+
+    @@media (max-width: 991.98px) {
+        .map-panel {
+            min-height: 48vh;
+        }
+
+        .login-panel {
+            padding: 3rem clamp(1.25rem, 7vw, 4rem);
+        }
+
+        .map-caption {
+            left: 2rem;
+            bottom: 2rem;
+            width: min(88%, 38rem);
+        }
+
+        .map-caption h2 {
+            font-size: 3rem;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .account-shell,
+        .main-panel {
+            min-height: 0;
+        }
+
+        .map-panel {
+            min-height: 42vh;
+        }
+
+        .map-coordinate {
+            top: 1rem;
+            left: 1rem;
+            font-size: 0.58rem;
+        }
+
+        .map-caption {
+            left: 1rem;
+            bottom: 1rem;
+            width: calc(100% - 2rem);
+            padding: 1rem;
+        }
+
+        .map-caption h2 {
+            font-size: 1.7rem;
+        }
+
+        .login-panel {
+            padding: 2.5rem 1.25rem 3rem;
+        }
+    }
+</style>
+
+<div class="account-shell">
+    <div class="main-panel">
+        <div class="row g-0">
+            <div class="col-lg-7 map-panel">
+                <div class="map-surface">
+                    <img src="~/images/kart-illustrasjon.svg" class="map-art" alt="" aria-hidden="true" />
+                </div>
+                <div class="map-coordinate">58°08′N · 7°59′Ø · Kristiansand</div>
+                <div class="map-caption">
+                    <span class="map-caption-tag">Totalforsvaret · 2026</span>
+                    <h2>Beredskap er noe vi<br />bygger <em>i fredstid.</em></h2>
+                </div>
+            </div>
+
+            <div class="col-lg-5 login-panel">
+                <div class="login-content">
+                <div class="crumbs">
+                    <span class="active">Logg inn</span>
+                    <span>•</span>
+                    <span>Opprett konto</span>
+                </div>
+
+                <h1 class="login-title">Logg inn på <br /><em>Totalforsvaret.</em></h1>
+
+                <form asp-action="Login" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="input-wrap">
+                        <label class="form-label" for="email">E-post</label>
+                        <input id="email" name="email" type="email" class="login-field" placeholder="kari.nordmann@epost.no" autocomplete="email" />
+                    </div>
+
+                    <div class="input-wrap">
+                        <div class="password-row">
+                            <label class="form-label" for="password">Passord</label>
+                            <a href="#" class="forgot-link">Glemt passord?</a>
+                        </div>
+                        <input id="password" name="password" type="password" class="login-field" placeholder="••••••••" autocomplete="current-password" />
+                    </div>
+
+                    <div class="remember-row">
+                        <input id="remember" type="checkbox" />
+                        <label for="remember">Husk meg på denne enheten</label>
+                    </div>
+
+                    <button type="submit" class="login-btn">Logg inn <span aria-hidden="true">→</span></button>
+                </form>
+
+                <div class="info-box">
+                    Representerer du en kommune eller etat? Kontakt oss for tilgang via organisasjonens digitale løsninger.
+                </div>
+
+                <a asp-controller="Profile" asp-action="Index" class="register-link">Ny her? Opprett konto som ressursutøver <span aria-hidden="true">→</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
