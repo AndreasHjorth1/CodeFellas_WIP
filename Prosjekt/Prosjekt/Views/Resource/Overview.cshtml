@@ -1,3 +1,6 @@
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model IEnumerable<ResourceViewModel>
@@ -216,15 +219,16 @@
 </div>
 
 @section Scripts {
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
+
     <script>
         var kart;
         var markorerMap = {};
+        var symbolMarkers;
 
         function fokuserPaRessurs(id, lat, lng) {
-            if (lat && lng && markorerMap[id]) {
-                kart.flyTo([lat, lng], 15, { duration: 1 });
-                markorerMap[id].openPopup();
-            }
+            MapSymbols.focus(symbolMarkers, markorerMap[id]);
         }
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -249,6 +253,7 @@
             }).addTo(kart);
 
             var bounds = [];
+            symbolMarkers = MapSymbols.createCluster(kart);
 
             ressurser.forEach(function (r) {
                 var lat = parseFloat(r.lat);
@@ -260,7 +265,7 @@
 
                 var statusTekst = r.isAvailable
                     ? '<span style="color: green; font-weight: bold;">Tilgjengelig</span>'
-                    : '<span style="color: red; font-weight: bold;">Opptatt</span>';
+                    : '<span style="color: red; font-weight: bold;">Ikke tilgjengelig</span>';
 
                 var resourceIcon = L.icon({
                     iconUrl: r.iconUrl,
@@ -274,7 +279,7 @@
                     icon: resourceIcon,
                     title: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig'),
                     alt: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig')
-                }).addTo(kart);
+                }).addTo(symbolMarkers);
                 markorerMap[r.id] = marker;
 
                 var toppInnhold = `
@@ -295,7 +300,7 @@
                     });
             });
             
-            var kjorFilter = settOppFilter(kart, [markorerMap]);
+            var kjorFilter = settOppFilter(kart, [markorerMap], [symbolMarkers]);
             settOppStedssok(kart, kjorFilter);
             settOppRadiusSok(kart, kjorFilter);
 

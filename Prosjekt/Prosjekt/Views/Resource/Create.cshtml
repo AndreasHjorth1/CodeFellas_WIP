@@ -1,3 +1,6 @@
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model ResourceViewModel
@@ -99,7 +102,7 @@
             <p><strong>Navn:</strong> @Model.Name</p>
             <p><strong>Telefonnummer:</strong> @Model.PhoneNumber</p>
             <p><strong>Beskrivelse:</strong> @Model.Description</p>
-            <p><strong>Type:</strong> @OversettKategori(Model.Category)</p>
+            <p><strong>Type:</strong> <img id="ressursKvitteringSymbol" class="map-symbol-small" alt="" width="28" height="28" /> @OversettKategori(Model.Category)</p>
             <p><strong>Antall:</strong> @Model.Quantity</p>
             <p><strong>Breddegrad:</strong> @Model.Latitude</p>
             <p class="mb-0"><strong>Lengdegrad:</strong> @Model.Longitude</p>
@@ -121,6 +124,9 @@
 </div>
 
 @section Scripts {
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
+
     <script>
         var kart;
         var marker;
@@ -138,6 +144,9 @@
             var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
             var navn = @Json.Serialize(Model.Name);
             var antall = @Model.Quantity;
+            var category = @Json.Serialize(Model.Category.ToString());
+            var available = @Json.Serialize(Model.Availability);
+            document.getElementById('ressursKvitteringSymbol').src = MapSymbols.resourceUrl(category, available);
 
             // --- KART ---
             if (lat !== null && lng !== null) {
@@ -146,15 +155,7 @@
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(kart);
 
-                function getIkon(fargeNavn) {
-                    return new L.Icon({
-                        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
-                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-                    });
-                }
-
-                marker = L.marker([lat, lng], { icon: getIkon('green') }).addTo(kart);
+                marker = L.marker([lat, lng], { icon: MapSymbols.resourceIcon(category, available), title: available ? 'Tilgjengelig' : 'Ikke tilgjengelig', alt: available ? 'Tilgjengelig ressurs' : 'Ikke tilgjengelig ressurs' }).addTo(kart);
 
                 // Popup med ressurs + adresse
                 var toppInnhold = `<b>${navn}</b> (${antall} stk)`;
