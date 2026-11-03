@@ -5,7 +5,11 @@ using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
 using System;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Prosjekt.Controllers
@@ -368,6 +372,110 @@ namespace Prosjekt.Controllers
             });
 
             return Json(result);
+        }
+
+        // Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
+        // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
+        [HttpGet]
+        public IActionResult Export()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
+        {
+            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Id;Navn;Kategori;Antall;Tilgjengelig;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
+
+            foreach (var r in ressurser)
+            {
+                sb.AppendLine(string.Join(";",
+                    r.Id,
+                    Csv(r.Name),
+                    OversettKategori(r.Category),
+                    r.Quantity,
+                    r.IsAvailable ? "Ja" : "Nei",
+                    Csv(r.PhoneNumber),
+                    Csv(r.Description),
+                    r.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    r.AvailableTo?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
+                    r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            // BOM gjør at Excel viser æ, ø og å riktig
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportJson(bool bareTilgjengelige = true)
+        {
+            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
+
+            var data = ressurser.Select(r => new
+            {
+                r.Id,
+                Navn = r.Name,
+                Kategori = OversettKategori(r.Category),
+                Antall = r.Quantity,
+                Tilgjengelig = r.IsAvailable,
+                Telefon = r.PhoneNumber,
+                Beskrivelse = r.Description,
+                TilgjengeligFra = r.AvailableFrom,
+                TilgjengeligTil = r.AvailableTo,
+                Breddegrad = r.Coords.Latitude,
+                Lengdegrad = r.Coords.Longitude
+            });
+
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // skriver æøå som vanlig tekst
+            };
+
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
+            return File(bytes, "application/json", $"{Filnavn(bareTilgjengelige)}.json");
+        }
+
+        // Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
+        private async Task<List<Resource>> HentRessurserForEksport(bool bareTilgjengelige)
+        {
+            var alle = await _repo.GetAllAsync();
+            return alle
+                .Where(r => !bareTilgjengelige || r.IsAvailable)
+                .OrderBy(r => r.Id)
+                .ToList();
+        }
+
+        // Ulike filnavn så de to eksportene ikke blandes sammen
+        private static string Filnavn(bool bareTilgjengelige)
+        {
+            var navn = bareTilgjengelige ? "ressurser_tilgjengelige" : "ressurser_alle";
+            return $"{navn}_{DateTime.Now:yyyy-MM-dd}";
+        }
+
+        // Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
+        private static string OversettKategori(string category) => category switch
+        {
+            nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
+            nameof(ResourceViewModel.ResourceType.Clothing) => "Klær",
+            nameof(ResourceViewModel.ResourceType.Tool) => "Verktøy",
+            nameof(ResourceViewModel.ResourceType.Vehicle) => "Kjøretøy",
+            nameof(ResourceViewModel.ResourceType.Materials) => "Materialer",
+            _ => "Annet"
+        };
+
+        // Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
+        private static string Csv(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
         }
     }
 }

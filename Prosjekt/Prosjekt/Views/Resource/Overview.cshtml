@@ -96,7 +96,11 @@
     }
 </style>
 
-<h1 class="mb-3">Oversikt over ressurser</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Oversikt over ressurser</h1>
+    @* TODO: vis kun for offentlige aktører når innlogging er på plass: @if (User.IsInRole("Offentlig")) *@
+    <a asp-controller="Resource" asp-action="Export" class="btn btn-outline-success">Eksporter ressurser</a>
+</div>
 
 <div class="resizable-container" id="splitWrapper">
     <!-- Tabell-seksjon (Ressursoversikt) -->
