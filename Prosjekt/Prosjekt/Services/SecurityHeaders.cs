@@ -1,7 +1,13 @@
 namespace Prosjekt.Services
 {
+    /// <summary>
+    /// Legger sikkerhetsheadere på alle svar fra applikasjonen.
+    /// </summary>
     public static class SecurityHeaders
     {
+        /// <summary>
+        /// Hvor nettleseren får hente innhold fra. Nye eksterne adresser må legges til her.
+        /// </summary>
         public const string ContentSecurityPolicy =
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
@@ -11,6 +17,9 @@ namespace Prosjekt.Services
             "connect-src 'self' https://nominatim.openstreetmap.org; " +
             "object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
+        /// <summary>
+        /// Setter headerne før siden lages. Referrer-Policy kan ikke være no-referrer, for da kan kartet slutte å virke.
+        /// </summary>
         public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
         {
             return app.Use(async (context, next) =>

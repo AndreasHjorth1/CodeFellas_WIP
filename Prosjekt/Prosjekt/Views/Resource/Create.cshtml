@@ -139,7 +139,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            // Konverterer tall trygt til punktum som desimaltegn
+            /// Konverterer tall trygt til punktum som desimaltegn
             var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
             var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
             var navn = @Json.Serialize(Model.Name);
@@ -148,7 +148,7 @@
             var available = @Json.Serialize(Model.Availability);
             document.getElementById('ressursKvitteringSymbol').src = MapSymbols.resourceUrl(category, available);
 
-            // --- KART ---
+            /// --- KART ---
             if (lat !== null && lng !== null) {
                 kart = L.map('kvitteringRessursKart').setView([lat, lng], 14);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -157,7 +157,7 @@
 
                 marker = L.marker([lat, lng], { icon: MapSymbols.resourceIcon(category, available), title: available ? 'Tilgjengelig' : 'Ikke tilgjengelig', alt: available ? 'Tilgjengelig ressurs' : 'Ikke tilgjengelig ressurs' }).addTo(kart);
 
-                // Popup med ressurs + adresse
+                /// Popup med ressurs + adresse
                 var toppInnhold = `<b>${escapeHtml(navn)}</b> (${antall} stk)`;
                 marker.bindPopup(toppInnhold + '<hr class="my-1"/><div class="small text-muted"><i>Henter adresse...</i></div>');
 
@@ -177,7 +177,7 @@
                     '<div class="text-muted p-3">Ingen gyldig posisjon å vise på kart.</div>';
             }
 
-            // --- DRAG / RESIZE LOGIKK ---
+            /// --- DRAG / RESIZE LOGIKK ---
             const resizer = document.getElementById('dragHandle');
             const leftSide = document.getElementById('infoBox');
             const container = document.getElementById('splitWrapper');
@@ -197,7 +197,7 @@
                 const dx = e.clientX - x;
                 const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
 
-                // Tillat justering mellom 15 % og 85 % bredde
+                /// Tillat justering mellom 15 % og 85 % bredde
                 if (newLeftWidth > 15 && newLeftWidth < 85) {
                     leftSide.style.flex = `0 0 ${newLeftWidth}%`;
                     if (kart) kart.invalidateSize();
@@ -215,7 +215,7 @@
 
             setTimeout(function () { if (kart) kart.invalidateSize(); }, 200);
 
-            // Scroll ned slik at kartet fyller skjermen under menylinjen
+            /// Scroll ned slik at kartet fyller skjermen under menylinjen
             document.getElementById('splitWrapper').scrollIntoView({ block: 'start' });
         });
     </script>

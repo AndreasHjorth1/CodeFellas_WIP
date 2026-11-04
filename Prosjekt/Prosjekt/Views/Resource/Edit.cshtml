@@ -156,7 +156,7 @@
 @section Scripts {
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
     <script>
-        // Lagrede underkategorier fra serveren (JSON-kodet)
+        /// Lagrede underkategorier fra serveren (JSON-kodet)
         var lagredeVerdier = {
             inputVehicleType: @Json.Serialize(Model.VehicleType),
             inputToolType: @Json.Serialize(Model.ToolType),
@@ -170,7 +170,7 @@
 
             var onsket = String(verdi).trim().toLowerCase();
 
-            // Finn option uavhengig av store/små bokstaver og mellomrom
+            /// Finn option uavhengig av store/små bokstaver og mellomrom
             var treff = Array.from(el.options).find(function (o) {
                 return o.value.trim().toLowerCase() === onsket;
             });
@@ -178,7 +178,7 @@
             if (treff) {
                 el.value = treff.value;
             } else {
-                // Verdien finnes ikke i listen: legg den til slik at den vises og ikke går tapt
+                /// Verdien finnes ikke i listen: legg den til slik at den vises og ikke går tapt
                 var ny = new Option(verdi + " (ikke i listen)", verdi, true, true);
                 el.add(ny);
                 el.value = verdi;
@@ -201,7 +201,7 @@
                 var skalVises = (s.id === seksjoner[valgt]);
                 s.style.display = skalVises ? 'block' : 'none';
 
-                // Skjulte seksjoner sendes ikke med i skjemaet
+                /// Skjulte seksjoner sendes ikke med i skjemaet
                 s.querySelectorAll('select, input').forEach(function (el) {
                     el.disabled = !skalVises;
                 });

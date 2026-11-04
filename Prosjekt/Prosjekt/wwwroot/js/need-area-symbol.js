@@ -1,8 +1,18 @@
+/// <summary>
+/// Viser behovets symbol inne i et tegnet område, og flytter det når området endres.
+/// </summary>
 window.createNeedAreaSymbol = function (map) {
     let marker;
+    /// <summary>
+    /// Finner et punkt inne i området. Midtpunktet kan havne utenfor når området er buet,
+    /// og da brukes midten av den bredeste strekningen blant 12 breddegrader.
+    /// </summary>
     function centerInside(polygon) {
         const center = polygon.getCenter();
         const ring = polygon.getLatLngs()[0];
+        /// <summary>
+        /// Hvor ytterkanten krysser breddegraden. To og to kryssinger avgrenser en strekning inne i området.
+        /// </summary>
         function intervals(lat) {
             const xs = [];
             for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {

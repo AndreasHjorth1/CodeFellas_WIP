@@ -4,6 +4,9 @@ using System.Net;
 
 namespace Prosjekt.Services
 {
+    /// <summary>
+    /// Skriver e-post til loggen i stedet for å sende den, så alle som kan lese loggen kan bruke passordlenkene.
+    /// </summary>
     public sealed class ConsoleEmailSender(ILogger<ConsoleEmailSender> logger) : IEmailSender
     {
         public Task SendEmailAsync(string email, string subject, string htmlMessage)

@@ -1,4 +1,4 @@
-﻿// Norske tekster for Leaflet.draw. Må lastes etter leaflet.draw.js.
+﻿/// Norske tekster for Leaflet.draw. Må lastes etter leaflet.draw.js.
 L.drawLocal.draw.toolbar.actions.title = 'Avbryt tegning';
 L.drawLocal.draw.toolbar.actions.text = 'Avbryt';
 L.drawLocal.draw.toolbar.finish.title = 'Fullfør tegningen';

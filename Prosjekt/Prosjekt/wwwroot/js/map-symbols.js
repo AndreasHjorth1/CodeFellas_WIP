@@ -5,6 +5,9 @@
     const needTypes = ['Food','Medicine','Transport','PowerGenerator','SnowRemoval','SandGravel','Machinery','Evacuation','Communication','Personnel','Other'];
     const resourceFiles = {Provision:'provision',Clothing:'clothing',Tool:'tool',Vehicle:'vehicle',Materials:'materials',Other:'other'};
     const needFiles = {Food:'food',Medicine:'medicine',Transport:'transport',PowerGenerator:'power',SnowRemoval:'snow',SandGravel:'gravel',Machinery:'machinery',Evacuation:'evacuation',Communication:'communication',Personnel:'personnel',Other:'other'};
+    /// <summary>
+    /// Typen kan komme som tall (enum-verdi) eller som navn, avhengig av hvor dataene kommer fra.
+    /// </summary>
     function typeName(value, types) {
         if (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '' && Number.isInteger(Number(value)))) return types[Number(value)] || 'Other';
         return types.find(t => t.toLowerCase() === String(value).toLowerCase()) || 'Other';
@@ -21,6 +24,9 @@
     function needClass(importance) { return 'need-map-icon '+(isAcute(importance) ? 'need-map-acute' : 'need-map-planned'); }
     function escape(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function image(url, className='') { return '<img src="'+escape(url)+'" class="map-symbol-small '+className+'" width="28" height="28" alt="">'; }
+    /// <summary>
+    /// Samler symboler som ligger tett. Et klikk sprer dem, i stedet for å zoome inn.
+    /// </summary>
     function createCluster(map) {
         const group=L.markerClusterGroup({maxClusterRadius:45,zoomToBoundsOnClick:false,spiderfyOnMaxZoom:false,showCoverageOnHover:false,spiderfyDistanceMultiplier:1.6,spiderLegPolylineOptions:{weight:1.5,color:'#164e63',opacity:.7}});
         map.addLayer(group);

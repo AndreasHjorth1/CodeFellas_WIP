@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Prosjekt.Controllers
 {
+    /// <summary>
+    /// Registrering, oversikt, endring og tildeling av behov. Bare for admin, unntatt GetInformation.
+    /// </summary>
     [Authorize(Roles = RoleNames.Admin)]
       public class NeedController : Controller
     {
@@ -34,6 +37,9 @@ namespace Prosjekt.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Oppretter alle behovene i listen. Posisjon, viktighet og frist er felles, og tomme rader hoppes over.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(NeedCreatorViewModel model)
@@ -195,7 +201,9 @@ namespace Prosjekt.Controllers
                 return NotFound();
             }
 
-            // Sjekk statusflyten FØR vi endrer noe på behovet
+            /// <summary>
+            /// Sjekk statusflyten FØR vi endrer noe på behovet
+            /// </summary>
             if (!EntryStatusFlow.CanMove(existingNeed.Status, model.Status))
             {
                 ModelState.AddModelError(nameof(model.Status),
@@ -220,8 +228,6 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
-
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -231,6 +237,10 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
+        /// <summary>
+        /// Data til kartet. [AllowAnonymous] opphever admin-kravet, så alle innloggede kan se behovene.
+        /// Den som ikke er logget inn, sendes til innlogging. Bare admin får telefonnumrene.
+        /// </summary>
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetInformation()
@@ -263,6 +273,9 @@ namespace Prosjekt.Controllers
             return Json(result);
         }
 
+        /// <summary>
+        /// Finner tilgjengelige ressurser i riktig kategori, med den nærmeste først.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Match(int id)
         {
@@ -328,7 +341,9 @@ namespace Prosjekt.Controllers
             var resource = await _resourceRepo.GetByIdAsync(resourceId);
             if (need == null || resource == null) return NotFound();
 
-            // Hvor mye av ressursen er allerede tildelt andre behov?
+            /// <summary>
+            /// Hvor mye av ressursen er allerede tildelt andre behov?
+            /// </summary>
             var alle = await _allocationRepo.GetAllAsync();
             var taken = alle.Where(a => a.ResourceId == resourceId).Sum(a => a.Quantity);
             var available = resource.Quantity - taken;
@@ -346,7 +361,9 @@ namespace Prosjekt.Controllers
                 Quantity = quantity
             });
 
-            // Behovet går fra Ny/Vurderes til Tildelt
+            /// <summary>
+            /// Behovet går fra Ny/Vurderes til Tildelt
+            /// </summary>
             if (need.Status == EntryStatus.New || need.Status == EntryStatus.UnderReview)
             {
                 need.Status = EntryStatus.Assigned;
@@ -362,7 +379,9 @@ namespace Prosjekt.Controllers
         {
             await _allocationRepo.DeleteAsync(allocationId);
 
-            // Står behovet uten tildelinger, går det tilbake til Vurderes
+            /// <summary>
+            /// Står behovet uten tildelinger, går det tilbake til Vurderes
+            /// </summary>
             var igjen = await _allocationRepo.GetByNeedAsync(needId);
             if (!igjen.Any())
             {
@@ -377,6 +396,9 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Match), new { id = needId });
         }
 
+        /// <summary>
+        /// Setter behovet til Løst. Bare Tildelt kan gå videre dit; fra Ny og Vurderes skjer det ingenting.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Resolve(int id)
@@ -402,7 +424,9 @@ namespace Prosjekt.Controllers
 
             if (need.Status != EntryStatus.Resolved) return RedirectToAction(nameof(Overview));
 
-            // Tilbake til Tildelt hvis noe er tildelt, ellers Vurderes
+            /// <summary>
+            /// Tilbake til Tildelt hvis noe er tildelt, ellers Vurderes
+            /// </summary>
             var allocations = await _allocationRepo.GetByNeedAsync(id);
             need.Status = allocations.Any() ? EntryStatus.Assigned : EntryStatus.UnderReview;
 

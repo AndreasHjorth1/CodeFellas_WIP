@@ -13,6 +13,9 @@ namespace Prosjekt.Models.Entities
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
+        /// <summary>
+        /// For kjøretøy står også skiltnummeret her, på formen [Reg.nr: ...].
+        /// </summary>
         [MaxLength(4000)]
         public string Description { get; set; } = string.Empty;
 
@@ -28,18 +31,22 @@ namespace Prosjekt.Models.Entities
         [MaxLength(20)]
         public string PhoneNumber { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Totalt antall. Hvor mange som er tildelt, regnes ut fra Allocations.
+        /// </summary>
         public int Quantity { get; set; } = 1;
 
         public DateTime? AvailableFrom { get; set; }
 
         public DateTime? AvailableTo { get; set; }
 
-        // ----------------------------------
-
         public Coordinates Coords { get; set; }
 
         public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
 
+        /// <summary>
+        /// Eieren av ressursen. Blir null hvis brukeren slettes.
+        /// </summary>
         public string? UserId { get; set; }
     }
 }

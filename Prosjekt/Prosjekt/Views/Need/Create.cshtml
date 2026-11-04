@@ -167,7 +167,7 @@
                 row.insertAdjacentHTML('afterbegin', MapSymbols.image(MapSymbols.needUrl(row.dataset.needType), MapSymbols.needClass(importanceNumber)) + ' ');
             });
 
-            // --- KART ---
+            /// --- KART ---
             if (!isNaN(lat) && !isNaN(lng)) {
                 kart = L.map('kvitteringBehovKart').setView([lat, lng], 14);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -182,7 +182,7 @@
                 });
                 marker = receiptMarkers[0];
 
-                // Slå opp adressen én gang for alle behov på samme sted.
+                /// Slå opp adressen én gang for alle behov på samme sted.
                 fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng)
                     .then(response => response.ok ? response.json() : null)
               
@@ -195,7 +195,7 @@
                     });
                 }
 
-                // Område
+                /// Område
                 var omradeJson = @Json.Serialize(Model.AreaGeoJson);
                 var arealM2 = @Json.Serialize(Model.AreaSquareMeters);
                 var omkretsM = @Json.Serialize(Model.PerimeterMeters);
@@ -223,7 +223,7 @@
                     '<div class="text-muted p-3">Ingen gyldig posisjon å vise på kart.</div>';
             }
 
-            // --- DRAG / RESIZE LOGIKK ---
+            /// --- DRAG / RESIZE LOGIKK ---
             const resizer = document.getElementById('dragHandle');
             const leftSide = document.getElementById('infoBox');
             const container = document.getElementById('splitWrapper');
@@ -243,7 +243,7 @@
                 const dx = e.clientX - x;
                 const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
 
-                // Tillat justering mellom 15 % og 85 % bredde
+                /// Tillat justering mellom 15 % og 85 % bredde
                 if (newLeftWidth > 15 && newLeftWidth < 85) {
                     leftSide.style.flex = `0 0 ${newLeftWidth}%`;
                     if (kart) kart.invalidateSize();
@@ -261,7 +261,7 @@
 
             setTimeout(function () { if (kart) kart.invalidateSize(); }, 200);
 
-            // Scroll ned slik at kartet fyller skjermen under menylinjen
+            /// Scroll ned slik at kartet fyller skjermen under menylinjen
             document.getElementById('splitWrapper').scrollIntoView({ block: 'start' });
         });
     </script>

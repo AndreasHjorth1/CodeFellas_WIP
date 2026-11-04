@@ -141,7 +141,7 @@
             return (importanceVal === '0' || importanceVal === 'Acute') ? '#dc3545' : '#fd7e14';
         }
 
-        // 1. Definer kartlagene med noWrap
+        /// 1. Definer kartlagene med noWrap
         var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors',
             noWrap: true
@@ -157,7 +157,7 @@
             noWrap: true
         });
 
-        // 2. Start kartet med grenser og fast verden
+        /// 2. Start kartet med grenser og fast verden
         var map = L.map('map', {
             center: [58.1467, 7.9956],
             zoom: 12,
@@ -170,7 +170,7 @@
             layers: [osmKart]
         });
 
-        // 3. Lag menyen oppe i hjørnet for å bytte kart
+        /// 3. Lag menyen oppe i hjørnet for å bytte kart
         var bakgrunnsKart = {
             "Standard (OSM)": osmKart,
             "Topografisk (Geonorge)": geonorgeTopo,
@@ -182,7 +182,7 @@
         map.addLayer(drawnItems);
         const areaSymbol = createNeedAreaSymbol(map);
 
-        // Creates the drawing control on the map
+        /// Creates the drawing control on the map
         var drawControl = new L.Control.Draw({
             draw: {
                 polygon: {
@@ -202,7 +202,7 @@
         map.on('draw:drawstart', function() { tegnerNaa = true; });
         map.on('draw:drawstop', function() { tegnerNaa = false; });
 
-        // Oppdaterer eksisterende markør dersom brukeren endrer dropdown-valget for Viktighet
+        /// Oppdaterer eksisterende markør dersom brukeren endrer dropdown-valget for Viktighet
         document.getElementById('viktighetSelect').addEventListener('change', function() {
             var valgtIkon = HentValgtIkon();
             var valgtFarge = HentValgtFarge();
@@ -215,7 +215,7 @@
             });
         });
 
-        // Event handler for tegning på kartet
+        /// Event handler for tegning på kartet
         map.on('draw:created', function (e) {
             drawnItems.clearLayers();
             if (e.layer instanceof L.Polygon) e.layer.setStyle({color:HentValgtFarge(),fillOpacity:.15});
@@ -271,7 +271,7 @@
             }, 300);
         }
 
-        // Lukk meny
+        /// Lukk meny
         document.getElementById('lukkMenyBtn').addEventListener('click', function() {
             sideMeny.classList.add('d-none');
             drawnItems.clearLayers();

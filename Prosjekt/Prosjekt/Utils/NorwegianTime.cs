@@ -9,10 +9,14 @@ namespace Prosjekt.Utils
         {
             get
             {
-                // TZConvert oversetter IANA-formatet til riktig Windows/Linux-tidssone sømløst
+                /// <summary>
+                /// Henter nåværende tid i Norge.
+                /// </summary>
+                /// <returns>Nåværende tid i Norge.</returns>
+                /// <remarks>TZConvert oversetter IANA-formatet til riktig Windows/Linux-tidssone sømløst</remarks>
                 var norwayTimeZone = TZConvert.GetTimeZoneInfo("Europe/Oslo");
                                
-                // Konverterer fra UTC til nøyaktig Norsk tid
+                /// Konverterer fra UTC til nøyaktig Norsk tid
                 return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, norwayTimeZone);
             }
         }

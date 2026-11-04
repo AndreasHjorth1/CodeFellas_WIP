@@ -163,7 +163,7 @@
             return MapSymbols.resourceIcon(document.getElementById('kategoriVelger').value, document.getElementById('inputAvailability').checked);
         }
 
-        // 1. Definer kartlagene med noWrap
+        /// 1. Definer kartlagene med noWrap
         var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
             attribution: '&copy; OpenStreetMap contributors',
             noWrap: true
@@ -179,7 +179,7 @@
             noWrap: true
         });
 
-        // 2. Start kartet med grenser og fast verden
+        /// 2. Start kartet med grenser og fast verden
         var map = L.map('map', {
             center: [58.1467, 7.9956],
             zoom: 11,
@@ -192,7 +192,7 @@
             layers: [osmKart]
         });
 
-        // 3. Lag menyen oppe i hjørnet for å bytte kart
+        /// 3. Lag menyen oppe i hjørnet for å bytte kart
         var bakgrunnsKart = {
             "Standard (OSM)": osmKart,
             "Topografisk (Geonorge)": geonorgeTopo,
@@ -290,7 +290,7 @@
             let size = document.getElementById('inputSize') ? document.getElementById('inputSize').value : '';
             let provisionType = document.getElementById('inputProvisionType') ? document.getElementById('inputProvisionType').value : '';
 
-            // Sjekk at alle felt for ressursen er fylt ut før den legges til
+            /// Sjekk at alle felt for ressursen er fylt ut før den legges til
             if (!name) { alert("Vennligst fyll ut 'Navn'."); document.getElementById('inputName').focus(); return; }
             if (!description) { alert("Vennligst fyll ut 'Beskrivelse'."); document.getElementById('inputDescription').focus(); return; }
             if (!phoneNumber) { alert("Vennligst fyll ut 'Telefonnummer'."); document.getElementById('inputPhoneNumber').focus(); return; }
@@ -305,7 +305,7 @@
                 materialType, size, provisionType 
             });
 
-            // Tøm feltene
+            /// Tøm feltene
             document.getElementById('inputName').value = '';
             document.getElementById('inputDescription').value = '';
             document.getElementById('inputPhoneNumber').value = '';
@@ -351,7 +351,7 @@
             });
         }
 
-        // Funksjon for å sjekke at det finnes minst 1 ressurs i listen når bruker trykker "Opprett alle ressurser"
+        /// Funksjon for å sjekke at det finnes minst 1 ressurs i listen når bruker trykker "Opprett alle ressurser"
         function validerInnsending() {
             if (mekortListe.length === 0) {
                 alert("Du må legge til minst én ressurs i listen før du kan opprette!");
