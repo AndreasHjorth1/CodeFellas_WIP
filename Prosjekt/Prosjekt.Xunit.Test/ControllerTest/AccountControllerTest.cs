@@ -279,6 +279,93 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.Contains(EncodeCode("reset-token"), _emailSender.SentMessage);
         }
 
-        // Neste tester kommer her
+        // ---------- Tilbakestille passord ----------
+
+        [Theory]
+        [InlineData(null, "ola@test.no")]
+        [InlineData("kode", null)]
+        [InlineData("", "ola@test.no")]
+        [InlineData("kode", " ")]
+        public void ResetPassword_Get_MissingCodeOrEmail_ReturnsBadRequest(string? code, string? email)
+        {
+            Assert.IsType<BadRequestObjectResult>(_controller.ResetPassword(code, email));
+        }
+
+        [Fact]
+        public void ResetPassword_Get_WithCodeAndEmail_FillsModel()
+        {
+            var view = Assert.IsType<ViewResult>(_controller.ResetPassword("kode", "ola@test.no"));
+
+            var model = Assert.IsType<ResetPasswordViewModel>(view.Model);
+            Assert.Equal("kode", model.Code);
+            Assert.Equal("ola@test.no", model.Email);
+        }
+
+        [Fact]
+        public async Task ResetPassword_Post_InvalidModel_DoesNotResetPassword()
+        {
+            _userManager.UserToFind = TestUser();
+            _controller.ModelState.AddModelError("Password", "Required");
+
+            var result = await _controller.ResetPassword(new ResetPasswordViewModel());
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Null(_userManager.UsedResetCode);
+        }
+
+        /// Sikkerhet: ukjent konto gir samme side som suksess
+        [Fact]
+        public async Task ResetPassword_Post_UnknownEmail_RedirectsToConfirmation()
+        {
+            var model = new ResetPasswordViewModel { Email = "ukjent@test.no", Code = EncodeCode("kode"), Password = "Nytt1!" };
+
+            var result = await _controller.ResetPassword(model);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("ResetPasswordConfirmation", redirect.ActionName);
+            Assert.Null(_userManager.UsedResetCode);
+        }
+
+        [Fact]
+        public async Task ResetPassword_Post_InvalidCodeFormat_ShowsError()
+        {
+            _userManager.UserToFind = TestUser();
+            var model = new ResetPasswordViewModel { Email = "ola@test.no", Code = "a", Password = "Nytt1!" };
+
+            var result = await _controller.ResetPassword(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Null(_userManager.UsedResetCode);
+            Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
+                e => e.ErrorMessage == "The password reset code is invalid.");
+        }
+
+        [Fact]
+        public async Task ResetPassword_Post_Success_DecodesCodeAndRedirects()
+        {
+            _userManager.UserToFind = TestUser();
+            var model = new ResetPasswordViewModel { Email = "ola@test.no", Code = EncodeCode("kode"), Password = "Nytt1!" };
+
+            var result = await _controller.ResetPassword(model);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("ResetPasswordConfirmation", redirect.ActionName);
+            Assert.Equal("kode", _userManager.UsedResetCode);
+            Assert.Equal("Nytt1!", _userManager.NewPassword);
+        }
+
+        [Fact]
+        public async Task ResetPassword_Post_Failure_ShowsErrorsFromIdentity()
+        {
+            _userManager.UserToFind = TestUser();
+            _userManager.ResetResult = IdentityResult.Failed(new IdentityError { Description = "Ugyldig kode" });
+            var model = new ResetPasswordViewModel { Email = "ola@test.no", Code = EncodeCode("kode"), Password = "Nytt1!" };
+
+            var result = await _controller.ResetPassword(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
+                e => e.ErrorMessage == "Ugyldig kode");
+        }
     }
 }
