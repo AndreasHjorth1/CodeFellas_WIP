@@ -82,6 +82,112 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.IsType<ViewResult>(_controller.ResetPasswordConfirmation());
         }
 
+        // ---------- Login ----------
+
+        [Fact]
+        public async Task Login_Post_InvalidModel_ReturnsViewWithoutSigningIn()
+        {
+            _userManager.UserToFind = TestUser();
+            _controller.ModelState.AddModelError("Email", "Required");
+            var model = new LoginViewModel();
+
+            var result = await _controller.Login(model);
+
+            var view = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, view.Model);
+            Assert.False(_signInManager.SignInCalled);
+        }
+
+        [Fact]
+        public async Task Login_Post_UnknownEmail_ShowsErrorWithoutSigningIn()
+        {
+            var model = new LoginViewModel { Email = "ukjent@test.no", Password = "passord" };
+
+            var result = await _controller.Login(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.False(_signInManager.SignInCalled);
+            Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
+                e => e.ErrorMessage == "Invalid email or password.");
+        }
+
+        [Fact]
+        public async Task Login_Post_WrongPassword_ShowsSameErrorAsUnknownEmail()
+        {
+            _userManager.UserToFind = TestUser();
+            _signInManager.SignInResult = SignInResult.Failed;
+            var model = new LoginViewModel { Email = "ola@test.no", Password = "feil" };
+
+            var result = await _controller.Login(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
+                e => e.ErrorMessage == "Invalid email or password.");
+        }
+
+        [Fact]
+        public async Task Login_Post_UsesLockoutOnFailure()
+        {
+            _userManager.UserToFind = TestUser();
+            var model = new LoginViewModel { Email = "ola@test.no", Password = "passord" };
+
+            await _controller.Login(model);
+
+            Assert.True(_signInManager.LockoutOnFailure);
+        }
+
+        [Fact]
+        public async Task Login_Post_Success_WithoutReturnUrl_RedirectsToHome()
+        {
+            _userManager.UserToFind = TestUser();
+            var model = new LoginViewModel { Email = "ola@test.no", Password = "passord" };
+
+            var result = await _controller.Login(model);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+            Assert.Equal("Home", redirect.ControllerName);
+        }
+
+        [Fact]
+        public async Task Login_Post_Success_WithLocalReturnUrl_RedirectsThere()
+        {
+            _userManager.UserToFind = TestUser();
+            var model = new LoginViewModel { Email = "ola@test.no", Password = "passord", ReturnUrl = "/Need/Overview" };
+
+            var result = await _controller.Login(model);
+
+            var redirect = Assert.IsType<RedirectResult>(result);
+            Assert.Equal("/Need/Overview", redirect.Url);
+        }
+
+        /// Sikkerhet: innlogging skal ikke kunne sende brukeren til en annen nettside
+        [Theory]
+        [InlineData("https://evil.example.com")]
+        [InlineData("//evil.example.com")]
+        public async Task Login_Post_Success_WithExternalReturnUrl_RedirectsToHome(string returnUrl)
+        {
+            _userManager.UserToFind = TestUser();
+            var model = new LoginViewModel { Email = "ola@test.no", Password = "passord", ReturnUrl = returnUrl };
+
+            var result = await _controller.Login(model);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Home", redirect.ControllerName);
+        }
+
+        // ---------- Logout ----------
+
+        [Fact]
+        public async Task Logout_SignsOutAndRedirectsToLogin()
+        {
+            var result = await _controller.Logout();
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Login", redirect.ActionName);
+            Assert.True(_signInManager.SignOutCalled);
+        }
+
         // Neste tester kommer her
     }
 }
