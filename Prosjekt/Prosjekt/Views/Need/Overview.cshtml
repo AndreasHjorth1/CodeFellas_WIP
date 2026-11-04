@@ -209,7 +209,7 @@
                                     <div class="d-flex gap-1">
                                         <a asp-controller="Need" asp-action="Match" asp-route-id="@item.Id" class="btn btn-sm btn-success">🔗 Finn ressurser</a>
                                         <a asp-controller="Need" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Rediger</a>
-                                        <form asp-controller="Need" asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
+                                        <form asp-controller="Need" asp-action="Delete" asp-route-id="@item.Id" method="post" data-navn="@item.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-danger">Slett</button>
                                         </form>
