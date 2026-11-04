@@ -1,5 +1,7 @@
-﻿@{
+﻿@using Prosjekt.Models.Authorization
+@{
     ViewData["Title"] = "Hjem - Kartoversikt";
+    var erAdmin = User.IsInRole(RoleNames.Admin);
 }
 
 <style>
@@ -70,6 +72,20 @@
 
 <!-- Kartbeholder -->
 <div id="homeMap" style="height: calc(100vh - 80px); width: 100%; margin: 0; padding: 0;"></div>
+@if (erAdmin)
+{
+    <div class="position-absolute bg-white shadow rounded p-3"
+         style="top: 100px; left: 20px; z-index: 1000; min-width: 220px;">
+        <h6 class="mb-2">🎛️ Filter</h6>
+
+        <label class="form-label small mb-1">Vis</label>
+        <select id="visFilter" class="form-select form-select-sm mb-2">
+            <option value="">Alt</option>
+            <option value="behov">Bare behov</option>
+            <option value="ressurs">Bare ressurser</option>
+        </select>
+    </div>
+}
 
 @section Scripts {
     <script>
@@ -89,7 +105,18 @@
                 attribution: '&copy; Midlertidig satellitt (Esri) - Venter på Geonorge-tilgang',
                 noWrap: true
             });
+            // Alle kartlag med egenskapene vi filtrerer på
+            var kartElementer = [];
 
+            function filtrerKart() {
+                var vis = document.getElementById('visFilter')?.value ?? '';
+
+                kartElementer.forEach(function(e) {
+                    var synlig = vis === '' || e.type === vis;
+
+                    if (synlig) { map.addLayer(e.lag); } else { map.removeLayer(e.lag); }
+                });
+            }
             // 2. Start kartet med grenser og fast verden
             var map = L.map('homeMap', {
                 center: [58.1467, 7.9956],
@@ -191,6 +218,7 @@
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
                             var marker = L.marker([lat, lng], { icon: ressursIkon }).addTo(map);
+                            kartElementer.push({ lag: marker, type: 'ressurs' });
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
@@ -241,6 +269,7 @@
                                         fillOpacity: 0.25
                                     }
                                 }).addTo(map);
+                                kartElementer.push({ lag: omrade, type: 'behov' });
 
                                 // Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
@@ -266,11 +295,13 @@
                             var chosenIcon = behovIkoner[importance] || behovIkoner[1];
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon }).addTo(map);
+                            kartElementer.push({ lag: marker, type: 'behov' });
                             marker.bindPopup(popupInnhold);
 
                             bounds.push([lat, lng]);
                         }
                     });
+                    document.getElementById('visFilter')?.addEventListener('change', filtrerKart);
                 }
 
                 // 6. Tilpass kartzoomen dersom det finnes markører eller områder
