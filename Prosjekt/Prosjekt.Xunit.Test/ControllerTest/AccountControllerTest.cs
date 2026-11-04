@@ -33,7 +33,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             };
         }
 
-        private static IdentityUser TestUser() => new() { Email = "test@test.no", UserName = "test@test.no" };
+        private static IdentityUser TestUser() => new() { Email = "ola@test.no", UserName = "ola@test.no" };
 
         private static string EncodeCode(string code) =>
             WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -227,6 +227,56 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.IsType<ViewResult>(result);
             Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
                 e => e.ErrorMessage == "For kort passord");
+        }
+
+        // ---------- Glemt passord ----------
+
+        [Fact]
+        public async Task ForgotPassword_Post_InvalidModel_SendsNoEmail()
+        {
+            _userManager.UserToFind = TestUser();
+            _controller.ModelState.AddModelError("Email", "Required");
+
+            var result = await _controller.ForgotPassword(new ForgotPasswordViewModel());
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Null(_emailSender.SentTo);
+        }
+
+        /// Sikkerhet: svaret skal være likt, så siden ikke avslører hvem som er registrert
+        [Fact]
+        public async Task ForgotPassword_Post_UnknownEmail_SendsNoEmailButGivesSameRedirect()
+        {
+            var result = await _controller.ForgotPassword(new ForgotPasswordViewModel { Email = "ukjent@test.no" });
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("ForgotPasswordConfirmation", redirect.ActionName);
+            Assert.Null(_emailSender.SentTo);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Post_UnconfirmedEmail_SendsNoEmail()
+        {
+            _userManager.UserToFind = TestUser();
+            _userManager.EmailConfirmed = false;
+
+            var result = await _controller.ForgotPassword(new ForgotPasswordViewModel { Email = "ola@test.no" });
+
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Null(_emailSender.SentTo);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Post_KnownEmail_SendsEmailWithEncodedCode()
+        {
+            _userManager.UserToFind = TestUser();
+
+            var result = await _controller.ForgotPassword(new ForgotPasswordViewModel { Email = "ola@test.no" });
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("ForgotPasswordConfirmation", redirect.ActionName);
+            Assert.Equal("ola@test.no", _emailSender.SentTo);
+            Assert.Contains(EncodeCode("reset-token"), _emailSender.SentMessage);
         }
 
         // Neste tester kommer her
