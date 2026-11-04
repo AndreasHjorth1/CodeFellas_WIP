@@ -112,6 +112,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Står etter feilhåndteringen, så også feilsiden får sikkerhetsheaderne
+app.UseSecurityHeaders();
+
 app.UseRouting();
 
 // 12. Sikkerhet: må stå etter UseRouting()
