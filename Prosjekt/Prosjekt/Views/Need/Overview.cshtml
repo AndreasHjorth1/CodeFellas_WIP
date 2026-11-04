@@ -209,7 +209,8 @@
                                     <div class="d-flex gap-1">
                                         <a asp-controller="Need" asp-action="Match" asp-route-id="@item.Id" class="btn btn-sm btn-success">🔗 Finn ressurser</a>
                                         <a asp-controller="Need" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Rediger</a>
-                                        <form asp-controller="Need" asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @item.Name?');">
+                                        @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et behovsnavn kjøres som JavaScript (XSS). *@
+                                        <form asp-controller="Need" asp-action="Delete" asp-route-id="@item.Id" method="post" data-navn="@item.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-danger">Slett</button>
                                         </form>
@@ -268,7 +269,7 @@
                 iconClass = b.Importance == ImportanceLevel.Acute ? "need-map-acute" : "need-map-planned"
             })));
 
-            // Initialiser kartet
+            /// Initialiser kartet
             kart = L.map('oversiktBehovKart').setView([58.163, 8.003], 12);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -289,7 +290,7 @@
 
                 bounds.push([lat, lng]);
 
-                // b.status kommer som tall: 0 = Ny, 1 = Vurderes, 2 = Tildelt, 3 = Løst
+                /// b.status kommer som tall: 0 = Ny, 1 = Vurderes, 2 = Tildelt, 3 = Løst
                 var statusNavn = ['Ny', 'Vurderes', 'Tildelt', 'Løst'][b.status] || 'Ny';
                 var statusFarge = ['gray', 'orange', 'blue', 'green'][b.status] || 'gray';
                 var statusTekst = `<span style="color: ${statusFarge}; font-weight: bold;">${statusNavn}</span>`;
@@ -333,7 +334,7 @@
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
 
-                // Slå opp adresse via Nominatim API
+                /// Slå opp adresse via Nominatim API
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
@@ -349,7 +350,7 @@
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
             }
 
-            // --- DRAG / RESIZE LOGIKK ---
+            /// --- DRAG / RESIZE LOGIKK ---
             const resizer = document.getElementById('dragHandle');
             const leftSide = document.getElementById('tableBox');
             const container = document.getElementById('splitWrapper');
@@ -370,7 +371,7 @@
                 const dx = e.clientX - x;
                 const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
 
-                // Tillat justering mellom 15 % og 85 % bredde
+                /// Tillat justering mellom 15 % og 85 % bredde
                 if (newLeftWidth > 15 && newLeftWidth < 85) {
                     leftSide.style.flex = `0 0 ${newLeftWidth}%`;
                     kart.invalidateSize();

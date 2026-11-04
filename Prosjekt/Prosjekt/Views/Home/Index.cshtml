@@ -80,7 +80,7 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
-            // 1. Definer kartlagene med noWrap
+            /// 1. Definer kartlagene med noWrap
             var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 noWrap: true
@@ -96,7 +96,7 @@
                 noWrap: true
             });
 
-            // 2. Start kartet med grenser og fast verden
+            /// 2. Start kartet med grenser og fast verden
             var map = L.map('homeMap', {
                 center: [58.1467, 7.9956],
                 zoom: 11,
@@ -109,7 +109,7 @@
                 layers: [osmKart]
             });
 
-            // 3. Lag menyen i hjørnet for å bytte bakgrunnskart
+            /// 3. Lag menyen i hjørnet for å bytte bakgrunnskart
             var bakgrunnsKart = {
                 "Standard (OSM)": osmKart,
                 "Topografisk (Geonorge)": geonorgeTopo,
@@ -117,7 +117,7 @@
             };
             L.control.layers(bakgrunnsKart).addTo(map);
 
-            // --- SYMBOL INFO KNAPP OG BOKS ---
+            /// --- SYMBOL INFO KNAPP OG BOKS ---
             var symbolInfoControl = L.control({ position: 'topright' });
 
             symbolInfoControl.onAdd = function (map) {
@@ -155,7 +155,7 @@
 
             var bounds = [];
 
-            // Hjelpefunksjon for å formatere areal
+            /// Hjelpefunksjon for å formatere areal
             function formaterAreal(sqm) {
                 if (!sqm) return '';
                 if (sqm >= 1000000) {
@@ -167,7 +167,7 @@
             var symbolMarkers = MapSymbols.createCluster(map);
 
             try {
-                // 4. Hent ressurser
+                /// 4. Hent ressurser
               
               const resResponse = await fetch('@Url.Action("GetInformation", "Resource")');
               
@@ -198,7 +198,7 @@
                     });
                 }
 
-                // 5. Hent behov (Inkludert inntegnede figurer/områder)
+                /// 5. Hent behov (Inkludert inntegnede figurer/områder)
               
               const needResponse = await fetch('@Url.Action("GetInformation", "Need")');
               
@@ -212,7 +212,7 @@
                         var areaGeoJson = need.areaGeoJson || need.AreaGeoJson;
                         var areaSquareMeters = need.areaSquareMeters || need.AreaSquareMeters;
 
-                        // Teksten som skal vises når du trykker på enten området eller markøren
+                        /// Teksten som skal vises når du trykker på enten området eller markøren
                         var popupInnhold = `
                             <div style="font-size: 0.9rem;">
                                 <strong style="color: #dc3545;">🆘 BEHOV</strong><br/>
@@ -225,7 +225,7 @@
 
                         var harOmrade = false;
 
-                        // --- TEGN FIGUR / OMÅDE DERSOM GEOJSON FINNES ---
+                        /// --- TEGN FIGUR / OMÅDE DERSOM GEOJSON FINNES ---
                         if (areaGeoJson) {
                             try {
                                 var parsedGeoJson = typeof areaGeoJson === 'string' ? JSON.parse(areaGeoJson) : areaGeoJson;
@@ -238,7 +238,7 @@
                                     }
                                 }).addTo(map);
 
-                                // Fest infoboksen direkte til området ved klikk
+                                /// Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
 
                                 if (areaSquareMeters) {
@@ -248,7 +248,7 @@
                                     );
                                 }
 
-                                // Hent ut grensene (bounds) til området slik at kartzoomen tilpasser seg
+                                /// Hent ut grensene (bounds) til området slik at kartzoomen tilpasser seg
                                 bounds.push(omrade.getBounds());
                                 harOmrade = true;
 
@@ -257,7 +257,7 @@
                             }
                         }
 
-                        // Vis behovssymbolet også når behovet har et inntegnet område.
+                        /// Vis behovssymbolet også når behovet har et inntegnet område.
                         if (!isNaN(lat) && !isNaN(lng)) {
                             var chosenIcon = MapSymbols.needIcon(need.type ?? need.Type, importance);
 
@@ -269,7 +269,7 @@
                     });
                 }
 
-                // 6. Tilpass kartzoomen dersom det finnes markører eller områder
+                /// 6. Tilpass kartzoomen dersom det finnes markører eller områder
                 if (bounds.length > 0) {
                     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
                 }

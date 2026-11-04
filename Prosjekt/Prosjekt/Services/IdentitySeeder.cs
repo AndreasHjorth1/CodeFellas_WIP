@@ -3,6 +3,10 @@ using Prosjekt.Models.Authorization;
 
 namespace Prosjekt.Services
 {
+    /// <summary>
+    /// Oppretter admin-rollen og to testbrukere ved oppstart, hvis de ikke finnes.
+    /// Testbrukerne har ikke passord før det settes med «Glemt passord».
+    /// </summary>
     public class IdentitySeeder
     {
         public const string DevelopmentAdminEmail = "admin@heimevernet.local";

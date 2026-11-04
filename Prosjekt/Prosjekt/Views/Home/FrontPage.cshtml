@@ -471,7 +471,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
 
-            // FAQ-ikon veksling
+            /// FAQ-ikon veksling
             const faqButtons = document.querySelectorAll('.faq-btn');
             faqButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -483,12 +483,13 @@
                 });
             });
 
-            // ----------------------------------------------------
-            // LEAFLET KART (STANDARD OSM-LAG)
-            // ----------------------------------------------------
+            /// ----------------------------------------------------
+            /// LEAFLET KART (STANDARD OSM-LAG)
+            /// ----------------------------------------------------
+            /// Tom liste i dag: HomeController.FrontPage sender ikke med noen modell.
             var needs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<Prosjekt.Models.ModelView.NeedViewModel>()));
 
-            // Standard OpenStreetMap-lag
+            /// Standard OpenStreetMap-lag
             var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 noWrap: true

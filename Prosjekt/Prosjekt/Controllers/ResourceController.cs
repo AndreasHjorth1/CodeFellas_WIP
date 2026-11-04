@@ -16,6 +16,9 @@ using System.Threading.Tasks;
 
 namespace Prosjekt.Controllers
 {
+    /// <summary>
+    /// Registrering, oversikt, endring, sletting og eksport av ressurser. Krever innlogging.
+    /// </summary>
     [Authorize]
     public class ResourceController : Controller
     {
@@ -28,6 +31,9 @@ namespace Prosjekt.Controllers
             _allocationRepo = allocationRepo;
         }
 
+        /// <summary>
+        /// Bare admin og eieren av ressursen kan endre eller slette den.
+        /// </summary>
         private bool CanModify(Resource resource)
         {
             return User.IsInRole(RoleNames.Admin)
@@ -40,6 +46,11 @@ namespace Prosjekt.Controllers
             return View(new ResourceCreatorViewModel());
         }
 
+        /// <summary>
+        /// Oppretter alle ressursene i listen, med samme posisjon fra kartet.
+        /// Skiltnummer lagres i beskrivelsen, fordi det ikke har egen kolonne.
+        /// Bekreftelsessiden viser bare den første ressursen.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ResourceCreatorViewModel model)
@@ -186,6 +197,9 @@ namespace Prosjekt.Controllers
             return View("Create", createdResourceModel);
         }
 
+        /// <summary>
+        /// Admin ser alle ressurser, andre bare sine egne.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
@@ -213,6 +227,9 @@ namespace Prosjekt.Controllers
             return View(resourceViewModels);
         }
 
+        /// <summary>
+        /// Viser redigeringsskjemaet. Skiltnummeret skilles ut fra beskrivelsen og vises i eget felt.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -267,6 +284,9 @@ namespace Prosjekt.Controllers
             return View(viewModel);
         }
 
+        /// <summary>
+        /// Lagrer endringene. Felt som bare gjelder enkelte kategorier, skal ikke kunne stoppe lagringen.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, ResourceViewModel model)
@@ -354,6 +374,9 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
+        /// <summary>
+        /// Sletter ressursen og tildelingene, siden de ikke slettes automatisk.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -367,6 +390,9 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
+        /// <summary>
+        /// Data til kartet på Home/Index. Admin får alle ressurser, andre bare sine egne.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetInformation()
         {
@@ -392,8 +418,10 @@ namespace Prosjekt.Controllers
             return Json(result);
         }
 
-        // Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
-        // TODO: [Authorize(Roles = "Offentlig")] på Export, ExportCsv og ExportJson når innlogging er på plass.
+        /// <summary>
+        /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
+        /// Foreløpig bare for admin. TODO: egen rolle for offentlige aktører på Export, ExportCsv og ExportJson.
+        /// </summary>
         [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public IActionResult Export()
@@ -426,7 +454,9 @@ namespace Prosjekt.Controllers
                     r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
             }
 
-            // BOM gjør at Excel viser æ, ø og å riktig
+            /// <summary>
+            /// BOM gjør at Excel viser æ, ø og å riktig
+            /// </summary>
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
         }
@@ -462,7 +492,9 @@ namespace Prosjekt.Controllers
             return File(bytes, "application/json", $"{Filnavn(bareTilgjengelige)}.json");
         }
 
-        // Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
+        /// <summary>
+        /// Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
+        /// </summary>
         private async Task<List<Resource>> HentRessurserForEksport(bool bareTilgjengelige)
         {
             var alle = await _repo.GetAllAsync();
@@ -472,14 +504,18 @@ namespace Prosjekt.Controllers
                 .ToList();
         }
 
-        // Ulike filnavn så de to eksportene ikke blandes sammen
+        /// <summary>
+        /// Ulike filnavn så de to eksportene ikke blandes sammen
+        /// </summary>
         private static string Filnavn(bool bareTilgjengelige)
         {
             var navn = bareTilgjengelige ? "ressurser_tilgjengelige" : "ressurser_alle";
             return $"{navn}_{DateTime.Now:yyyy-MM-dd}";
         }
 
-        // Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
+        /// <summary>
+        /// Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
+        /// </summary>
         private static string OversettKategori(string category) => category switch
         {
             nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
@@ -490,7 +526,9 @@ namespace Prosjekt.Controllers
             _ => "Annet"
         };
 
-        // Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
+        /// <summary>
+        /// Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
+        /// </summary>
         private static string Csv(string? value)
         {
             if (string.IsNullOrEmpty(value)) return "";

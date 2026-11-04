@@ -10,10 +10,8 @@ namespace Prosjekt.DataAccess
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-        // Her er tabellen for ressurser 
         public DbSet<Resource> Resources { get; set; }
 
-        // Her er tabellen for need / behov
         public DbSet<Need> Needs { get; set; }
 
         public DbSet<Allocation> Allocations { get; set; }
@@ -23,7 +21,6 @@ namespace Prosjekt.DataAccess
         {
             base.OnModelCreating(modelBuilder);
 
-            // Konfigurasjon for Resource
             modelBuilder.Entity<Resource>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -46,7 +43,6 @@ namespace Prosjekt.DataAccess
 
             });
 
-            // Konfigurasjon for Need
             modelBuilder.Entity<Need>(entity =>
             {
                 entity.HasKey(e => e.Id);

@@ -29,7 +29,9 @@ namespace Prosjekt.Models.ModelView
         [Required(ErrorMessage = "Du må legge inn lengdegrad")]
         public double? Longitude { get; init; }
 
-        // Område tegnet i kartet. Null når brukeren bare satte en markør.
+        /// <summary>
+        /// Område tegnet i kartet. Null når brukeren bare satte en markør.
+        /// </summary>
         public string? AreaGeoJson { get; init; }
 
         public double? AreaSquareMeters { get; init; }

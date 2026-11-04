@@ -124,15 +124,15 @@
         function HentValgtIkon() { return MapSymbols.needIcon(behovstype.value, viktighet.value); }
         function hentFarge() { return MapSymbols.isAcute(viktighet.value) ? '#dc3545' : '#fd7e14'; }
 
-        // 1. Initialiser kartet
+        /// 1. Initialiser kartet
         var map = L.map('map').setView(startPunkt, harPosisjon ? 14 : 13);
 
-        // 2. Legg til tile layer
+        /// 2. Legg til tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // 3. Initialiser Leaflet.Draw feature group
+        /// 3. Initialiser Leaflet.Draw feature group
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
         const areaSymbol = createNeedAreaSymbol(map);
@@ -150,7 +150,7 @@
             drawnItems.addLayer(existingMarker);
         }
 
-        // 4. Opprett draw control
+        /// 4. Opprett draw control
         var drawControl = new L.Control.Draw({
             draw: {
                 polygon: {

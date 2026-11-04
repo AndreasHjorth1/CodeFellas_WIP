@@ -6,7 +6,7 @@
 @model IEnumerable<ResourceViewModel>
 
 @{
-    // Vanlige brukere ser bare sine egne ressurser
+    /// Vanlige brukere ser bare sine egne ressurser
     var erAdmin = User.IsInRole("Admin");
     ViewData["Title"] = erAdmin ? "Oversikt over ressurser" : "Mine ressurser";
 }
@@ -199,7 +199,8 @@
                                 <td class="text-nowrap" onclick="event.stopPropagation();">
                                     <div class="d-flex gap-1">
                                         <a asp-action="Edit" asp-route-id="@res.Id" class="btn btn-sm btn-warning">Rediger</a>
-                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @res.Name?');">
+                                        @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
+                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-danger">Slett</button>
                                         </form>
@@ -240,7 +241,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            // Konverter C#-modellen til JS uten kontaktinfo/reg-nr
+            /// Konverter C#-modellen til JS uten kontaktinfo/reg-nr
             var ressurser = @Json.Serialize((Model ?? Enumerable.Empty<ResourceViewModel>()).Select(r => new
             {
                 id = r.Id,
@@ -253,7 +254,7 @@
                 lng = r.Longitude
             }));
 
-            // Initialiser kartet
+            /// Initialiser kartet
             kart = L.map('oversiktRessursKart').setView([58.163, 8.003], 12);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -296,7 +297,7 @@
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
 
-                // Slå opp adresse via Nominatim API
+                /// Slå opp adresse via Nominatim API
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
@@ -316,7 +317,7 @@
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
             }
 
-            // --- DRAG / RESIZE LOGIKK ---
+            /// --- DRAG / RESIZE LOGIKK ---
             const resizer = document.getElementById('dragHandle');
             const leftSide = document.getElementById('tableBox');
             const container = document.getElementById('splitWrapper');
@@ -337,7 +338,7 @@
                 const dx = e.clientX - x;
                 const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
 
-                // Tillat justering mellom 15 % og 85 % bredde
+                /// Tillat justering mellom 15 % og 85 % bredde
                 if (newLeftWidth > 15 && newLeftWidth < 85) {
                     leftSide.style.flex = `0 0 ${newLeftWidth}%`;
                     kart.invalidateSize();
