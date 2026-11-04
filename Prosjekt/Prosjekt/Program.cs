@@ -52,13 +52,6 @@ var identityBuilder = builder.Services
         options.User.RequireUniqueEmail = true;
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = 10;
-
-        // Passordkrav (svake, greit for testing)
-        options.Password.RequireDigit = false;
-        options.Password.RequireLowercase = false;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequiredLength = 6;
     })
     .AddDefaultTokenProviders();
 
