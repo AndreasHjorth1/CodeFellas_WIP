@@ -188,6 +188,47 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.True(_signInManager.SignOutCalled);
         }
 
+        // ---------- Register ----------
+
+        [Fact]
+        public async Task Register_Post_InvalidModel_DoesNotCreateUser()
+        {
+            _controller.ModelState.AddModelError("Email", "Required");
+
+            var result = await _controller.Register(new RegisterViewModel());
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Null(_userManager.CreatedUser);
+        }
+
+        [Fact]
+        public async Task Register_Post_Success_CreatesConfirmedUserAndRedirectsToLogin()
+        {
+            var model = new RegisterViewModel { Email = "ny@test.no", Password = "Passord1!", ConfirmPassword = "Passord1!" };
+
+            var result = await _controller.Register(model);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Login", redirect.ActionName);
+            Assert.Equal("ny@test.no", _userManager.CreatedUser!.Email);
+            Assert.Equal("ny@test.no", _userManager.CreatedUser.UserName);
+            Assert.True(_userManager.CreatedUser.EmailConfirmed);
+            Assert.Equal("Passord1!", _userManager.CreatedPassword);
+        }
+
+        [Fact]
+        public async Task Register_Post_Failure_ShowsErrorsFromIdentity()
+        {
+            _userManager.CreateResult = IdentityResult.Failed(new IdentityError { Description = "For kort passord" });
+            var model = new RegisterViewModel { Email = "ny@test.no", Password = "a", ConfirmPassword = "a" };
+
+            var result = await _controller.Register(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
+                e => e.ErrorMessage == "For kort passord");
+        }
+
         // Neste tester kommer her
     }
 }
