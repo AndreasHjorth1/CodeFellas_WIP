@@ -312,23 +312,23 @@ namespace Prosjekt.Controllers
         /// </summary>
         [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
-        public async Task<IActionResult> ExportJson(bool bareTilgjengelige = true)
+        public async Task<IActionResult> ExportJson(bool onlyAvailable = true)
         {
-            var ressurser = await RetrieveResourcesForExport(bareTilgjengelige);
+            var resources = await RetrieveResourcesForExport(onlyAvailable);
 
-            var data = ressurser.Select(r => new
+            var data = resources.Select(r => new
             {
                 r.Id,
-                Navn = r.Name,
-                Kategori = TranslateCategory(r.Category),
-                Antall = r.Quantity,
-                Tilgjengelig = r.IsAvailable,
-                Telefon = r.PhoneNumber,
-                Beskrivelse = r.Description,
-                TilgjengeligFra = NorwegianTime.FromUtc(r.AvailableFrom),
-                TilgjengeligTil = NorwegianTime.FromUtc(r.AvailableTo),
-                Breddegrad = r.Coords.Latitude,
-                Lengdegrad = r.Coords.Longitude
+                r.Name,
+                Category = TranslateCategory(r.Category),
+                r.Quantity,
+                r.IsAvailable,
+                r.PhoneNumber,
+                r.Description,
+                AvailableFrom = NorwegianTime.FromUtc(r.AvailableFrom),
+                AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
+                r.Coords.Latitude,
+                r.Coords.Longitude
             });
 
             var options = new JsonSerializerOptions
@@ -338,7 +338,7 @@ namespace Prosjekt.Controllers
             };
 
             var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
-            return File(bytes, "application/json", $"{FileName(bareTilgjengelige)}.json");
+            return File(bytes, "application/json", $"{FileName(onlyAvailable)}.json");
         }
 
         /// <summary>

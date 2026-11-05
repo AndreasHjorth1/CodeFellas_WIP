@@ -743,10 +743,10 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
             var ressurs = Assert.Single(json.RootElement.EnumerateArray());
             Assert.Equal(1, ressurs.GetProperty("Id").GetInt32());
-            Assert.Equal("Traktor", ressurs.GetProperty("Navn").GetString());
-            Assert.Equal("Kjøretøy", ressurs.GetProperty("Kategori").GetString());
-            Assert.True(ressurs.GetProperty("Tilgjengelig").GetBoolean());
-            Assert.Equal("98765432", ressurs.GetProperty("Telefon").GetString());
+            Assert.Equal("Traktor", ressurs.GetProperty("Name").GetString());
+            Assert.Equal("Kjøretøy", ressurs.GetProperty("Category").GetString());
+            Assert.True(ressurs.GetProperty("IsAvailable").GetBoolean());
+            Assert.Equal("98765432", ressurs.GetProperty("PhoneNumber").GetString());
         }
 
         [Fact]
@@ -759,7 +759,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
-            var result = await controller.ExportJson(bareTilgjengelige: false);
+            var result = await controller.ExportJson(onlyAvailable: false);
 
             // Assert
             var file = Assert.IsType<FileContentResult>(result);
@@ -768,7 +768,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
             var ressurser = json.RootElement.EnumerateArray().ToList();
             Assert.Equal(2, ressurser.Count);
-            Assert.False(ressurser.Single(r => r.GetProperty("Navn").GetString() == "Aggregat").GetProperty("Tilgjengelig").GetBoolean());
+            Assert.False(ressurser.Single(r => r.GetProperty("Name").GetString() == "Aggregat").GetProperty("IsAvailable").GetBoolean());
         }
     }
 }
