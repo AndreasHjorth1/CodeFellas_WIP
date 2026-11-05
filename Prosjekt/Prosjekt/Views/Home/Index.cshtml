@@ -1,11 +1,36 @@
+@using Prosjekt.Models.Authorization
+@using Prosjekt.Models.Enums
+@using Prosjekt.Models.ModelView
+
 <link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 ﻿@{
     ViewData["Title"] = "Hjem - Kartoversikt";
+    var erAdmin = User.IsInRole(RoleNames.Admin);
 }
 
 <style>
+    /* Tvinger Leaflets øvre høyre hjørne til å legge kontrollene ved siden av hverandre */
+    .leaflet-top.leaflet-right {
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    /* Pil som vises at filteret er kollapsbart + animasjon */
+    .filter-pil {
+        transition: transform 0.5s ease;
+    }
+
+    [aria-expanded="false"] .filter-pil {
+        transform: rotate(-90deg);
+    }
+    /* Fjern blå fokusring på filterknappen ved museklikk */
+    #filterPanel .btn:focus:not(:focus-visible) {
+        box-shadow: none;
+    }
     /* Strekker kartet slik at det fyller hovedskjermen rent uten marginer */
     main {
         max-width: 100% !important;
@@ -73,6 +98,81 @@
 
 <!-- Kartbeholder -->
 <div id="homeMap" style="height: calc(100vh - 80px); width: 100%; margin: 0; padding: 0;"></div>
+@if (erAdmin)
+{
+    <div id="filterPanel" class="bg-white shadow rounded" style="width: 260px; display: none;">
+
+        <button class="btn btn-sm text-dark text-decoration-none fw-bold w-100 text-start d-flex justify-content-between align-items-center px-3 py-2"
+                type="button" data-bs-toggle="collapse" data-bs-target="#filterKropp"
+                aria-expanded="false" aria-controls="filterKropp">
+            <span>🎛️ Filter</span>
+            <span class="filter-pil">▾</span>
+        </button>
+
+        <div class="collapse" id="filterKropp">
+            <div class="px-3 pb-3">
+
+                <label class="form-label small mb-1">Vis</label>
+                <select id="visFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alt</option>
+                    <option value="behov">Bare behov</option>
+                    <option value="ressurs">Bare ressurser</option>
+                </select>
+
+                <label class="form-label small mb-1">Kategori</label>
+                <select id="kategoriFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alle</option>
+                    <optgroup label="Behov">
+                        @foreach (var i in Html.GetEnumSelectList<NeedViewModel.NeedType>())
+                        {
+                            <option value="behov:@i.Value">@i.Text</option>
+                        }
+                    </optgroup>
+                    <optgroup label="Ressurser">
+                        @foreach (var i in Html.GetEnumSelectList<ResourceViewModel.ResourceType>())
+                        {
+                            <option value="ressurs:@i.Value">@i.Text</option>
+                        }
+                    </optgroup>
+                </select>
+
+                <label class="form-label small mb-1">Tilgjengelighet <span class="text-muted">(ressurs)</span></label>
+                <select id="tilgjengelighetFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alle</option>
+                    <option value="true">Tilgjengelig</option>
+                    <option value="false">Ikke tilgjengelig</option>
+                </select>
+
+                <label class="form-label small mb-1">Status <span class="text-muted">(behov)</span></label>
+                <select id="statusFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alle</option>
+                    @foreach (var i in Html.GetEnumSelectList<EntryStatus>())
+                    {
+                        <option value="@i.Value">@i.Text</option>
+                    }
+                </select>
+
+                <label class="form-label small mb-1">Viktighet <span class="text-muted">(behov)</span></label>
+                <select id="viktighetFilter" class="form-select form-select-sm">
+                    <option value="">Alle</option>
+                    @foreach (var i in Html.GetEnumSelectList<ImportanceLevel>())
+                    {
+                        <option value="@i.Value">@i.Text</option>
+                    }
+                </select>
+                <label class="form-label small mb-1 mt-2">Innenfor omkrets</label>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" id="velgPunktBtn" class="btn btn-outline-primary btn-sm text-nowrap">
+                        📍 Velg punkt
+                    </button>
+                    <input type="number" id="radiusFelt" class="form-control form-control-sm"
+                           value="5" min="1" max="500" step="1" style="max-width: 80px;" />
+                    <span class="small text-muted">km</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @section Scripts {
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
@@ -95,7 +195,41 @@
                 attribution: '&copy; Midlertidig satellitt (Esri) - Venter på Geonorge-tilgang',
                 noWrap: true
             });
+            /// Alle kartlag med egenskapene vi filtrerer på
+            var kartElementer = [];
 
+            function filtrerKart() {
+
+                var tilg = document.getElementById('tilgjengelighetFilter')?.value ?? '';
+                var vis = document.getElementById('visFilter')?.value ?? '';
+                var kat = document.getElementById('kategoriFilter')?.value ?? '';
+                var sta = document.getElementById('statusFilter')?.value ?? '';
+                var vik = document.getElementById('viktighetFilter')?.value ?? '';
+
+                kartElementer.forEach(function(e) {
+                    var synlig = true;
+
+                    /// radiusSenter og radiusMeter settes av settOppRadiusSok i site.js
+                    if (radiusSenter && !isNaN(e.lat) && !isNaN(e.lng)) {
+                        if (radiusSenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeter) synlig = false;
+                    }
+
+                    if (vis !== '' && e.type !== vis) synlig = false;
+
+                    /// kategori har formen "behov:3" eller "ressurs:1"
+                    if (kat !== '') {
+                        var deler = kat.split(':');
+                        if (e.type !== deler[0] || String(e.kategori) !== deler[1]) synlig = false;
+                    }
+
+                    /// Disse gjelder bare sin egen type - den andre slipper gjennom
+                    if (sta !== '' && e.type === 'behov' && String(e.status) !== sta) synlig = false;
+                    if (vik !== '' && e.type === 'behov' && String(e.viktighet) !== vik) synlig = false;
+                    if (tilg !== '' && e.type === 'ressurs' && String(e.tilgjengelig) !== tilg) synlig = false;
+                    
+                    if (synlig) { e.gruppe.addLayer(e.lag); } else { e.gruppe.removeLayer(e.lag); }
+                });
+            }
             /// 2. Start kartet med grenser og fast verden
             var map = L.map('homeMap', {
                 center: [58.1467, 7.9956],
@@ -153,6 +287,17 @@
                 infoBox.classList.toggle('d-none');
             });
 
+            /// Flytt filterpanelet inn i kartets kontrollhjørne
+            var filterControl = L.control({ position: 'topright' });
+            filterControl.onAdd = function() {
+                var el = document.getElementById('filterPanel');
+                el.style.display = 'block';
+                L.DomEvent.disableClickPropagation(el);
+                L.DomEvent.disableScrollPropagation(el);
+                return el;
+            };
+            filterControl.addTo(map);
+
             var bounds = [];
 
             /// Hjelpefunksjon for å formatere areal
@@ -167,7 +312,7 @@
             var symbolMarkers = MapSymbols.createCluster(map);
 
             try {
-                /// 4. Hent ressurser
+            /// 4. Hent ressurser
               
               const resResponse = await fetch('@Url.Action("GetInformation", "Resource")');
               
@@ -185,6 +330,7 @@
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
                             var marker = L.marker([lat, lng], { icon: MapSymbols.resourceIcon(res.category ?? res.Category, available), title: (res.name ?? res.Name ?? 'Ressurs') + (available ? ' – Tilgjengelig' : ' – Ikke tilgjengelig'), alt: available ? 'Tilgjengelig ressurs' : 'Ikke tilgjengelig ressurs' }).addTo(symbolMarkers);
+                            kartElementer.push({ lag: marker, gruppe: symbolMarkers, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null, tilgjengelig: (res.availability !== undefined ? res.availability : res.Availability), lat: lat, lng: lng });
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
@@ -237,6 +383,7 @@
                                         fillOpacity: 0.25
                                     }
                                 }).addTo(map);
+                                kartElementer.push({ lag: omrade, gruppe: map, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: omrade.getBounds().getCenter().lat, lng: omrade.getBounds().getCenter().lng });
 
                                 /// Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
@@ -262,12 +409,19 @@
                             var chosenIcon = MapSymbols.needIcon(need.type ?? need.Type, importance);
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon, title: need.name ?? need.Name ?? 'Behov', alt: need.name ?? need.Name ?? 'Behov' }).addTo(symbolMarkers);
+                            kartElementer.push({ lag: marker, gruppe: symbolMarkers, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: lat, lng: lng });
                             marker.bindPopup(popupInnhold);
 
-                            bounds.push([lat, lng]);
-                        }
+                                bounds.push([lat, lng]);
+                            }
+                        });
+                    }
+
+                    ['visFilter', 'kategoriFilter', 'tilgjengelighetFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
+                    document.getElementById(id)?.addEventListener('change', filtrerKart);
+
                     });
-                }
+                    settOppRadiusSok(map, filtrerKart);
 
                 /// 6. Tilpass kartzoomen dersom det finnes markører eller områder
                 if (bounds.length > 0) {
