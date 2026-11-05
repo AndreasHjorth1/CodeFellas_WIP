@@ -52,7 +52,6 @@ namespace Prosjekt.Controllers
         /// Bekreftelsessiden viser bare den første ressursen.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ResourceCreatorViewModel model)
         {
             if (model.Latitude.HasValue && model.Longitude.HasValue && model.ResourceList != null)
@@ -288,7 +287,6 @@ namespace Prosjekt.Controllers
         /// Lagrer endringene. Felt som bare gjelder enkelte kategorier, skal ikke kunne stoppe lagringen.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, ResourceViewModel model)
         {
             if (id != model.Id) return BadRequest();
@@ -378,7 +376,6 @@ namespace Prosjekt.Controllers
         /// Sletter ressursen og tildelingene, siden de ikke slettes automatisk.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var resource = await _repo.GetByIdAsync(id);

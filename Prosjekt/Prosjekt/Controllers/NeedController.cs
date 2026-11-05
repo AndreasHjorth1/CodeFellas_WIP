@@ -42,7 +42,6 @@ namespace Prosjekt.Controllers
         /// Oppretter alle behovene i listen. Posisjon, viktighet og frist er felles, og tomme rader hoppes over.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(NeedCreatorViewModel model)
         {
             if (model.NeedList == null)
@@ -170,7 +169,6 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, NeedViewModel model)
         {
             if (id != model.Id)
@@ -230,7 +228,6 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             await _repo.DeleteAsync(id);
@@ -335,7 +332,6 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Allocate(int needId, int resourceId, int quantity)
         {
             var need = await _repo.GetByIdAsync(needId);
@@ -375,7 +371,6 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deallocate(int allocationId, int needId)
         {
             await _allocationRepo.DeleteAsync(allocationId);
@@ -401,7 +396,6 @@ namespace Prosjekt.Controllers
         /// Setter behovet til Løst. Bare Tildelt kan gå videre dit; fra Ny og Vurderes skjer det ingenting.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Resolve(int id)
         {
             var need = await _repo.GetByIdAsync(id);
@@ -417,7 +411,6 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Unresolve(int id)
         {
             var need = await _repo.GetByIdAsync(id);
