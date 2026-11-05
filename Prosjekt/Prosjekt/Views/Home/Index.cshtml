@@ -7,6 +7,13 @@
 }
 
 <style>
+    /* Legg kontrollene i topp-høyre hjørne ved siden av hverandre */
+    .leaflet-top.leaflet-right {
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: flex-start;
+    }
+
     /* Pil som vises at filteret er kollapsbart + animasjon */
     .filter-pil {
         transition: transform 0.5s ease;
@@ -14,6 +21,10 @@
 
     [aria-expanded="false"] .filter-pil {
         transform: rotate(-90deg);
+    }
+    /* Fjern blå fokusring på filterknappen ved museklikk */
+    #filterPanel .btn:focus:not(:focus-visible) {
+        box-shadow: none;
     }
     /* Strekker kartet slik at det fyller hovedskjermen rent uten marginer */
     main {
@@ -84,17 +95,16 @@
 <div id="homeMap" style="height: calc(100vh - 80px); width: 100%; margin: 0; padding: 0;"></div>
 @if (erAdmin)
 {
-    <div class="position-absolute bg-white shadow rounded"
-         style="top: 100px; left: 70px; z-index: 1000; min-width: 230px;">
+    <div id="filterPanel" class="bg-white shadow rounded" style="width: 260px; display: none;">
 
-        <button class="btn btn-link text-decoration-none fw-bold w-100 text-start d-flex justify-content-between align-items-center px-3 py-2"
+        <button class="btn btn-sm text-dark text-decoration-none fw-bold w-100 text-start d-flex justify-content-between align-items-center px-3 py-2"
                 type="button" data-bs-toggle="collapse" data-bs-target="#filterKropp"
-                aria-expanded="true" aria-controls="filterKropp">
+                aria-expanded="false" aria-controls="filterKropp">
             <span>🎛️ Filter</span>
             <span class="filter-pil">▾</span>
         </button>
 
-        <div class="collapse show" id="filterKropp">
+        <div class="collapse" id="filterKropp">
             <div class="px-3 pb-3">
 
                 <label class="form-label small mb-1">Vis</label>
@@ -145,7 +155,15 @@
                         <option value="@i.Value">@i.Text</option>
                     }
                 </select>
-
+                <label class="form-label small mb-1 mt-2">Innenfor omkrets</label>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" id="velgPunktBtn" class="btn btn-outline-primary btn-sm text-nowrap">
+                        📍 Velg punkt
+                    </button>
+                    <input type="number" id="radiusFelt" class="form-control form-control-sm"
+                           value="5" min="1" max="500" step="1" style="max-width: 80px;" />
+                    <span class="small text-muted">km</span>
+                </div>
             </div>
         </div>
     </div>
@@ -183,6 +201,11 @@
                 kartElementer.forEach(function(e) {
                     var synlig = true;
 
+                    // radiusSenter og radiusMeter settes av settOppRadiusSok i site.js
+                    if (radiusSenter && !isNaN(e.lat) && !isNaN(e.lng)) {
+                        if (radiusSenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeter) synlig = false;
+                    }
+
                     if (vis !== '' && e.type !== vis) synlig = false;
 
                     // kategori har formen "behov:3" eller "ressurs:1"
@@ -195,7 +218,9 @@
                     if (sta !== '' && String(e.status) !== sta) synlig = false;
                     if (vik !== '' && String(e.viktighet) !== vik) synlig = false;
                     if (tilg !== '' && String(e.tilgjengelig) !== tilg) synlig = false;
-
+                    if (radiusSenter &&!isNaN(e.lat) && !isNaN(e.lng)) {
+                        if (radiusSenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeter) synlig = false;
+                    }
                     if (synlig) { map.addLayer(e.lag); } else { map.removeLayer(e.lag); }
                 });
             }
@@ -254,6 +279,17 @@
                 infoBox.classList.toggle('d-none');
             });
 
+            // Flytt filterpanelet inn i kartets kontrollhjørne
+            var filterControl = L.control({ position: 'topright' });
+            filterControl.onAdd = function() {
+                var el = document.getElementById('filterPanel');
+                el.style.display = 'block';
+                L.DomEvent.disableClickPropagation(el);
+                L.DomEvent.disableScrollPropagation(el);
+                return el;
+            };
+            filterControl.addTo(map);
+
             var bounds = [];
 
             // Hjelpefunksjon for å formatere areal
@@ -300,7 +336,7 @@
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
                             var marker = L.marker([lat, lng], { icon: ressursIkon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null, tilgjengelighet: (res.availability !== undefined ? res.availability : res.Availability) });
+                            kartElementer.push({ lag: marker, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null, tilgjengelig: (res.availability !== undefined ? res.availability : res.Availability), lat: lat, lng: lng });
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
@@ -351,7 +387,7 @@
                                         fillOpacity: 0.25
                                     }
                                 }).addTo(map);
-                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null });
+                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: omrade.getBounds().getCenter().lat, lng: omrade.getBounds().getCenter().lng });
 
                                 // Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
@@ -377,7 +413,7 @@
                             var chosenIcon = behovIkoner[importance] || behovIkoner[1];
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelighet: null });
+                            kartElementer.push({ lag: marker, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: lat, lng: lng });
                             marker.bindPopup(popupInnhold);
 
                                 bounds.push([lat, lng]);
@@ -389,6 +425,7 @@
                     document.getElementById(id)?.addEventListener('change', filtrerKart);
 
                     });
+                    settOppRadiusSok(map, filtrerKart);
 
                 // 6. Tilpass kartzoomen dersom det finnes markører eller områder
                 if (bounds.length > 0) {
