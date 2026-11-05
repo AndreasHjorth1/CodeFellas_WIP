@@ -5,7 +5,9 @@ namespace Prosjekt.Models.ModelView
 {
     public class NeedViewModel
     {
-
+        /// <summary>
+        /// La inn Id for å kunne bruke denne modellen til å redigere eksisterende behov.
+        /// </summary>
         public int Id { get; set; }
 
         [Display(Name = "Navn")]
@@ -60,7 +62,7 @@ namespace Prosjekt.Models.ModelView
         public NeedType Type { get; init; } = NeedType.Other;
 
         [Display(Name = "Tidsfrist")]
-        [Required(ErrorMessage = "Et tidspunkt må registreres")]
+        [Required(ErrorMessage = "EN tidsfrist må registreres")]
         public DateTime? Deadline { get; init; }
 
         [Display(Name = "Viktighet")]
@@ -69,10 +71,17 @@ namespace Prosjekt.Models.ModelView
         [Display(Name = "Status")]
         public EntryStatus Status {get; init;} = EntryStatus.New;
 
+        [Display(Name = "Breddegrad")]
         public double? Latitude { get; set; }
 
+        [Display(Name = "Lengdegrad")]
         public double? Longitude { get; set; }
 
+        /// <summary>
+        /// La inn område for behovet.
+        /// Dette brukes til å tegne et polygon i kartet,
+        /// og kan brukes til å finne ressurser som ligger innenfor området.
+        /// </summary>
         public string? AreaGeoJson { get; init; }
 
         public double? AreaSquareMeters { get; init; }

@@ -6,13 +6,10 @@ using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
 using System.Security.Claims;
-using System;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Prosjekt.Controllers
 {
@@ -52,145 +49,59 @@ namespace Prosjekt.Controllers
         /// Bekreftelsessiden viser bare den første ressursen.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ResourceCreatorViewModel model)
         {
-            if (model.Latitude.HasValue && model.Longitude.HasValue && model.ResourceList != null)
-            {
-                foreach (var item in model.ResourceList)
-                {
-                    item.Latitude = model.Latitude;
-                    item.Longitude = model.Longitude;
-                }
-
-                foreach (var key in ModelState.Keys.Where(k => k.EndsWith(".Latitude") || k.EndsWith(".Longitude")).ToList())
-                {
-                    ModelState.Remove(key);
-                }
-            }
-
             if (!ModelState.IsValid)
             {
                 return View("Index", model);
             }
 
-            if (model.ResourceList == null || !model.ResourceList.Any())
+            if (model.ResourceList == null || !model.ResourceList.Any(r => !string.IsNullOrWhiteSpace(r.Name)))
             {
-                ModelState.AddModelError("", "You must add at least one resource to the list.");
+                ModelState.AddModelError("", "Du må legge til minst én ressurs.");
                 return View("Index", model);
             }
 
-            var coords = new Coordinates(model.Latitude!.Value, model.Longitude!.Value);
+            if (!model.Latitude.HasValue || !model.Longitude.HasValue)
+            {
+                ModelState.AddModelError("", "Du må velge et punkt på kartet.");
+                return View("Index", model);
+            }
+
+            var coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
             if (!coords.IsValid())
             {
-                ModelState.AddModelError("", "The provided coordinates are invalid.");
+                ModelState.AddModelError("", "De oppgitte koordinatene er ugyldige.");
                 return View("Index", model);
             }
 
             ResourceViewModel? createdResourceModel = null;
 
-            for (int i = 0; i < model.ResourceList.Count; i++)
+            foreach (var baseResource in model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)))
             {
-                var baseResource = model.ResourceList[i];
-
-                string extraInfo = "";
-                string? subCategoryValue = null;
-
-                switch (baseResource.Category)
-                {
-                    case ResourceViewModel.ResourceType.Vehicle:
-                        string vehicleTypeStr = !string.IsNullOrWhiteSpace(baseResource.VehicleType)
-                            ? baseResource.VehicleType
-                            : Request.Form[$"ResourceList[{i}].VehicleType"].ToString();
-
-                        string licensePlate = !string.IsNullOrWhiteSpace(baseResource.LicensePlate)
-                            ? baseResource.LicensePlate
-                            : Request.Form[$"ResourceList[{i}].LicensePlate"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(vehicleTypeStr))
-                        {
-                            subCategoryValue = vehicleTypeStr;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(licensePlate))
-                        {
-                            extraInfo = $"[Reg.nr: {licensePlate}]";
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Tool:
-                        string toolTypeStr = !string.IsNullOrWhiteSpace(baseResource.ToolType)
-                            ? baseResource.ToolType
-                            : Request.Form[$"ResourceList[{i}].ToolType"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(toolTypeStr))
-                        {
-                            subCategoryValue = toolTypeStr;
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Clothing:
-                        string sizeStr = !string.IsNullOrWhiteSpace(baseResource.Size)
-                            ? baseResource.Size
-                            : Request.Form[$"ResourceList[{i}].Size"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(sizeStr))
-                        {
-                            subCategoryValue = sizeStr;
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Provision:
-                        string provisionTypeStr = !string.IsNullOrWhiteSpace(baseResource.ProvisionType)
-                            ? baseResource.ProvisionType
-                            : Request.Form[$"ResourceList[{i}].ProvisionType"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(provisionTypeStr))
-                        {
-                            subCategoryValue = provisionTypeStr;
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Materials:
-                        string materialTypeStr = !string.IsNullOrWhiteSpace(baseResource.MaterialType)
-                            ? baseResource.MaterialType
-                            : Request.Form[$"ResourceList[{i}].MaterialType"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(materialTypeStr))
-                        {
-                            subCategoryValue = materialTypeStr;
-                        }
-                        break;
-
-                    default:
-                        subCategoryValue = null;
-                        break;
-                }
-
                 var resourceEntity = new Resource
                 {
-                    Name = baseResource.Name ?? "Unknown resource",
-                    Description = string.IsNullOrWhiteSpace(extraInfo)
-                        ? baseResource.Description ?? ""
-                        : $"{baseResource.Description} {extraInfo}".Trim(),
+                    Name = baseResource.Name!,
+                    Description = GetFullDescription(baseResource),
                     Category = baseResource.Category.ToString(),
-                    SubCategory = subCategoryValue,
+                    SubCategory = GetSubCategory(baseResource),
                     IsAvailable = baseResource.Availability,
                     PhoneNumber = baseResource.PhoneNumber,
                     Quantity = baseResource.Quantity,
                     AvailableFrom = NorwegianTime.ToUtc(baseResource.AvailableFrom),
                     AvailableTo = NorwegianTime.ToUtc(baseResource.AvailableTo),
-                    Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    CreatedAt = DateTime.UtcNow,
+                    Coords = coords,
                     UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(resourceEntity);
 
-                if (i == 0)
+                if (createdResourceModel == null)
                 {
                     createdResourceModel = baseResource;
                     createdResourceModel.Id = resourceEntity.Id;
+                    createdResourceModel.Latitude = model.Latitude;
+                    createdResourceModel.Longitude = model.Longitude;
                 }
             }
 
@@ -203,9 +114,7 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
-            var resourceEntities = User.IsInRole(RoleNames.Admin)
-                ? await _repo.GetAllAsync()
-                : await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var resourceEntities = await GetVisibleResourcesAsync();
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
             var resourceViewModels = resourceEntities.Select(r => new ResourceViewModel
@@ -218,7 +127,7 @@ namespace Prosjekt.Controllers
                 Availability = r.IsAvailable,
                 Latitude = r.Coords.Latitude,
                 Longitude = r.Coords.Longitude,
-                Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat) ? cat : ResourceViewModel.ResourceType.Other,
+                Category = ParseCategory(r.Category),
                 AvailableFrom = NorwegianTime.FromUtc(r.AvailableFrom),
                 AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
                 Allocated = allocations.Where(a => a.ResourceId == r.Id).Sum(a => a.Quantity),
@@ -253,10 +162,7 @@ namespace Prosjekt.Controllers
                 }
             }
 
-            var category = Enum.TryParse<ResourceViewModel.ResourceType>(resource.Category, out var cat)
-                ? cat
-                : ResourceViewModel.ResourceType.Other;
-
+            var category = ParseCategory(resource.Category);
             var subCategory = resource.SubCategory?.Trim();
 
             var viewModel = new ResourceViewModel
@@ -284,25 +190,19 @@ namespace Prosjekt.Controllers
             return View(viewModel);
         }
 
-        /// <summary>
-        /// Lagrer endringene. Felt som bare gjelder enkelte kategorier, skal ikke kunne stoppe lagringen.
-        /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, ResourceViewModel model)
         {
             if (id != model.Id) return BadRequest();
 
-            ModelState.Remove(nameof(model.VehicleType));
-            ModelState.Remove(nameof(model.LicensePlate));
-            ModelState.Remove(nameof(model.ToolType));
-            ModelState.Remove(nameof(model.MaterialType));
-            ModelState.Remove(nameof(model.ProvisionType));
-            ModelState.Remove(nameof(model.Size));
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
 
             if (!model.Latitude.HasValue || !model.Longitude.HasValue)
             {
-                ModelState.AddModelError("", "Du må velge en posisjon i kartet.");
+                ModelState.AddModelError("", "Du må velge et punkt på kartet.");
                 return View(model);
             }
 
@@ -313,59 +213,17 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             var resourceEntity = await _repo.GetByIdAsync(id);
             if (resourceEntity == null) return NotFound();
             if (!CanModify(resourceEntity)) return Forbid();
 
-            string extraInfo = "";
-            string? subCategoryValue = null;
-
-            switch (model.Category)
-            {
-                case ResourceViewModel.ResourceType.Vehicle:
-                    if (!string.IsNullOrWhiteSpace(model.VehicleType))
-                        subCategoryValue = model.VehicleType;
-                    if (!string.IsNullOrWhiteSpace(model.LicensePlate))
-                        extraInfo = $"[Reg.nr: {model.LicensePlate.Trim()}]";
-                    break;
-
-                case ResourceViewModel.ResourceType.Tool:
-                    if (!string.IsNullOrWhiteSpace(model.ToolType))
-                        subCategoryValue = model.ToolType;
-                    break;
-
-                case ResourceViewModel.ResourceType.Clothing:
-                    if (!string.IsNullOrWhiteSpace(model.Size))
-                        subCategoryValue = model.Size;
-                    break;
-
-                case ResourceViewModel.ResourceType.Provision:
-                    if (!string.IsNullOrWhiteSpace(model.ProvisionType))
-                        subCategoryValue = model.ProvisionType;
-                    break;
-
-                case ResourceViewModel.ResourceType.Materials:
-                    if (!string.IsNullOrWhiteSpace(model.MaterialType))
-                        subCategoryValue = model.MaterialType;
-                    break;
-            }
-
-            string fullDescription = string.IsNullOrWhiteSpace(extraInfo)
-                ? model.Description ?? ""
-                : $"{model.Description} {extraInfo}".Trim();
-
             resourceEntity.Name = model.Name;
-            resourceEntity.Description = fullDescription;
+            resourceEntity.Description = GetFullDescription(model);
             resourceEntity.PhoneNumber = model.PhoneNumber;
             resourceEntity.Quantity = model.Quantity;
             resourceEntity.IsAvailable = model.Availability;
             resourceEntity.Category = model.Category.ToString();
-            resourceEntity.SubCategory = subCategoryValue?.Trim();
+            resourceEntity.SubCategory = GetSubCategory(model);
             resourceEntity.Coords = coords;
             resourceEntity.AvailableFrom = NorwegianTime.ToUtc(model.AvailableFrom);
             resourceEntity.AvailableTo = NorwegianTime.ToUtc(model.AvailableTo);
@@ -378,7 +236,6 @@ namespace Prosjekt.Controllers
         /// Sletter ressursen og tildelingene, siden de ikke slettes automatisk.
         /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var resource = await _repo.GetByIdAsync(id);
@@ -396,9 +253,7 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> GetInformation()
         {
-            var resources= User.IsInRole(RoleNames.Admin)
-                ? await _repo.GetAllAsync()
-                : await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var resources = await GetVisibleResourcesAsync();
 
             var result = resources.Select(r => new ResourceViewModel
             {
@@ -408,9 +263,7 @@ namespace Prosjekt.Controllers
                 Description = r.Description,
                 Quantity = r.Quantity,
                 Availability = r.IsAvailable,
-                Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat)
-                    ? cat
-                    : ResourceViewModel.ResourceType.Other,
+                Category = ParseCategory(r.Category),
                 Latitude = r.Coords.Latitude,
                 Longitude = r.Coords.Longitude
             });
@@ -420,7 +273,6 @@ namespace Prosjekt.Controllers
 
         /// <summary>
         /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
-        /// Foreløpig bare for admin. TODO: egen rolle for offentlige aktører på Export, ExportCsv og ExportJson.
         /// </summary>
         [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
@@ -454,9 +306,6 @@ namespace Prosjekt.Controllers
                     r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
             }
 
-            /// <summary>
-            /// BOM gjør at Excel viser æ, ø og å riktig
-            /// </summary>
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
         }
@@ -485,11 +334,56 @@ namespace Prosjekt.Controllers
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // skriver æøå som vanlig tekst
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
 
             var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
             return File(bytes, "application/json", $"{Filnavn(bareTilgjengelige)}.json");
+        }
+
+        /// <summary>
+        /// Admin får alle ressurser, andre bare sine egne.
+        /// </summary>
+        private Task<IEnumerable<Resource>> GetVisibleResourcesAsync()
+        {
+            return User.IsInRole(RoleNames.Admin)
+                ? _repo.GetAllAsync()
+                : _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        }
+
+        private static ResourceViewModel.ResourceType ParseCategory(string category)
+        {
+            return Enum.TryParse<ResourceViewModel.ResourceType>(category, out var parsed)
+                ? parsed
+                : ResourceViewModel.ResourceType.Other;
+        }
+
+        /// <summary>
+        /// Underkategorien ligger i ulike felt avhengig av kategorien.
+        /// </summary>
+        private static string? GetSubCategory(ResourceViewModel model)
+        {
+            var value = model.Category switch
+            {
+                ResourceViewModel.ResourceType.Vehicle => model.VehicleType,
+                ResourceViewModel.ResourceType.Tool => model.ToolType,
+                ResourceViewModel.ResourceType.Clothing => model.Size,
+                ResourceViewModel.ResourceType.Provision => model.ProvisionType,
+                ResourceViewModel.ResourceType.Materials => model.MaterialType,
+                _ => null
+            };
+
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Skiltnummer lagres i beskrivelsen, fordi det ikke har egen kolonne.
+        /// </summary>
+        private static string GetFullDescription(ResourceViewModel model)
+        {
+            return model.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(model.LicensePlate)
+                ? $"{model.Description} [Reg.nr: {model.LicensePlate.Trim()}]".Trim()
+                : model.Description ?? "";
         }
 
         /// <summary>

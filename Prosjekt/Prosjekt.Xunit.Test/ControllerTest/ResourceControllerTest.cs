@@ -306,19 +306,18 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task Create_CoordinateErrorsInList_AreRemovedAndResourceIsSaved()
+        public async Task Create_TwoResources_SavesBothAndShowsFirstWithCoordinates()
         {
             // Arrange
             var repo = new FakeResourceRepository();
             var controller = CreateController(repo);
-            controller.ModelState.AddModelError("ResourceList[0].Latitude", "Required");
-            controller.ModelState.AddModelError("ResourceList[0].Longitude", "Required");
 
             var model = new ResourceCreatorViewModel
             {
                 ResourceList = new List<ResourceViewModel>
                 {
-                    new ResourceViewModel { Name = "Aggregat" }
+                    new ResourceViewModel { Name = "Aggregat" },
+                    new ResourceViewModel { Name = "Båt" }
                 },
                 Latitude = 58.1467,
                 Longitude = 7.9956
@@ -330,9 +329,13 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
             Assert.Equal("Create", viewResult.ViewName);
-            Assert.True(controller.ModelState.IsValid);
-            Assert.Equal(58.1467, model.ResourceList[0].Latitude);
-            Assert.Single(repo.Resources);
+            Assert.Equal(2, repo.Resources.Count);
+            Assert.All(repo.Resources, r => Assert.Equal(58.1467, r.Coords.Latitude));
+
+            var shown = Assert.IsType<ResourceViewModel>(viewResult.Model);
+            Assert.Equal("Aggregat", shown.Name);
+            Assert.Equal(58.1467, shown.Latitude);
+            Assert.Equal(7.9956, shown.Longitude);
         }
 
         [Fact]

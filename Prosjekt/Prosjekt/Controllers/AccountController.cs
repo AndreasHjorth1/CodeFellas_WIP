@@ -23,12 +23,14 @@ namespace Prosjekt.Controllers
             return View(new LoginViewModel { ReturnUrl = returnUrl });
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult AccessDenied()
         {
             return View();
         }
+
 
         /// <summary>
         /// Logger inn brukeren. Kontoen sperres etter for mange feil forsøk.
@@ -61,6 +63,7 @@ namespace Prosjekt.Controllers
             return View(model);
         }
 
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> Logout()
@@ -69,12 +72,14 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Login));
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult Register()
         {
             return View(new RegisterViewModel());
         }
+
 
         /// <summary>
         /// Oppretter en ny bruker. Appen sender ikke ekte e-post, så adressen regnes som bekreftet.
@@ -108,12 +113,14 @@ namespace Prosjekt.Controllers
             return View(model);
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult ForgotPassword()
         {
             return View(new ForgotPasswordViewModel());
         }
+
 
         /// <summary>
         /// Lager en lenke for å tilbakestille passordet (se ConsoleEmailSender).
@@ -149,12 +156,14 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(ForgotPasswordConfirmation));
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult ForgotPasswordConfirmation()
         {
             return View();
         }
+
 
         [AllowAnonymous]
         [HttpGet]
@@ -167,6 +176,7 @@ namespace Prosjekt.Controllers
 
             return View(new ResetPasswordViewModel { Code = code, Email = email });
         }
+
 
         /// <summary>
         /// Setter nytt passord. Ukjent konto gir samme side som suksess, så siden ikke avslører hvem som er registrert.
@@ -187,6 +197,7 @@ namespace Prosjekt.Controllers
             }
 
             string code;
+            
             try
             {
                 code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Code));
@@ -210,6 +221,7 @@ namespace Prosjekt.Controllers
 
             return View(model);
         }
+
 
         [AllowAnonymous]
         [HttpGet]
