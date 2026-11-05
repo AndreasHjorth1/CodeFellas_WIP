@@ -7,6 +7,14 @@
 }
 
 <style>
+    /* Pil som vises at filteret er kollapsbart + animasjon */
+    .filter-pil {
+        transition: transform 0.5s ease;
+    }
+
+    [aria-expanded="false"] .filter-pil {
+        transform: rotate(-90deg);
+    }
     /* Strekker kartet slik at det fyller hovedskjermen rent uten marginer */
     main {
         max-width: 100% !important;
@@ -343,7 +351,7 @@
                                         fillOpacity: 0.25
                                     }
                                 }).addTo(map);
-                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjenglig: null ;
+                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null });
 
                                 // Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
@@ -377,7 +385,7 @@
                         });
                     }
 
-                    ['visFilter', 'kategoriFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
+                    ['visFilter', 'kategoriFilter', 'tilgjengelighetFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
                     document.getElementById(id)?.addEventListener('change', filtrerKart);
 
                     });
