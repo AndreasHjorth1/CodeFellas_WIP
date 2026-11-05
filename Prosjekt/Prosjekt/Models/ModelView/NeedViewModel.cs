@@ -77,6 +77,11 @@ namespace Prosjekt.Models.ModelView
         [Display(Name = "Lengdegrad")]
         public double? Longitude { get; set; }
 
+        /// <summary>
+        /// La inn område for behovet.
+        /// Dette brukes til å tegne et polygon i kartet,
+        /// og kan brukes til å finne ressurser som ligger innenfor området.
+        /// </summary>
         public string? AreaGeoJson { get; init; }
 
         public double? AreaSquareMeters { get; init; }

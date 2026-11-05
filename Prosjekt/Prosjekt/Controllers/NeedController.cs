@@ -82,7 +82,7 @@ namespace Prosjekt.Controllers
 
             foreach (var baseNeed in model.NeedList.Where(n => !string.IsNullOrWhiteSpace(n.Name)))
             {
-                await _repo.AddAsync(new Need
+                var needEntity = new Need
                 {
                     Name = baseNeed.Name,
                     Description = baseNeed.Description ?? string.Empty,
@@ -94,7 +94,9 @@ namespace Prosjekt.Controllers
                     AreaGeoJson = model.AreaGeoJson,
                     AreaSquareMeters = model.AreaSquareMeters,
                     PerimeterMeters = model.PerimeterMeters
-                });
+                };
+
+                await _repo.AddAsync(needEntity);
             }
 
             return View("Create", model);

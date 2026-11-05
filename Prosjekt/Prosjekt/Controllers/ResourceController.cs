@@ -56,7 +56,7 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            if (model.ResourceList == null || !model.ResourceList.Any())
+            if (model.ResourceList == null || !model.ResourceList.Any(r => !string.IsNullOrWhiteSpace(r.Name)))
             {
                 ModelState.AddModelError("", "Du må legge til minst én ressurs.");
                 return View("Index", model);
@@ -77,11 +77,11 @@ namespace Prosjekt.Controllers
 
             ResourceViewModel? createdResourceModel = null;
 
-            foreach (var baseResource in model.ResourceList)
+            foreach (var baseResource in model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)))
             {
                 var resourceEntity = new Resource
                 {
-                    Name = baseResource.Name ?? "Unknown resource",
+                    Name = baseResource.Name!,
                     Description = GetFullDescription(baseResource),
                     Category = baseResource.Category.ToString(),
                     SubCategory = GetSubCategory(baseResource),
@@ -190,9 +190,6 @@ namespace Prosjekt.Controllers
             return View(viewModel);
         }
 
-        /// <summary>
-        /// Lagrer endringene.
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Edit(int id, ResourceViewModel model)
         {
