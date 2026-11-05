@@ -312,7 +312,7 @@
             var symbolMarkers = MapSymbols.createCluster(map);
 
             try {
-                /// 4. Hent ressurser
+            /// 4. Hent ressurser
               
               const resResponse = await fetch('@Url.Action("GetInformation", "Resource")');
               
@@ -423,7 +423,7 @@
                     });
                     settOppRadiusSok(map, filtrerKart);
 
-                // 6. Tilpass kartzoomen dersom det finnes markører eller områder
+                /// 6. Tilpass kartzoomen dersom det finnes markører eller områder
                 if (bounds.length > 0) {
                     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
                 }
