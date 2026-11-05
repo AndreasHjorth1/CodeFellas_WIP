@@ -178,10 +178,10 @@ namespace Prosjekt.Controllers
                     IsAvailable = baseResource.Availability,
                     PhoneNumber = baseResource.PhoneNumber,
                     Quantity = baseResource.Quantity,
-                    AvailableFrom = baseResource.AvailableFrom,
-                    AvailableTo = baseResource.AvailableTo,
+                    AvailableFrom = NorwegianTime.ToUtc(baseResource.AvailableFrom),
+                    AvailableTo = NorwegianTime.ToUtc(baseResource.AvailableTo),
                     Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    CreatedAt = NorwegianTime.Now,
+                    CreatedAt = DateTime.UtcNow,
                     UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
@@ -219,8 +219,8 @@ namespace Prosjekt.Controllers
                 Latitude = r.Coords.Latitude,
                 Longitude = r.Coords.Longitude,
                 Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat) ? cat : ResourceViewModel.ResourceType.Other,
-                AvailableFrom = r.AvailableFrom,
-                AvailableTo = r.AvailableTo,
+                AvailableFrom = NorwegianTime.FromUtc(r.AvailableFrom),
+                AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
                 Allocated = allocations.Where(a => a.ResourceId == r.Id).Sum(a => a.Quantity),
             }).ToList();
 
@@ -270,8 +270,8 @@ namespace Prosjekt.Controllers
                 Latitude = resource.Coords.Latitude,
                 Longitude = resource.Coords.Longitude,
                 Category = category,
-                AvailableFrom = resource.AvailableFrom,
-                AvailableTo = resource.AvailableTo,
+                AvailableFrom = NorwegianTime.FromUtc(resource.AvailableFrom),
+                AvailableTo = NorwegianTime.FromUtc(resource.AvailableTo),
                 LicensePlate = licensePlate,
 
                 VehicleType = category == ResourceViewModel.ResourceType.Vehicle ? subCategory : null,
@@ -367,8 +367,8 @@ namespace Prosjekt.Controllers
             resourceEntity.Category = model.Category.ToString();
             resourceEntity.SubCategory = subCategoryValue?.Trim();
             resourceEntity.Coords = coords;
-            resourceEntity.AvailableFrom = model.AvailableFrom;
-            resourceEntity.AvailableTo = model.AvailableTo;
+            resourceEntity.AvailableFrom = NorwegianTime.ToUtc(model.AvailableFrom);
+            resourceEntity.AvailableTo = NorwegianTime.ToUtc(model.AvailableTo);
 
             await _repo.UpdateAsync(resourceEntity);
             return RedirectToAction(nameof(Overview));
@@ -448,8 +448,8 @@ namespace Prosjekt.Controllers
                     r.IsAvailable ? "Ja" : "Nei",
                     Csv(r.PhoneNumber),
                     Csv(r.Description),
-                    r.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    r.AvailableTo?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    NorwegianTime.FromUtc(r.AvailableFrom)?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    NorwegianTime.FromUtc(r.AvailableTo)?.ToString("dd.MM.yyyy HH:mm") ?? "",
                     r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
                     r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
             }
@@ -476,8 +476,8 @@ namespace Prosjekt.Controllers
                 Tilgjengelig = r.IsAvailable,
                 Telefon = r.PhoneNumber,
                 Beskrivelse = r.Description,
-                TilgjengeligFra = r.AvailableFrom,
-                TilgjengeligTil = r.AvailableTo,
+                TilgjengeligFra = NorwegianTime.FromUtc(r.AvailableFrom),
+                TilgjengeligTil = NorwegianTime.FromUtc(r.AvailableTo),
                 Breddegrad = r.Coords.Latitude,
                 Lengdegrad = r.Coords.Longitude
             });
@@ -510,7 +510,7 @@ namespace Prosjekt.Controllers
         private static string Filnavn(bool bareTilgjengelige)
         {
             var navn = bareTilgjengelige ? "ressurser_tilgjengelige" : "ressurser_alle";
-            return $"{navn}_{DateTime.Now:yyyy-MM-dd}";
+            return $"{navn}_{NorwegianTime.FromUtc(DateTime.UtcNow):yyyy-MM-dd}";
         }
 
         /// <summary>

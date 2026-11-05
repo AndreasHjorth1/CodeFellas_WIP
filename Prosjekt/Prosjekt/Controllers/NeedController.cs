@@ -5,6 +5,7 @@ using Prosjekt.Models.ModelView;
 using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
+using Prosjekt.Utils;
 
 
 namespace Prosjekt.Controllers
@@ -97,7 +98,7 @@ namespace Prosjekt.Controllers
                         Category = baseNeed.Type.ToString(),
                         PhoneNumber = baseNeed.Phone ?? string.Empty,
                         Priority = model.Importance.ToString(),
-                        NeededBy = baseNeed.Deadline ?? model.Deadline,
+                        NeededBy = NorwegianTime.ToUtc(baseNeed.Deadline ?? model.Deadline),
                         Status = EntryStatus.New,
                         Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
                         AreaGeoJson = model.AreaGeoJson,
@@ -127,7 +128,7 @@ namespace Prosjekt.Controllers
                 Phone = n.PhoneNumber,
                 Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
                 Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
-                Deadline = n.NeededBy,
+                Deadline = NorwegianTime.FromUtc(n.NeededBy),
                 Status = n.Status,
                 Latitude = n.Coords.Latitude,
                 Longitude = n.Coords.Longitude,
@@ -156,7 +157,7 @@ namespace Prosjekt.Controllers
                 Phone = need.PhoneNumber,
                 Type = Enum.TryParse<NeedViewModel.NeedType>(need.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
                 Importance = Enum.TryParse<ImportanceLevel>(need.Priority, out var prio) ? prio : default,
-                Deadline = need.NeededBy,
+                Deadline = NorwegianTime.FromUtc(need.NeededBy),
                 Status = need.Status,
                 Latitude = need.Coords.Latitude,
                 Longitude = need.Coords.Longitude,
@@ -216,7 +217,7 @@ namespace Prosjekt.Controllers
             existingNeed.PhoneNumber = model.Phone;
             existingNeed.Category = model.Type.ToString();
             existingNeed.Priority = model.Importance.ToString();
-            existingNeed.NeededBy = model.Deadline;
+            existingNeed.NeededBy = NorwegianTime.ToUtc(model.Deadline);
             existingNeed.Status = model.Status;
             existingNeed.Coords = coords;
             existingNeed.AreaGeoJson = model.AreaGeoJson;

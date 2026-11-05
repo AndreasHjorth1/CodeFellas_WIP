@@ -39,7 +39,7 @@ namespace Prosjekt.Models.Entities
 
         public Coordinates Coords { get; set; } = new Coordinates(0, 0);
 
-        public DateTime CreatedAt { get; init; } = NorwegianTime.Now;
+        public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
         /// <summary>
         /// Område tegnet i kartet. Null når brukeren bare satte en markør.
