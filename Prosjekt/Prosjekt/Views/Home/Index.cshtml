@@ -110,11 +110,20 @@
 
             function filtrerKart() {
                 var vis = document.getElementById('visFilter')?.value ?? '';
+                var kat = document.getElementById('kategoriFilter')?.value ?? '';
+                var sta = document.getElementById('statusFilter')?.value ?? '';
+                var vik = document.getElementById('viktighetFilter')?.value ?? '';
 
                 kartElementer.forEach(function(e) {
-                    var synlig = vis === '' || e.type === vis;
+                    var synlig = true;
 
-                    if (synlig) { map.addLayer(e.lag); } else { map.removeLayer(e.lag); }
+                    if (vis !== '' && e.type !== vis) synlig = false;
+
+                    // kategori har formen "behov:3" eller "ressurs:1"
+                    if (kat !== '') {
+                        var deler = kat.split(':');
+                        if (e.type !== deler[0] || String(e.kategori !== deler[1]) synlig = false;
+                    }
                 });
             }
             // 2. Start kartet med grenser og fast verden
@@ -218,7 +227,7 @@
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
                             var marker = L.marker([lat, lng], { icon: ressursIkon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'ressurs' });
+                            kartElementer.push({ lag: marker, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null});
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
@@ -269,7 +278,7 @@
                                         fillOpacity: 0.25
                                     }
                                 }).addTo(map);
-                                kartElementer.push({ lag: omrade, type: 'behov' });
+                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance});
 
                                 // Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
@@ -295,14 +304,15 @@
                             var chosenIcon = behovIkoner[importance] || behovIkoner[1];
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'behov' });
+                            kartElementer.push({ lag: marker, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance });
                             marker.bindPopup(popupInnhold);
 
                             bounds.push([lat, lng]);
                         }
                     });
+                    ['visFilter', 'kategoriFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id)) {
                     document.getElementById('visFilter')?.addEventListener('change', filtrerKart);
-                }
+                });
 
                 // 6. Tilpass kartzoomen dersom det finnes markører eller områder
                 if (bounds.length > 0) {
