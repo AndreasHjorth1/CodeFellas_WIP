@@ -332,10 +332,15 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.Equal(2, repo.Resources.Count);
             Assert.All(repo.Resources, r => Assert.Equal(58.1467, r.Coords.Latitude));
 
-            var shown = Assert.IsType<ResourceViewModel>(viewResult.Model);
-            Assert.Equal("Aggregat", shown.Name);
-            Assert.Equal(58.1467, shown.Latitude);
-            Assert.Equal(7.9956, shown.Longitude);
+            var shown = Assert.IsType<List<ResourceViewModel>>(viewResult.Model);
+            Assert.Equal(2, shown.Count);
+            Assert.Equal("Aggregat", shown[0].Name);
+            Assert.Equal("Båt", shown[1].Name);
+            Assert.All(shown, r =>
+            {
+                Assert.Equal(58.1467, r.Latitude);
+                Assert.Equal(7.9956, r.Longitude);
+            });
         }
 
         [Fact]
