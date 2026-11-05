@@ -75,58 +75,72 @@
 <!-- Kartbeholder -->
 <div id="homeMap" style="height: calc(100vh - 80px); width: 100%; margin: 0; padding: 0;"></div>
 @if (erAdmin)
-
 {
-    <details open class="position-absolute bg-white shadow rounded"
-             style="top: 100px; left: 70px; z-index: 1000; min-width: 230px;">
-        <summary class="p-2 fw-bold" style="cursor: pointer; list-style: none;">
-            🎛️ Filter
-        </summary>
+    <div class="position-absolute bg-white shadow rounded"
+         style="top: 100px; left: 70px; z-index: 1000; min-width: 230px;">
 
-        <div class="px-3 pb-3">
-            <label class="form-label small mb-1">Vis</label>
-            <select id="visFilter" class="form-select form-select-sm mb-2">
-                <option value="">Alt</option>
-                <option value="behov">Bare behov</option>
-                <option value="ressurs">Bare ressurser</option>
-            </select>
+        <button class="btn btn-link text-decoration-none fw-bold w-100 text-start d-flex justify-content-between align-items-center px-3 py-2"
+                type="button" data-bs-toggle="collapse" data-bs-target="#filterKropp"
+                aria-expanded="true" aria-controls="filterKropp">
+            <span>🎛️ Filter</span>
+            <span class="filter-pil">▾</span>
+        </button>
 
-            <label class="form-label small mb-1">Kategori</label>
-            <select id="kategoriFilter" class="form-select form-select-sm mb-2">
-                <option value="">Alle</option>
-                <optgroup label="Behov">
-                    @foreach (var i in Html.GetEnumSelectList<NeedViewModel.NeedType>())
+        <div class="collapse show" id="filterKropp">
+            <div class="px-3 pb-3">
+
+                <label class="form-label small mb-1">Vis</label>
+                <select id="visFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alt</option>
+                    <option value="behov">Bare behov</option>
+                    <option value="ressurs">Bare ressurser</option>
+                </select>
+
+                <label class="form-label small mb-1">Kategori</label>
+                <select id="kategoriFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alle</option>
+                    <optgroup label="Behov">
+                        @foreach (var i in Html.GetEnumSelectList<NeedViewModel.NeedType>())
+                        {
+                            <option value="behov:@i.Value">@i.Text</option>
+                        }
+                    </optgroup>
+                    <optgroup label="Ressurser">
+                        @foreach (var i in Html.GetEnumSelectList<ResourceViewModel.ResourceType>())
+                        {
+                            <option value="ressurs:@i.Value">@i.Text</option>
+                        }
+                    </optgroup>
+                </select>
+
+                <label class="form-label small mb-1">Tilgjengelighet <span class="text-muted">(ressurs)</span></label>
+                <select id="tilgjengelighetFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alle</option>
+                    <option value="true">Tilgjengelig</option>
+                    <option value="false">Ikke tilgjengelig</option>
+                </select>
+
+                <label class="form-label small mb-1">Status <span class="text-muted">(behov)</span></label>
+                <select id="statusFilter" class="form-select form-select-sm mb-2">
+                    <option value="">Alle</option>
+                    @foreach (var i in Html.GetEnumSelectList<EntryStatus>())
                     {
-                        <option value="behov:@i.Value">@i.Text</option>
+                        <option value="@i.Value">@i.Text</option>
                     }
-                </optgroup>
-                <optgroup label="Ressurser">
-                    @foreach (var i in Html.GetEnumSelectList<ResourceViewModel.ResourceType>())
+                </select>
+
+                <label class="form-label small mb-1">Viktighet <span class="text-muted">(behov)</span></label>
+                <select id="viktighetFilter" class="form-select form-select-sm">
+                    <option value="">Alle</option>
+                    @foreach (var i in Html.GetEnumSelectList<ImportanceLevel>())
                     {
-                        <option value="ressurs:@i.Value">@i.Text</option>
+                        <option value="@i.Value">@i.Text</option>
                     }
-                </optgroup>
-            </select>
+                </select>
 
-            <label class="form-label small mb-1">Status <span class="text-muted">(behov)</span></label>
-            <select id="statusFilter" class="form-select form-select-sm mb-2">
-                <option value="">Alle</option>
-                @foreach (var i in Html.GetEnumSelectList<EntryStatus>())
-                {
-                    <option value="@i.Value">@i.Text</option>
-                }
-            </select>
-
-            <label class="form-label small mb-1">Viktighet <span class="text-muted">(behov)</span></label>
-            <select id="viktighetFilter" class="form-select form-select-sm">
-                <option value="">Alle</option>
-                @foreach (var i in Html.GetEnumSelectList<ImportanceLevel>())
-                {
-                    <option value="@i.Value">@i.Text</option>
-                }
-            </select>
+            </div>
         </div>
-    </details>
+    </div>
 }
 
 @section Scripts {
@@ -151,6 +165,8 @@
             var kartElementer = [];
 
             function filtrerKart() {
+
+                var tilg = document.getElementById('tilgjengelighetFilter')?.value ?? '';
                 var vis = document.getElementById('visFilter')?.value ?? '';
                 var kat = document.getElementById('kategoriFilter')?.value ?? '';
                 var sta = document.getElementById('statusFilter')?.value ?? '';
@@ -170,6 +186,7 @@
                     // status og viktighet finnes bare på behov
                     if (sta !== '' && String(e.status) !== sta) synlig = false;
                     if (vik !== '' && String(e.viktighet) !== vik) synlig = false;
+                    if (tilg !== '' && String(e.tilgjengelig) !== tilg) synlig = false;
 
                     if (synlig) { map.addLayer(e.lag); } else { map.removeLayer(e.lag); }
                 });
@@ -275,7 +292,7 @@
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
                             var marker = L.marker([lat, lng], { icon: ressursIkon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null});
+                            kartElementer.push({ lag: marker, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null, tilgjengelighet: (res.availability !== undefined ? res.availability : res.Availability) });
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
@@ -326,7 +343,7 @@
                                         fillOpacity: 0.25
                                     }
                                 }).addTo(map);
-                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance});
+                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjenglig: null ;
 
                                 // Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
@@ -352,7 +369,7 @@
                             var chosenIcon = behovIkoner[importance] || behovIkoner[1];
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance });
+                            kartElementer.push({ lag: marker, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelighet: null });
                             marker.bindPopup(popupInnhold);
 
                                 bounds.push([lat, lng]);
