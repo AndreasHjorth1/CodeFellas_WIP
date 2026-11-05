@@ -1,12 +1,15 @@
 <link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
-﻿@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.ModelView
 @using System.Globalization
-@model ResourceViewModel
+@model List<ResourceViewModel>
 
 @{
-    ViewData["Title"] = "Ressurs opprettet";
+    ViewData["Title"] = Model.Count == 1 ? "Ressurs opprettet" : "Ressurser opprettet";
+
+    /// Alle ressursene i ett skjema deler samme posisjon, så den første holder for kartet
+    var forste = Model.FirstOrDefault();
 }
 
 @functions {
@@ -92,21 +95,30 @@
         }
 </style>
 
-<h1>Ressurs opprettet</h1>
+<h1>@(Model.Count == 1 ? "Ressurs opprettet" : $"{Model.Count} ressurser opprettet")</h1>
 <hr />
 
 <div class="resizable-container mb-3" id="splitWrapper">
-    <!-- Info-seksjon -->
+    <!-- Info-seksjon: ett kort per ressurs -->
     <div class="info-section" id="infoBox">
-        <div class="card p-4 h-100 shadow-sm info-clickable" onclick="fokuserPaKart()">
-            <p><strong>Navn:</strong> @Model.Name</p>
-            <p><strong>Telefonnummer:</strong> @Model.PhoneNumber</p>
-            <p><strong>Beskrivelse:</strong> @Model.Description</p>
-            <p><strong>Type:</strong> <img id="ressursKvitteringSymbol" class="map-symbol-small" alt="" width="28" height="28" /> @OversettKategori(Model.Category)</p>
-            <p><strong>Antall:</strong> @Model.Quantity</p>
-            <p><strong>Breddegrad:</strong> @Model.Latitude</p>
-            <p class="mb-0"><strong>Lengdegrad:</strong> @Model.Longitude</p>
-        </div>
+        @if (forste != null)
+        {
+            <p class="text-muted small mb-2">
+                <strong>Posisjon:</strong> @forste.Latitude, @forste.Longitude
+            </p>
+        }
+
+        @for (int i = 0; i < Model.Count; i++)
+        {
+            var r = Model[i];
+            <div class="card p-3 mb-3 shadow-sm info-clickable" onclick="fokuserPaKart(@i)">
+                <p class="mb-1"><strong>Navn:</strong> @r.Name</p>
+                <p class="mb-1"><strong>Telefonnummer:</strong> @r.PhoneNumber</p>
+                <p class="mb-1"><strong>Beskrivelse:</strong> @r.Description</p>
+                <p class="mb-1"><strong>Type:</strong> <img class="map-symbol-small ressurs-symbol" data-index="@i" alt="" width="28" height="28" /> @OversettKategori(r.Category)</p>
+                <p class="mb-0"><strong>Antall:</strong> @r.Quantity</p>
+            </div>
+        }
     </div>
 
     <!-- Drabar skillelinje -->
@@ -129,48 +141,80 @@
 
     <script>
         var kart;
-        var marker;
+        var gruppe;
+        var markorer = [];
 
-        function fokuserPaKart() {
-            if (kart && marker) {
-                kart.flyTo(marker.getLatLng(), 16, { duration: 1 });
-                marker.openPopup();
-            }
+        /// Flytter kartet til ressursen man klikket på og åpner popupen
+        function fokuserPaKart(index) {
+            var marker = markorer[index];
+            if (!kart || !gruppe || !marker) return;
+            gruppe.zoomToShowLayer(marker, function () { marker.openPopup(); });
         }
 
         document.addEventListener("DOMContentLoaded", function () {
             /// Konverterer tall trygt til punktum som desimaltegn
-            var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
-            var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
-            var navn = @Json.Serialize(Model.Name);
-            var antall = @Model.Quantity;
-            var category = @Json.Serialize(Model.Category.ToString());
-            var available = @Json.Serialize(Model.Availability);
-            document.getElementById('ressursKvitteringSymbol').src = MapSymbols.resourceUrl(category, available);
+            var lat = @(forste?.Latitude is double la ? la.ToString(CultureInfo.InvariantCulture) : "null");
+            var lng = @(forste?.Longitude is double lo ? lo.ToString(CultureInfo.InvariantCulture) : "null");
+
+            var ressurser = @Json.Serialize(Model.Select(r => new
+            {
+                navn = r.Name,
+                antall = r.Quantity,
+                category = r.Category.ToString(),
+                available = r.Availability
+            }));
+
+            /// Symbol ved siden av typen i hvert kort
+            document.querySelectorAll('.ressurs-symbol').forEach(function (img) {
+                var r = ressurser[img.dataset.index];
+                img.src = MapSymbols.resourceUrl(r.category, r.available);
+            });
 
             /// --- KART ---
-            if (lat !== null && lng !== null) {
+            if (lat !== null && lng !== null && ressurser.length > 0) {
                 kart = L.map('kvitteringRessursKart').setView([lat, lng], 14);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(kart);
 
-                marker = L.marker([lat, lng], { icon: MapSymbols.resourceIcon(category, available), title: available ? 'Tilgjengelig' : 'Ikke tilgjengelig', alt: available ? 'Tilgjengelig ressurs' : 'Ikke tilgjengelig ressurs' }).addTo(kart);
+                /// Alle ressursene står på samme punkt. Gruppen samler dem og sprer dem ut når man klikker,
+                /// så ingen markører ligger skjult under hverandre.
+                gruppe = L.markerClusterGroup({ spiderfyOnMaxZoom: true, showCoverageOnHover: false });
 
-                /// Popup med ressurs + adresse
-                var toppInnhold = `<b>${escapeHtml(navn)}</b> (${antall} stk)`;
-                marker.bindPopup(toppInnhold + '<hr class="my-1"/><div class="small text-muted"><i>Henter adresse...</i></div>');
+                var adresseTekst = '<div class="small text-muted"><i>Henter adresse...</i></div>';
+
+                function popupInnhold(r) {
+                    return `<b>${escapeHtml(r.navn)}</b> (${r.antall} stk)<hr class="my-1"/>` + adresseTekst;
+                }
+
+                ressurser.forEach(function (r) {
+                    var marker = L.marker([lat, lng], {
+                        icon: MapSymbols.resourceIcon(r.category, r.available),
+                        title: r.available ? 'Tilgjengelig' : 'Ikke tilgjengelig',
+                        alt: r.available ? 'Tilgjengelig ressurs' : 'Ikke tilgjengelig ressurs'
+                    });
+                    marker.bindPopup(popupInnhold(r));
+                    markorer.push(marker);
+                    gruppe.addLayer(marker);
+                });
+
+                kart.addLayer(gruppe);
+
+                /// Adressen er den samme for alle, så den hentes bare én gang
+                function oppdaterAdresse(tekst) {
+                    adresseTekst = tekst;
+                    markorer.forEach(function (m, i) { m.setPopupContent(popupInnhold(ressurser[i])); });
+                }
 
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(address)}</small>`);
-                        marker.openPopup();
+                        oppdaterAdresse(`<small>📍 <b>Adresse:</b> ${escapeHtml(address)}</small>`);
+                        if (markorer.length === 1) markorer[0].openPopup();
                     })
                     .catch(function () {
-                        marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
-                        marker.openPopup();
+                        oppdaterAdresse('<small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
                     });
             } else {
                 document.getElementById('mapBox').innerHTML =
