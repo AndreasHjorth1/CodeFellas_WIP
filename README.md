@@ -182,7 +182,7 @@ Kjøres fra mappa `Prosjekt` med `dotnet test`, og i CI på hver PR.
 | `EntryStatusFlowTest` | Regler for statusflyt | 4 |
 | `SecurityHeadersTest` | At sikkerhetsheaderne settes på svarene | 2 |
 | `HomeControllerTest`, `InnstillingerControllerTest` | Visninger og feilside | 4 |
-| **Totalt** | | **127** |
+| **Totalt** | | **132** |
 
 Controllertestene bruker falske repositories (`Fakes/`). Repository-testene bruker ekte EF Core mot SQLite, så spørringer og lagring testes ende til ende.
 
