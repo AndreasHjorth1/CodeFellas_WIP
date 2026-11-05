@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model NeedViewModel
@@ -51,6 +52,7 @@
                         <option value="Personnel">Mannskap</option>
                         <option value="Other">Annet</option>
                     </select>
+                    <div id="behovSymbolPreview" class="map-symbol-preview" aria-live="polite"></div>
                 </div>
 
                 <!-- Viktighet -->
@@ -108,99 +110,99 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
+    <script src="~/js/need-area-symbol.js" asp-append-version="true"></script>
     <script>
         var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
         var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
-        var importanceNumber = @((int)Model.Importance);
 
         var harPosisjon = (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng));
         var startPunkt = harPosisjon ? [lat, lng] : [58.163, 8.003];
 
-        // Hjælpefunksjon for fargede markører
-        function getIkon(fargeNavn) {
-            return new L.Icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${fargeNavn}.png`,
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-            });
-        }
+        const behovstype = document.getElementById('Type');
+        const viktighet = document.getElementById('Importance');
+        function HentValgtIkon() { return MapSymbols.needIcon(behovstype.value, viktighet.value); }
+        function hentFarge() { return MapSymbols.isAcute(viktighet.value) ? '#dc3545' : '#fd7e14'; }
 
-        var valgtFarge = (importanceNumber === 0) ? '#dc3545' : '#fd7e14';
-
-        // Velg rød (0 = Acute) eller gul/gold (1 = Planned)
-        var ikoner = { 0: getIkon('red'), 1: getIkon('gold') };
-        var valgtIkon = ikoner[importanceNumber] || getIkon('blue');
-
-        // 1. Initialiser kartet
+        /// 1. Initialiser kartet
         var map = L.map('map').setView(startPunkt, harPosisjon ? 14 : 13);
 
-        // 2. Legg til tile layer
+        /// 2. Legg til tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // 3. Initialiser Leaflet.Draw feature group
+        /// 3. Initialiser Leaflet.Draw feature group
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
+        const areaSymbol = createNeedAreaSymbol(map);
 
         var omradeJson = @Json.Serialize(Model.AreaGeoJson);
 
         if (omradeJson) {
             var eksisterende = L.geoJSON(JSON.parse(omradeJson), {
-                style: { color: valgtFarge, weight: 2, fillOpacity: 0.15 }
+                style: { color: hentFarge(), weight: 2, fillOpacity: 0.15 }
             });
             eksisterende.eachLayer(function (l) { drawnItems.addLayer(l); });
             map.fitBounds(eksisterende.getBounds(), { padding: [20, 20] });
         } else if (harPosisjon) {
-            var existingMarker = L.marker(startPunkt, { icon: valgtIkon });
+            var existingMarker = L.marker(startPunkt, { icon: HentValgtIkon() });
             drawnItems.addLayer(existingMarker);
         }
 
-        // 4. Opprett draw control
+        /// 4. Opprett draw control
         var drawControl = new L.Control.Draw({
             draw: {
                 polygon: {
                     allowIntersection: false,
                     showArea: true,
                     metric: true,
-                    shapeOptions: { color: valgtFarge }
+                    shapeOptions: { color: hentFarge() }
                 },
                 polyline: false, circle: false, rectangle: false,
-                marker: { icon: valgtIkon }
+                marker: { icon: HentValgtIkon() }
             },
             edit: { featureGroup: drawnItems, remove: true }
         });
         map.addControl(drawControl);
 
-        // 5. Event handlers
+        function oppdaterBehovSymbol() {
+            document.getElementById('behovSymbolPreview').innerHTML =
+                MapSymbols.image(MapSymbols.needUrl(behovstype.value), MapSymbols.needClass(viktighet.value)) +
+                '<span>' + MapSymbols.escape(behovstype.options[behovstype.selectedIndex].text) + '</span>';
+            drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Marker) layer.setIcon(HentValgtIkon());
+                if (layer instanceof L.Polygon) layer.setStyle({color:hentFarge()});
+            });
+            drawControl.setDrawingOptions({marker:{icon:HentValgtIkon()},polygon:{shapeOptions:{color:hentFarge()}}});
+            synkroniserBehovsomrade(false);
+        }
+        behovstype.addEventListener('change', oppdaterBehovSymbol);
+        viktighet.addEventListener('change', oppdaterBehovSymbol);
+
         map.on('draw:created', function (e) {
-            var layer = e.layer;
             drawnItems.clearLayers();
-
-            var latlng;
-
-            if (layer instanceof L.Polygon) {
-                latlng = layer.getBounds().getCenter();
-                layer.setStyle({ color: valgtFarge, fillOpacity: 0.15 });
-                lagreOmrade(layer);
-            } else {
-                latlng = layer.getLatLng();
-                tomOmrade();
-            }
-
-            drawnItems.addLayer(layer);
-            document.getElementById('Latitude').value = latlng.lat.toFixed(6);
-            document.getElementById('Longitude').value = latlng.lng.toFixed(6);
+            if (e.layer instanceof L.Polygon) e.layer.setStyle({color:hentFarge(),fillOpacity:.15});
+            if (e.layer instanceof L.Marker) e.layer.setIcon(HentValgtIkon());
+            drawnItems.addLayer(e.layer);
+            synkroniserBehovsomrade(true);
         });
 
-        map.on('draw:deleted', function() {
-            tomOmrade();
-            document.getElementById('Latitude').value = '';
-            document.getElementById('Longitude').value = '';
-        });
+        function synkroniserBehovsomrade(lagre) {
+            const layer = drawnItems.getLayers()[0];
+            const polygon = layer instanceof L.Polygon ? layer : null;
+            const center = areaSymbol.update(polygon, HentValgtIkon());
+            if (!lagre) return;
+            const position = center || (layer instanceof L.Marker ? layer.getLatLng() : null);
+            if (polygon) lagreOmrade(polygon); else tomOmrade();
+            document.getElementById('Latitude').value = position ? position.lat.toFixed(6) : '';
+            document.getElementById('Longitude').value = position ? position.lng.toFixed(6) : '';
+        }
+
+        map.on('draw:edited draw:deleted', () => synkroniserBehovsomrade(true));
+        map.on('draw:editvertex draw:editstop deletestop draw:deletestop', () => synkroniserBehovsomrade(false));
+
+        oppdaterBehovSymbol();
 
         setTimeout(function () { map.invalidateSize(); }, 200);
     </script>

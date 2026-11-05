@@ -9,6 +9,10 @@ using Prosjekt.Models.ModelView.Account;
 
 namespace Prosjekt.Controllers
 {
+    /// <summary>
+    /// Registrering, innlogging, utlogging og tilbakestilling av passord.
+    /// POST-handlingene er CSRF-beskyttet av et globalt filter i Program.cs.
+    /// </summary>
     public sealed class AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager,
     IEmailSender emailSender) : Controller
     {
@@ -19,6 +23,7 @@ namespace Prosjekt.Controllers
             return View(new LoginViewModel { ReturnUrl = returnUrl });
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult AccessDenied()
@@ -26,6 +31,11 @@ namespace Prosjekt.Controllers
             return View();
         }
 
+
+        /// <summary>
+        /// Logger inn brukeren. Kontoen sperres etter for mange feil forsøk.
+        /// Feilmeldingen er lik for ukjent e-post og feil passord, så den ikke avslører hvem som er registrert.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
@@ -53,6 +63,7 @@ namespace Prosjekt.Controllers
             return View(model);
         }
 
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> Logout()
@@ -61,6 +72,7 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Login));
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult Register()
@@ -68,6 +80,10 @@ namespace Prosjekt.Controllers
             return View(new RegisterViewModel());
         }
 
+
+        /// <summary>
+        /// Oppretter en ny bruker. Appen sender ikke ekte e-post, så adressen regnes som bekreftet.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel model)
@@ -97,6 +113,7 @@ namespace Prosjekt.Controllers
             return View(model);
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult ForgotPassword()
@@ -104,6 +121,11 @@ namespace Prosjekt.Controllers
             return View(new ForgotPasswordViewModel());
         }
 
+
+        /// <summary>
+        /// Lager en lenke for å tilbakestille passordet (se ConsoleEmailSender).
+        /// Svaret er det samme enten kontoen finnes eller ikke.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
@@ -134,12 +156,14 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(ForgotPasswordConfirmation));
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult ForgotPasswordConfirmation()
         {
             return View();
         }
+
 
         [AllowAnonymous]
         [HttpGet]
@@ -153,6 +177,10 @@ namespace Prosjekt.Controllers
             return View(new ResetPasswordViewModel { Code = code, Email = email });
         }
 
+
+        /// <summary>
+        /// Setter nytt passord. Ukjent konto gir samme side som suksess, så siden ikke avslører hvem som er registrert.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
@@ -169,6 +197,7 @@ namespace Prosjekt.Controllers
             }
 
             string code;
+            
             try
             {
                 code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Code));
@@ -193,6 +222,7 @@ namespace Prosjekt.Controllers
             return View(model);
         }
 
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult ResetPasswordConfirmation()
@@ -200,6 +230,9 @@ namespace Prosjekt.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Sender bare til lokale adresser, så returnUrl ikke kan føre brukeren til en annen nettside.
+        /// </summary>
         private IActionResult RedirectToLocalUrl(string? returnUrl)
         {
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl) : RedirectToAction("Index", "Home")!;

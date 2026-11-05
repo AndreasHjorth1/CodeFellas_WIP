@@ -2,7 +2,9 @@
 
 namespace Prosjekt.Models.Entities
 {
-        // Kobler et behov til en ressurs med et antall.
+        /// <summary>
+        /// Kobler et behov til en ressurs med et antall.
+        /// </summary>
         public class Allocation
         {
             public int Id { get; set; }

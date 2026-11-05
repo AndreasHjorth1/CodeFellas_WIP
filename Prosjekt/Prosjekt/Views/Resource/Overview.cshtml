@@ -1,9 +1,12 @@
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model IEnumerable<ResourceViewModel>
 
 @{
-    // Vanlige brukere ser bare sine egne ressurser
+    /// Vanlige brukere ser bare sine egne ressurser
     var erAdmin = User.IsInRole("Admin");
     ViewData["Title"] = erAdmin ? "Oversikt over ressurser" : "Mine ressurser";
 }
@@ -196,7 +199,8 @@
                                 <td class="text-nowrap" onclick="event.stopPropagation();">
                                     <div class="d-flex gap-1">
                                         <a asp-action="Edit" asp-route-id="@res.Id" class="btn btn-sm btn-warning">Rediger</a>
-                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @res.Name?');">
+                                        @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
+                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-danger">Slett</button>
                                         </form>
@@ -224,19 +228,20 @@
 </div>
 
 @section Scripts {
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
+
     <script>
         var kart;
         var markorerMap = {};
+        var symbolMarkers;
 
         function fokuserPaRessurs(id, lat, lng) {
-            if (lat && lng && markorerMap[id]) {
-                kart.flyTo([lat, lng], 15, { duration: 1 });
-                markorerMap[id].openPopup();
-            }
+            MapSymbols.focus(symbolMarkers, markorerMap[id]);
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            // Konverter C#-modellen til JS uten kontaktinfo/reg-nr
+            /// Konverter C#-modellen til JS uten kontaktinfo/reg-nr
             var ressurser = @Json.Serialize((Model ?? Enumerable.Empty<ResourceViewModel>()).Select(r => new
             {
                 id = r.Id,
@@ -249,7 +254,7 @@
                 lng = r.Longitude
             }));
 
-            // Initialiser kartet
+            /// Initialiser kartet
             kart = L.map('oversiktRessursKart').setView([58.163, 8.003], 12);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -257,6 +262,7 @@
             }).addTo(kart);
 
             var bounds = [];
+            symbolMarkers = MapSymbols.createCluster(kart);
 
             ressurser.forEach(function (r) {
                 var lat = parseFloat(r.lat);
@@ -268,7 +274,7 @@
 
                 var statusTekst = r.isAvailable
                     ? '<span style="color: green; font-weight: bold;">Tilgjengelig</span>'
-                    : '<span style="color: red; font-weight: bold;">Opptatt</span>';
+                    : '<span style="color: red; font-weight: bold;">Ikke tilgjengelig</span>';
 
                 var resourceIcon = L.icon({
                     iconUrl: r.iconUrl,
@@ -282,7 +288,7 @@
                     icon: resourceIcon,
                     title: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig'),
                     alt: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig')
-                }).addTo(kart);
+                }).addTo(symbolMarkers);
                 markorerMap[r.id] = marker;
 
                 var toppInnhold = `
@@ -291,7 +297,7 @@
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
 
-                // Slå opp adresse via Nominatim API
+                /// Slå opp adresse via Nominatim API
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
@@ -303,7 +309,7 @@
                     });
             });
             
-            var kjorFilter = settOppFilter(kart, [markorerMap]);
+            var kjorFilter = settOppFilter(kart, [markorerMap], [symbolMarkers]);
             settOppStedssok(kart, kjorFilter);
             settOppRadiusSok(kart, kjorFilter);
 
@@ -311,7 +317,7 @@
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
             }
 
-            // --- DRAG / RESIZE LOGIKK ---
+            /// --- DRAG / RESIZE LOGIKK ---
             const resizer = document.getElementById('dragHandle');
             const leftSide = document.getElementById('tableBox');
             const container = document.getElementById('splitWrapper');
@@ -332,7 +338,7 @@
                 const dx = e.clientX - x;
                 const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
 
-                // Tillat justering mellom 15 % og 85 % bredde
+                /// Tillat justering mellom 15 % og 85 % bredde
                 if (newLeftWidth > 15 && newLeftWidth < 85) {
                     leftSide.style.flex = `0 0 ${newLeftWidth}%`;
                     kart.invalidateSize();
