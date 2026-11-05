@@ -75,7 +75,7 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            ResourceViewModel? createdResourceModel = null;
+            var createdResources = new List<ResourceViewModel>();
 
             foreach (var baseResource in model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)))
             {
@@ -96,16 +96,13 @@ namespace Prosjekt.Controllers
 
                 await _repo.AddAsync(resourceEntity);
 
-                if (createdResourceModel == null)
-                {
-                    createdResourceModel = baseResource;
-                    createdResourceModel.Id = resourceEntity.Id;
-                    createdResourceModel.Latitude = model.Latitude;
-                    createdResourceModel.Longitude = model.Longitude;
-                }
+                baseResource.Id = resourceEntity.Id;
+                baseResource.Latitude = model.Latitude;
+                baseResource.Longitude = model.Longitude;
+                createdResources.Add(baseResource);
             }
 
-            return View("Create", createdResourceModel);
+            return View("Create", createdResources);
         }
 
         /// <summary>
@@ -285,7 +282,7 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
         {
-            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
+            var ressurser = await RetrieveResourcesForExport(bareTilgjengelige);
 
             var sb = new StringBuilder();
             sb.AppendLine("Id;Navn;Kategori;Antall;Tilgjengelig;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
@@ -295,7 +292,7 @@ namespace Prosjekt.Controllers
                 sb.AppendLine(string.Join(";",
                     r.Id,
                     Csv(r.Name),
-                    OversettKategori(r.Category),
+                    TranslateCategory(r.Category),
                     r.Quantity,
                     r.IsAvailable ? "Ja" : "Nei",
                     Csv(r.PhoneNumber),
@@ -307,20 +304,23 @@ namespace Prosjekt.Controllers
             }
 
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-            return File(bytes, "text/csv", $"{Filnavn(bareTilgjengelige)}.csv");
+            return File(bytes, "text/csv", $"{FileName(bareTilgjengelige)}.csv");
         }
 
+        /// <summary>
+        /// Eksporter ressurser i JSON-format.
+        /// </summary>
         [Authorize(Roles = RoleNames.Admin)]
         [HttpGet]
         public async Task<IActionResult> ExportJson(bool bareTilgjengelige = true)
         {
-            var ressurser = await HentRessurserForEksport(bareTilgjengelige);
+            var ressurser = await RetrieveResourcesForExport(bareTilgjengelige);
 
             var data = ressurser.Select(r => new
             {
                 r.Id,
                 Navn = r.Name,
-                Kategori = OversettKategori(r.Category),
+                Kategori = TranslateCategory(r.Category),
                 Antall = r.Quantity,
                 Tilgjengelig = r.IsAvailable,
                 Telefon = r.PhoneNumber,
@@ -338,7 +338,7 @@ namespace Prosjekt.Controllers
             };
 
             var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
-            return File(bytes, "application/json", $"{Filnavn(bareTilgjengelige)}.json");
+            return File(bytes, "application/json", $"{FileName(bareTilgjengelige)}.json");
         }
 
         /// <summary>
@@ -389,11 +389,11 @@ namespace Prosjekt.Controllers
         /// <summary>
         /// Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
         /// </summary>
-        private async Task<List<Resource>> HentRessurserForEksport(bool bareTilgjengelige)
+        private async Task<List<Resource>> RetrieveResourcesForExport(bool OnlyAvailable)
         {
-            var alle = await _repo.GetAllAsync();
-            return alle
-                .Where(r => !bareTilgjengelige || r.IsAvailable)
+            var all = await _repo.GetAllAsync();
+            return all
+                .Where(r => !OnlyAvailable || r.IsAvailable)
                 .OrderBy(r => r.Id)
                 .ToList();
         }
@@ -401,16 +401,16 @@ namespace Prosjekt.Controllers
         /// <summary>
         /// Ulike filnavn så de to eksportene ikke blandes sammen
         /// </summary>
-        private static string Filnavn(bool bareTilgjengelige)
+        private static string FileName(bool OnlyAvailable)
         {
-            var navn = bareTilgjengelige ? "ressurser_tilgjengelige" : "ressurser_alle";
-            return $"{navn}_{NorwegianTime.FromUtc(DateTime.UtcNow):yyyy-MM-dd}";
+            var name = OnlyAvailable ? "ressurser_tilgjengelige" : "ressurser_alle";
+            return $"{name}_{NorwegianTime.FromUtc(DateTime.UtcNow):yyyy-MM-dd}";
         }
 
         /// <summary>
         /// Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
         /// </summary>
-        private static string OversettKategori(string category) => category switch
+        private static string TranslateCategory(string category) => category switch
         {
             nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
             nameof(ResourceViewModel.ResourceType.Clothing) => "Klær",
@@ -422,6 +422,7 @@ namespace Prosjekt.Controllers
 
         /// <summary>
         /// Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
+        /// Gjør tekst trygg å legge i en CSV-fil, så Excel ikke blander sammen kolonnene
         /// </summary>
         private static string Csv(string? value)
         {
