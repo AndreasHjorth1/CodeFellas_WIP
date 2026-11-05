@@ -1,4 +1,6 @@
 ﻿@using Prosjekt.Models.Authorization
+@using Prosjekt.Models.Enums
+@using Prosjekt.Models.ModelView
 @{
     ViewData["Title"] = "Hjem - Kartoversikt";
     var erAdmin = User.IsInRole(RoleNames.Admin);
@@ -73,18 +75,58 @@
 <!-- Kartbeholder -->
 <div id="homeMap" style="height: calc(100vh - 80px); width: 100%; margin: 0; padding: 0;"></div>
 @if (erAdmin)
-{
-    <div class="position-absolute bg-white shadow rounded p-3"
-         style="top: 100px; left: 20px; z-index: 1000; min-width: 220px;">
-        <h6 class="mb-2">🎛️ Filter</h6>
 
-        <label class="form-label small mb-1">Vis</label>
-        <select id="visFilter" class="form-select form-select-sm mb-2">
-            <option value="">Alt</option>
-            <option value="behov">Bare behov</option>
-            <option value="ressurs">Bare ressurser</option>
-        </select>
-    </div>
+{
+    <details open class="position-absolute bg-white shadow rounded"
+             style="top: 100px; left: 70px; z-index: 1000; min-width: 230px;">
+        <summary class="p-2 fw-bold" style="cursor: pointer; list-style: none;">
+            🎛️ Filter
+        </summary>
+
+        <div class="px-3 pb-3">
+            <label class="form-label small mb-1">Vis</label>
+            <select id="visFilter" class="form-select form-select-sm mb-2">
+                <option value="">Alt</option>
+                <option value="behov">Bare behov</option>
+                <option value="ressurs">Bare ressurser</option>
+            </select>
+
+            <label class="form-label small mb-1">Kategori</label>
+            <select id="kategoriFilter" class="form-select form-select-sm mb-2">
+                <option value="">Alle</option>
+                <optgroup label="Behov">
+                    @foreach (var i in Html.GetEnumSelectList<NeedViewModel.NeedType>())
+                    {
+                        <option value="behov:@i.Value">@i.Text</option>
+                    }
+                </optgroup>
+                <optgroup label="Ressurser">
+                    @foreach (var i in Html.GetEnumSelectList<ResourceViewModel.ResourceType>())
+                    {
+                        <option value="ressurs:@i.Value">@i.Text</option>
+                    }
+                </optgroup>
+            </select>
+
+            <label class="form-label small mb-1">Status <span class="text-muted">(behov)</span></label>
+            <select id="statusFilter" class="form-select form-select-sm mb-2">
+                <option value="">Alle</option>
+                @foreach (var i in Html.GetEnumSelectList<EntryStatus>())
+                {
+                    <option value="@i.Value">@i.Text</option>
+                }
+            </select>
+
+            <label class="form-label small mb-1">Viktighet <span class="text-muted">(behov)</span></label>
+            <select id="viktighetFilter" class="form-select form-select-sm">
+                <option value="">Alle</option>
+                @foreach (var i in Html.GetEnumSelectList<ImportanceLevel>())
+                {
+                    <option value="@i.Value">@i.Text</option>
+                }
+            </select>
+        </div>
+    </details>
 }
 
 @section Scripts {
@@ -122,8 +164,14 @@
                     // kategori har formen "behov:3" eller "ressurs:1"
                     if (kat !== '') {
                         var deler = kat.split(':');
-                        if (e.type !== deler[0] || String(e.kategori !== deler[1]) synlig = false;
+                        if (e.type !== deler[0] || String(e.kategori) !== deler[1]) synlig = false;
                     }
+
+                    // status og viktighet finnes bare på behov
+                    if (sta !== '' && String(e.status) !== sta) synlig = false;
+                    if (vik !== '' && String(e.viktighet) !== vik) synlig = false;
+
+                    if (synlig) { map.addLayer(e.lag); } else { map.removeLayer(e.lag); }
                 });
             }
             // 2. Start kartet med grenser og fast verden
