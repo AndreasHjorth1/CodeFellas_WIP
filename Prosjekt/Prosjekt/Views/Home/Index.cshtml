@@ -1,7 +1,7 @@
 @using Prosjekt.Models.Authorization
 @using Prosjekt.Models.Enums
 @using Prosjekt.Models.ModelView
-@{
+
 <link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
@@ -11,11 +11,12 @@
 }
 
 <style>
-    /* Legg kontrollene i topp-høyre hjørne ved siden av hverandre */
+    /* Tvinger Leaflets øvre høyre hjørne til å legge kontrollene ved siden av hverandre */
     .leaflet-top.leaflet-right {
         display: flex;
         flex-direction: row-reverse;
         align-items: flex-start;
+        gap: 10px;
     }
 
     /* Pil som vises at filteret er kollapsbart + animasjon */
@@ -194,7 +195,7 @@
                 attribution: '&copy; Midlertidig satellitt (Esri) - Venter på Geonorge-tilgang',
                 noWrap: true
             });
-            // Alle kartlag med egenskapene vi filtrerer på
+            /// Alle kartlag med egenskapene vi filtrerer på
             var kartElementer = [];
 
             function filtrerKart() {
@@ -208,30 +209,28 @@
                 kartElementer.forEach(function(e) {
                     var synlig = true;
 
-                    // radiusSenter og radiusMeter settes av settOppRadiusSok i site.js
+                    /// radiusSenter og radiusMeter settes av settOppRadiusSok i site.js
                     if (radiusSenter && !isNaN(e.lat) && !isNaN(e.lng)) {
                         if (radiusSenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeter) synlig = false;
                     }
 
                     if (vis !== '' && e.type !== vis) synlig = false;
 
-                    // kategori har formen "behov:3" eller "ressurs:1"
+                    /// kategori har formen "behov:3" eller "ressurs:1"
                     if (kat !== '') {
                         var deler = kat.split(':');
                         if (e.type !== deler[0] || String(e.kategori) !== deler[1]) synlig = false;
                     }
 
-                    // status og viktighet finnes bare på behov
-                    if (sta !== '' && String(e.status) !== sta) synlig = false;
-                    if (vik !== '' && String(e.viktighet) !== vik) synlig = false;
-                    if (tilg !== '' && String(e.tilgjengelig) !== tilg) synlig = false;
-                    if (radiusSenter &&!isNaN(e.lat) && !isNaN(e.lng)) {
-                        if (radiusSenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeter) synlig = false;
-                    }
-                    if (synlig) { map.addLayer(e.lag); } else { map.removeLayer(e.lag); }
+                    /// Disse gjelder bare sin egen type - den andre slipper gjennom
+                    if (sta !== '' && e.type === 'behov' && String(e.status) !== sta) synlig = false;
+                    if (vik !== '' && e.type === 'behov' && String(e.viktighet) !== vik) synlig = false;
+                    if (tilg !== '' && e.type === 'ressurs' && String(e.tilgjengelig) !== tilg) synlig = false;
+                    
+                    if (synlig) { e.gruppe.addLayer(e.lag); } else { e.gruppe.removeLayer(e.lag); }
                 });
             }
-            // 2. Start kartet med grenser og fast verden
+            /// 2. Start kartet med grenser og fast verden
             var map = L.map('homeMap', {
                 center: [58.1467, 7.9956],
                 zoom: 11,
@@ -288,7 +287,7 @@
                 infoBox.classList.toggle('d-none');
             });
 
-            // Flytt filterpanelet inn i kartets kontrollhjørne
+            /// Flytt filterpanelet inn i kartets kontrollhjørne
             var filterControl = L.control({ position: 'topright' });
             filterControl.onAdd = function() {
                 var el = document.getElementById('filterPanel');
@@ -331,8 +330,7 @@
                                 : '<span class="badge bg-danger">Ikke tilgjengelig</span>';
 
                             var marker = L.marker([lat, lng], { icon: MapSymbols.resourceIcon(res.category ?? res.Category, available), title: (res.name ?? res.Name ?? 'Ressurs') + (available ? ' – Tilgjengelig' : ' – Ikke tilgjengelig'), alt: available ? 'Tilgjengelig ressurs' : 'Ikke tilgjengelig ressurs' }).addTo(symbolMarkers);
-                            var marker = L.marker([lat, lng], { icon: ressursIkon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null, tilgjengelig: (res.availability !== undefined ? res.availability : res.Availability), lat: lat, lng: lng });
+                            kartElementer.push({ lag: marker, gruppe: symbolMarkers, type: 'ressurs', kategori: res.category !== undefined ? res.category : res.Category, status: null, viktighet: null, tilgjengelig: (res.availability !== undefined ? res.availability : res.Availability), lat: lat, lng: lng });
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
                                     <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
@@ -385,7 +383,7 @@
                                         fillOpacity: 0.25
                                     }
                                 }).addTo(map);
-                                kartElementer.push({ lag: omrade, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: omrade.getBounds().getCenter().lat, lng: omrade.getBounds().getCenter().lng });
+                                kartElementer.push({ lag: omrade, gruppe: map, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: omrade.getBounds().getCenter().lat, lng: omrade.getBounds().getCenter().lng });
 
                                 /// Fest infoboksen direkte til området ved klikk
                                 omrade.bindPopup(popupInnhold);
@@ -411,8 +409,7 @@
                             var chosenIcon = MapSymbols.needIcon(need.type ?? need.Type, importance);
 
                             var marker = L.marker([lat, lng], { icon: chosenIcon, title: need.name ?? need.Name ?? 'Behov', alt: need.name ?? need.Name ?? 'Behov' }).addTo(symbolMarkers);
-                            var marker = L.marker([lat, lng], { icon: chosenIcon }).addTo(map);
-                            kartElementer.push({ lag: marker, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: lat, lng: lng });
+                            kartElementer.push({ lag: marker, gruppe: symbolMarkers, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance, tilgjengelig: null, lat: lat, lng: lng });
                             marker.bindPopup(popupInnhold);
 
                                 bounds.push([lat, lng]);
