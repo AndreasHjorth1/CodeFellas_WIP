@@ -355,12 +355,15 @@
                             kartElementer.push({ lag: marker, type: 'behov', kategori: need.type !== undefined ? need.type : need.Type, status: need.status !== undefined ? need.status : need.Status, viktighet: importance });
                             marker.bindPopup(popupInnhold);
 
-                            bounds.push([lat, lng]);
-                        }
+                                bounds.push([lat, lng]);
+                            }
+                        });
+                    }
+
+                    ['visFilter', 'kategoriFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
+                    document.getElementById(id)?.addEventListener('change', filtrerKart);
+
                     });
-                    ['visFilter', 'kategoriFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id)) {
-                    document.getElementById('visFilter')?.addEventListener('change', filtrerKart);
-                });
 
                 // 6. Tilpass kartzoomen dersom det finnes markører eller områder
                 if (bounds.length > 0) {
