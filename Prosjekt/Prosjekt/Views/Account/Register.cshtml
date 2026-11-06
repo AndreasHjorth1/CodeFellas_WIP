@@ -1,37 +1,198 @@
 ﻿@model Prosjekt.Models.ModelView.Account.RegisterViewModel
 
 @{
-    ViewData["Title"] = "Registrer deg";
+    ViewData["Title"] = "Registrer bruker";
 }
 
-<h1>Opprett bruker</h1>
+<style>
+    .register-page {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #eff3f6;
+        padding: 2rem 1rem;
+    }
 
-<form asp-action="Register" method="post" class="col-md-6">
+    .register-card {
+        width: 100%;
+        max-width: 400px;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 6px;
+        padding: 2rem 1.75rem 1.5rem;
+    }
 
-    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    .register-card h1 {
+        color: #0f2a4f;
+        font-size: 1.9rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
 
-    <div class="mb-3">
-        <label asp-for="Email" class="form-label">E-postadresse</label>
-        <input asp-for="Email" class="form-control" autocomplete="email" placeholder="Skriv inn e-postadresse" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+    .register-card .form-label {
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+
+    .register-card .form-control {
+        border: 1px solid #8a9bb3;
+        border-radius: 0;
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        padding: 0.65rem 0.6rem;
+    }
+
+    .register-card .form-control:focus {
+        border-color: #0f2a4f;
+        box-shadow: 0 0 0 2px rgba(15, 42, 79, 0.2);
+    }
+
+    .register-card a {
+        color: #2d4f86;
+        text-decoration: underline;
+    }
+
+    .register-card a:hover {
+        color: #0f2a4f;
+    }
+
+    .register-card .btn-register {
+        width: 100%;
+        background-color: #04245a;
+        border: none;
+        border-radius: 0;
+        color: #ffffff;
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 0.75rem;
+    }
+
+    .register-card .btn-register:hover,
+    .register-card .btn-register:focus {
+        background-color: #0f3a80;
+        color: #ffffff;
+    }
+
+    .register-card .register-footer {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 1.25rem;
+        font-size: 0.95rem;
+    }
+
+    .password-field {
+        position: relative;
+    }
+
+    .password-field .form-control {
+        padding-right: 2.75rem;
+    }
+
+    /* Skjul Edge sitt innebygde øyeikon så det ikke blir to */
+    .password-field .form-control::-ms-reveal {
+        display: none;
+    }
+
+    .password-toggle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 2.75rem;
+        border: none;
+        background: transparent;
+        color: #5f6f86;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .password-toggle:hover {
+        color: #0f2a4f;
+    }
+
+    .password-toggle .icon-hide,
+    .password-toggle.is-visible .icon-show {
+        display: none;
+    }
+
+    .password-toggle.is-visible .icon-hide {
+        display: inline;
+    }
+</style>
+
+<div class="register-page">
+    <div class="register-card">
+        <h1>Registrer bruker</h1>
+
+        <form asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">E-post</label>
+                <input asp-for="Email" class="form-control" autocomplete="email" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label">Passord</label>
+                <div class="password-field">
+                    <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" />
+                    <button type="button" class="password-toggle" data-target="Password" aria-label="Vis passord">
+                        <svg class="icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg class="icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ConfirmPassword" class="form-label">Gjenta passord</label>
+                <div class="password-field">
+                    <input asp-for="ConfirmPassword" type="password" class="form-control" autocomplete="new-password" />
+                    <button type="button" class="password-toggle" data-target="ConfirmPassword" aria-label="Vis passord">
+                        <svg class="icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg class="icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                    </button>
+                </div>
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-register">Bekreft</button>
+        </form>
+
+        <div class="register-footer">
+            <a asp-action="Login">&lsaquo; Tilbake</a>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label asp-for="Password" class="form-label">Passord</label>
-        <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" placeholder="Opprett et passord" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="ConfirmPassword" class="form-label">Bekreft passord</label>
-        <input asp-for="ConfirmPassword" type="password" class="form-control" autocomplete="new-password" placeholder="Gjenta passordet" />
-        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Opprett bruker</button>
-
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.password-toggle').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var input = document.getElementById(button.dataset.target);
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                button.classList.toggle('is-visible', show);
+                button.setAttribute('aria-label', show ? 'Skjul passord' : 'Vis passord');
+            });
+        });
+    </script>
 }
