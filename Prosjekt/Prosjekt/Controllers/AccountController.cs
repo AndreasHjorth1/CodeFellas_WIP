@@ -100,6 +100,7 @@ namespace Prosjekt.Controllers
                 EmailConfirmed = true
             };
             var result = await userManager.CreateAsync(user, model.Password);
+
             if (result.Succeeded)
             {
                 return RedirectToAction(nameof(Login));
