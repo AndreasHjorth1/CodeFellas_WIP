@@ -37,7 +37,8 @@ Aspire-dashboardet åpnes i nettleseren og viser disse ressursene:
 | `Prosjekt` | Webappen, bygget fra `Prosjekt/Prosjekt/Dockerfile` | http://localhost:5027 (https://localhost:5028 når sertifikat finnes) |
 
 ### Ved oppstart
-Appen kjører `Database.Migrate()`, oppretter rollen `Admin` og to testbrukere:
+Appen kjører `Database.Migrate()`, oppretter rollen `Admin`  og `Bruker`:
+For å få tilgang til databasen i docker desktop: Trykk på mariadb containeren, trykk på knappen "exe" og skriv in commandoen `mariadb -uroot -p"$MYSQL_ROOT_PASSWORD"`.
 
 | Bruker | Rolle |
 |---|---|
@@ -116,7 +117,7 @@ Nettleser ──▶ Controller ──▶ Repository (interface) ──▶ Applic
 
 ### Roller og tilgang
 
-| | Offentlig aktør (`Admin`) | Ressursleverandør (Bruker) | Ikke innlogget |
+| | Offentlig aktør (`Admin`) | Ressursleverandør (`Bruker`) | Ikke innlogget |
 |---|---|---|---|
 | Forside, om oss, personvern, brukerinstruks, kriseinformasjon | ✓ | ✓ | ✓ |
 | Kart med behov og ressurser | ✓ | ✓ (uten telefonnummer på behov, bare egne ressurser) | – |
@@ -195,18 +196,18 @@ Controllertestene bruker falske repositories (`Fakes/`). Repository-testene bruk
 ### Manuelle testscenarier
 | # | Scenario | Forventet | Resultat |
 |---|---|---|---|
-| 1 | Start via AppHost på en ren maskin | Ingen passordspørsmål, alle ressurser grønne | **(fyll inn)** |
-| 2 | Glemt passord for `admin@heimevernet.local` | Lenke i loggen, nytt passord virker | **(fyll inn)** |
-| 3 | 10 feil passord på rad | Kontoen låses | **(fyll inn)** |
-| 4 | Behov/ressurs med tomme eller ugyldige felt | Feilmelding, ingen krasj | **(fyll inn)** |
-| 5 | Ressursleverandør registrerer ressurs | Vises i «Mine ressurser» og på kartet | **(fyll inn)** |
-| 6 | Ressursleverandør prøver å endre en annens ressurs | Nektes | **(fyll inn)** |
-| 7 | Admin registrerer behov med tegnet område | Område og areal vises i kartet | **(fyll inn)** |
-| 8 | Matching for et transportbehov | Kjøretøy listes, nærmeste først | **(fyll inn)** |
-| 9 | Statusendring Ny → Løst direkte | Avvises med feilmelding | **(fyll inn)** |
-| 10 | Eksport CSV/JSON | Fil lastes ned, æøå og semikolon er riktige | **(fyll inn)** |
-| 11 | Stopp og start Aspire | Data er fortsatt der | **(fyll inn)** |
-| 12 | Ukjent URL | **(fyll inn)** | **(fyll inn)** |
+| 1 | Start via AppHost på en ren maskin | Ingen passordspørsmål, alle ressurser grønne | Oppfylt |
+| 2 | Glemt passord for `admin@heimevernet.local` | Lenke i loggen, nytt passord virker | Oppfylt |
+| 3 | 10 feil passord på rad | Kontoen låses | Oppfylt |
+| 4 | Behov/ressurs med tomme eller ugyldige felt | Feilmelding, ingen krasj | Oppfylt |
+| 5 | Ressursleverandør registrerer ressurs | Vises i «Mine ressurser» og på kartet | Oppfylt |
+| 6 | Ressursleverandør prøver å endre en annens ressurs | Nektes | Oppfylt |
+| 7 | Admin registrerer behov med tegnet område | Område og areal vises i kartet | Oppfylt |
+| 8 | Matching for et transportbehov | Kjøretøy listes, nærmeste først | Oppfylt |
+| 9 | Statusendring Ny → Løst direkte | Avvises med feilmelding | Oppfylt |
+| 10 | Eksport CSV/JSON | Fil lastes ned, æøå og semikolon er riktige | Oppfylt |
+| 11 | Stopp og start Aspire | Data er fortsatt der | Oppfylt |
+| 12 | Ukjent URL | http://localhost:5027/Home/Innstillingerr | Oppfylt |
 
 ---
 
