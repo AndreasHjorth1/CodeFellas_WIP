@@ -79,7 +79,7 @@ function settOppFilter(kart, lagRegistre, lagGrupper = []) {
         var tekst = sokeFelt.value.toLowerCase().trim();
         var type = typeFilter.value;
 
-        document.querySelectorAll('tr.table-row-clickable').forEach(function (rad) {
+        document.querySelectorAll('.table-row-clickable').forEach(function (rad) {
             var lat = parseFloat(rad.dataset.lat);
             var lng = parseFloat(rad.dataset.lng);
 

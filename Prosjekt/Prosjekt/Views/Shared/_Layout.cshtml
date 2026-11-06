@@ -198,16 +198,50 @@
             .public-navbar .btn-public.wide {
                 padding: 0.5rem 1.75rem;
             }
+
+            /* Navn og initialer oppe til høyre når man er innlogget som bruker */
+            .public-navbar .user-menu-toggle {
+                display: flex;
+                align-items: center;
+                gap: 0.9rem;
+                background: transparent;
+                border: none;
+                color: #ffffff;
+                font-size: 0.95rem;
+                padding: 0;
+            }
+
+            .public-navbar .user-avatar {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background-color: #ffffff;
+                color: #04245a;
+                font-size: 0.75rem;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .public-navbar .dropdown-menu {
+                border-radius: 4px;
+                font-size: 0.95rem;
+            }
     </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
 
-    @if (User.Identity == null || !User.Identity.IsAuthenticated)
-    {
+    @{
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
-        bool IsCurrent(string action) => currentController == "Home" && currentAction == action;
+        bool IsCurrent(string controller, string action) => currentController == controller && currentAction == action;
+    }
+
+    @if (User.Identity == null || !User.Identity.IsAuthenticated)
+    {
+        bool IsCurrentHome(string action) => IsCurrent("Home", action);
 
         <!-- Navbar når man ikke er innlogget -->
         <header class="sticky-top">
@@ -215,15 +249,15 @@
                 <div class="public-nav-inner">
 
                     <div class="public-nav-links">
-                        <a class="public-nav-link brand @(IsCurrent("FrontPage") ? "active" : "")"
+                        <a class="public-nav-link brand @(IsCurrentHome("FrontPage") ? "active" : "")"
                            asp-controller="Home" asp-action="FrontPage">
                             Totalforsvaret
                         </a>
-                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("CrisisInformation") ? "active" : "")"
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrentHome("CrisisInformation") ? "active" : "")"
                            asp-controller="Home" asp-action="CrisisInformation">
                             Kriseinformasjon
                         </a>
-                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("UserInstruction") ? "active" : "")"
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrentHome("UserInstruction") ? "active" : "")"
                            asp-controller="Home" asp-action="UserInstruction">
                             Slik fungerer det
                         </a>
@@ -232,6 +266,68 @@
                     <div class="public-nav-buttons">
                         <a class="btn-public" asp-controller="Account" asp-action="Register">Registrer</a>
                         <a class="btn-public wide" asp-controller="Account" asp-action="Login">Logg inn</a>
+                    </div>
+
+                </div>
+            </nav>
+        </header>
+    }
+    else if (!User.IsInRole("Admin"))
+    {
+        /// Viser «ola.haugland@...» som «Ola Haugland» og «OH»
+        var userName = User.Identity.Name ?? "";
+        var nameParts = userName.Split('@')[0]
+            .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        var displayName = nameParts.Length > 0
+            ? string.Join(" ", nameParts.Select(p => char.ToUpper(p[0]) + p[1..]))
+            : userName;
+        var initials = nameParts.Length >= 2
+            ? $"{nameParts[0][0]}{nameParts[1][0]}"
+            : displayName.Length >= 2 ? displayName[..2] : displayName;
+
+        <!-- Navbar for innlogget bruker -->
+        <header class="sticky-top">
+            <nav class="public-navbar">
+                <div class="public-nav-inner">
+
+                    <div class="public-nav-links">
+                        <a class="public-nav-link brand"
+                           asp-controller="Resource" asp-action="Overview">
+                            Totalforsvaret
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Resource", "Overview") ? "active" : "")"
+                           asp-controller="Resource" asp-action="Overview">
+                            Mine ressurser
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(currentController == "Resource" && currentAction != "Overview" ? "active" : "")"
+                           asp-controller="Resource" asp-action="Index">
+                            Registrer ressurs
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Home", "CrisisInformation") ? "active" : "")"
+                           asp-controller="Home" asp-action="CrisisInformation">
+                            Kriseinformasjon
+                        </a>
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="d-none d-sm-inline">@displayName</span>
+                            <span class="user-avatar">@initials.ToUpper()</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Mine ressurser</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ressurs</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="CrisisInformation">Kriseinformasjon</a></li>
+                            <li><a class="dropdown-item" asp-controller="Settings" asp-action="Index">Innstillinger</a></li>
+                            <li><a class="dropdown-item" asp-controller="Home" asp-action="UserInstruction">Brukerinstruks</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <form asp-controller="Account" asp-action="Logout" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item">Logg ut</button>
+                                </form>
+                            </li>
+                        </ul>
                     </div>
 
                 </div>
