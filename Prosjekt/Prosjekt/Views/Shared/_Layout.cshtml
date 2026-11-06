@@ -109,19 +109,10 @@
                 border-bottom: 2px solid #1a3048 !important;
             }
 
-            .grid-border-right {
-                border-right: 1px solid #e2d9cc;
-            }
-
             .menu-header-text {
                 font-size: 0.75rem;
                 text-transform: uppercase;
                 letter-spacing: 1px;
-            }
-
-            .footer-header-text {
-                font-size: 0.7rem;
-                letter-spacing: 1.5px;
             }
 
             main {
@@ -130,16 +121,125 @@
                 background-color: #f7f5f0;
             }
 
-            footer.footer-light {
-                background-color: #f7f5f0;
-                color: #1a3048;
-                border-top: 4px solid #0b2238;
+            /* Navbar for brukere som ikke er innlogget */
+            .public-navbar {
+                background-color: #04245a;
+                padding: 0.9rem 0;
+            }
+
+            .public-navbar .public-nav-inner {
+                max-width: 1100px;
+                margin: 0 auto;
+                padding: 0 1.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+            }
+
+            .public-navbar .public-nav-links {
+                display: flex;
+                align-items: center;
+                gap: 1.75rem;
+            }
+
+            .public-navbar .public-nav-link {
+                position: relative;
+                color: #ffffff;
+                font-size: 0.95rem;
+                font-weight: 600;
+                text-decoration: none;
+                padding-bottom: 0.35rem;
+            }
+
+            .public-navbar .public-nav-link.brand {
+                font-size: 1.15rem;
+                font-weight: 700;
+            }
+
+            .public-navbar .public-nav-link:hover {
+                color: #d6deeb;
+            }
+
+            /* Rosa strek under siden man er på */
+            .public-navbar .public-nav-link.active::after {
+                content: "";
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 1.4rem;
+                height: 2px;
+                background-color: #e0607e;
+            }
+
+            .public-navbar .public-nav-buttons {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .public-navbar .btn-public {
+                border: 1px solid rgba(255, 255, 255, 0.7);
+                border-radius: 2px;
+                color: #ffffff;
+                background-color: transparent;
+                font-size: 0.95rem;
+                padding: 0.5rem 1.1rem;
+                text-decoration: none;
+                white-space: nowrap;
+            }
+
+            .public-navbar .btn-public:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-color: #ffffff;
+                color: #ffffff;
+            }
+
+            .public-navbar .btn-public.wide {
+                padding: 0.5rem 1.75rem;
             }
     </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
 
+    @if (User.Identity == null || !User.Identity.IsAuthenticated)
+    {
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        bool IsCurrent(string action) => currentController == "Home" && currentAction == action;
+
+        <!-- Navbar når man ikke er innlogget -->
+        <header class="sticky-top">
+            <nav class="public-navbar">
+                <div class="public-nav-inner">
+
+                    <div class="public-nav-links">
+                        <a class="public-nav-link brand @(IsCurrent("FrontPage") ? "active" : "")"
+                           asp-controller="Home" asp-action="FrontPage">
+                            Totalforsvaret
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("CrisisInformation") ? "active" : "")"
+                           asp-controller="Home" asp-action="CrisisInformation">
+                            Kriseinformasjon
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("UserInstruction") ? "active" : "")"
+                           asp-controller="Home" asp-action="UserInstruction">
+                            Slik fungerer det
+                        </a>
+                    </div>
+
+                    <div class="public-nav-buttons">
+                        <a class="btn-public" asp-controller="Account" asp-action="Register">Registrer</a>
+                        <a class="btn-public wide" asp-controller="Account" asp-action="Login">Logg inn</a>
+                    </div>
+
+                </div>
+            </nav>
+        </header>
+    }
+    else
+    {
     <header class="sticky-top">
 
         <!-- 1. Øverste mørkeblå stripe -->
@@ -190,37 +290,19 @@
 
                 <div class="d-flex align-items-center gap-2 ms-auto">
 
-                    @if (User.Identity != null && User.Identity.IsAuthenticated)
-                    {
-                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
 
-                            <button type="submit" class="btn btn-custom-outline">
-                                Logg ut (@User.Identity.Name)
-                            </button>
-                        </form>
-                    }
-                    else
-                    {
-                        <a class="btn btn-custom-outline"
-                           asp-area=""
-                           asp-controller="Account"
-                           asp-action="Login">
-                            Logg inn
-                        </a>
-
-                        <a class="btn btn-custom-dark"
-                           asp-area=""
-                           asp-controller="Account"
-                           asp-action="Register">
-                            Opprett bruker
-                        </a>
-                    }
+                        <button type="submit" class="btn btn-custom-outline">
+                            Logg ut (@User.Identity.Name)
+                        </button>
+                    </form>
 
                 </div>
             </div>
         </nav>
     </header>
+    }
 
 
     <!-- HOVEDINNHOLD -->
@@ -372,109 +454,6 @@
         </div>
     </div>
 
-
-    <!-- 3. FOOTER -->
-<footer class="footer-light mt-auto">
-
-        <div class="container-fluid p-0">
-
-            <div class="row g-0 border-top border-secondary-subtle">
-
-                <div class="col-lg-6 px-4 px-md-5 py-3 grid-border-right">
-
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <div class="logo-line logo-line-red"></div>
-                        <h5 class="mb-0 fw-bold logo-text" style="font-size: 1.15rem;">Totalforsvaret</h5>
-                    </div>
-
-                    <p class="text-muted mb-0"
-                       style="max-width: 420px; line-height: 1.4; font-size: 0.8rem;">
-                        En nasjonal portal for å registrere sivile ressurser og koble dem med behov i en krise. Utviklet for Kartverket og Heimevernet.
-                    </p>
-                </div>
-
-
-                <div class="col-lg-3 px-4 px-md-5 py-3 grid-border-right">
-
-                    <span class="text-uppercase extra-small fw-bold text-muted d-block mb-1 footer-header-text">
-                        OM
-                    </span>
-
-                    <ul class="list-unstyled d-flex flex-column gap-1 mb-0" style="font-size: 0.8rem;">
-
-                        <li>
-                            <a asp-controller="Home" asp-action="Privacy"
-                               class="text-dark text-decoration-none">
-                                Personvern
-                            </a>
-                        </li>
-
-                        <li>
-                            <a asp-controller="Home" asp-action="UserInstruction"
-                               class="text-dark text-decoration-none">
-                                Brukerinstruks
-                            </a>
-                        </li>
-
-                        <li>
-                            <a asp-controller="Home" asp-action="AboutUs"
-                               class="text-dark text-decoration-none">
-                                Om oss
-                            </a>
-                        </li>
-
-                    </ul>
-                </div>
-
-
-                <div class="col-lg-3 px-4 px-md-5 py-3">
-
-                    <span class="text-uppercase extra-small fw-bold text-danger d-block mb-1 footer-header-text">
-                        VED AKUTT FARE
-                    </span>
-
-                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary-subtle"
-                         style="font-size: 0.8rem; padding: 2px 0;">
-                        <span>Brann</span>
-                        <strong class="text-danger fw-bold">110</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary-subtle"
-                         style="font-size: 0.8rem; padding: 2px 0;">
-                        <span>Politi</span>
-                        <strong class="text-danger fw-bold">112</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary-subtle"
-                         style="font-size: 0.8rem; padding: 2px 0;">
-                        <span>Ambulanse</span>
-                        <strong class="text-danger fw-bold">113</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center"
-                         style="font-size: 0.8rem; padding: 2px 0;">
-                        <span>Legevakt</span>
-                        <strong class="text-danger fw-bold">116 117</strong>
-                    </div>
-
-                </div>
-            </div>
-
-
-            <div class="row g-0 px-4 px-md-5 py-1 text-muted align-items-center border-top border-secondary-subtle"
-                 style="font-size: 0.62rem; letter-spacing: 0.5px; line-height: 1.2;">
-
-                <div class="col-md-6">
-                    © 2026 TOTALFORSVARET • PROTOTYPE, IS-202, UNIVERSITETET I AGDER
-                </div>
-
-                <div class="col-md-6 text-md-end">
-                    KARTDATA © KARTVERKET • VÆRDATA © MET NORWAY
-                </div>
-
-            </div>
-        </div>
-    </footer>
 
 
     <!-- SKRIPTER -->
