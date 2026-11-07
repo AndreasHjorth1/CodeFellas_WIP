@@ -20,6 +20,7 @@ namespace Prosjekt.Xunit.Test.Fakes
         public IdentityResult CreateResult { get; set; } = IdentityResult.Success;
         public IdentityResult ResetResult { get; set; } = IdentityResult.Success;
         public string ResetToken { get; set; } = "reset-token";
+        public bool IsAdmin { get; set; }
 
         public IdentityUser? CreatedUser { get; private set; }
         public string? CreatedPassword { get; private set; }
@@ -35,6 +36,9 @@ namespace Prosjekt.Xunit.Test.Fakes
         public override Task<IdentityUser?> FindByEmailAsync(string email) => Task.FromResult(UserToFind);
 
         public override Task<bool> IsEmailConfirmedAsync(IdentityUser user) => Task.FromResult(EmailConfirmed);
+
+        public override Task<bool> IsInRoleAsync(IdentityUser user, string role) =>
+            Task.FromResult(IsAdmin && role == "Admin");
 
         public override Task<string> GeneratePasswordResetTokenAsync(IdentityUser user) => Task.FromResult(ResetToken);
 

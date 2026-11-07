@@ -2,17 +2,20 @@
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 @using Prosjekt.Models.ModelView
+@using System.Globalization
 @model NeedCreatorViewModel
 
 @{
+    var antall = Model.NeedList.Count;
+    var ettBehov = antall == 1;
     ViewData["Title"] = "Behov registrert";
 }
 
 @functions {
     string OversettImportance(ImportanceLevel v) => v switch
     {
-        ImportanceLevel.Acute => "Akutt behov",
-        _ => "Planlagt behov"
+        ImportanceLevel.Acute => "Akutt",
+        _ => "Planlagt"
     };
 
     string OversettNeedType(NeedViewModel.NeedType type) => type switch
@@ -32,114 +35,268 @@
 }
 
 <style>
-    .resizable-container {
+    .receipt-page {
+        background-color: #ffffff;
+        padding: 2rem 1rem 3rem;
+    }
+
+    .receipt-inner {
+        max-width: 620px;
+        margin: 0 auto;
+    }
+
+    .receipt-success {
         display: flex;
-        width: 100%;
-        height: calc(100vh - 80px);
-        min-height: 500px;
-        position: relative;
-    }
-
-    /* Brukes av scrollIntoView slik at menylinjen ikke dekker toppen av kartet */
-    #splitWrapper {
-        scroll-margin-top: 90px; /* høyden på menylinjen, juster ved behov */
-    }
-
-    /* Infoseksjonen starter på 40 %, kartet tar resten */
-    .info-section {
-        flex: 0 0 40%;
-        min-width: 250px;
-        overflow-y: auto;
-        padding-right: 10px;
-    }
-
-    .map-section {
-        flex: 1 1 0;
-        min-width: 200px;
-        position: relative;
-    }
-
-    /* Drabar skillelinje */
-    .resizer {
-        width: 10px;
-        background: #e0e0e0;
-        cursor: col-resize;
-        transition: background 0.2s;
+        align-items: center;
+        gap: 1.5rem;
+        background-color: #e3f1ea;
         border-radius: 4px;
-        margin: 0 4px;
+        padding: 1.25rem 1.25rem 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .receipt-success .success-icon {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background-color: #16855a;
+        color: #ffffff;
+        font-size: 1.3rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        user-select: none;
     }
 
-        .resizer:hover, .resizer.dragging {
-            background: #0d6efd;
-        }
-
-        .resizer::after {
-            content: "⋮";
-            color: #666;
-            font-weight: bold;
-        }
-
-        .resizer:hover::after, .resizer.dragging::after {
-            color: white;
-        }
-
-    #kvitteringBehovKart {
-        width: 100%;
-        height: 100%;
-        border-radius: 8px;
+    .receipt-success h1 {
+        color: #0f2a4f;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
     }
 
-    .need-item-clickable {
+    .receipt-success p {
+        color: #5f6f86;
+        font-size: 0.9rem;
+        margin: 0.25rem 0 0;
+    }
+
+    .receipt-card {
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        padding: 0.9rem 0.75rem 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .receipt-card h2 {
+        color: #0f2a4f;
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 0.6rem;
+    }
+
+    /* Felles opplysninger for alle behovene */
+    .receipt-facts {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.3rem 1rem;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .receipt-facts dt {
+        color: #5f6f86;
+        font-weight: 600;
+    }
+
+    .receipt-facts dd {
+        margin: 0;
+        color: #0f2a4f;
+    }
+
+    .imp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 2px;
+    }
+
+    .imp-badge.acute {
+        background-color: #c8102e;
+        color: #ffffff;
+    }
+
+    .imp-badge.planned {
+        background-color: #fdf3d6;
+        color: #7a5b00;
+    }
+
+    .need-list-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background-color: #f4f2ec;
+        border: 1px solid #e2ded3;
+        border-radius: 3px;
+        padding: 0.6rem 0.75rem;
+        margin-bottom: 0.5rem;
         cursor: pointer;
     }
 
-        .need-item-clickable:hover {
-            background-color: #f8f9fa;
-        }
+    .need-list-item:hover {
+        border-color: #c9c3b4;
+    }
+
+    .need-list-item img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .need-list-item .item-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .need-list-item .item-name {
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .need-list-item .item-meta {
+        color: #5f6f86;
+        font-size: 0.75rem;
+    }
+
+    #kvitteringBehovKart {
+        width: 100%;
+        height: 260px;
+        border-radius: 3px;
+    }
+
+    .receipt-card .map-note {
+        color: #5f6f86;
+        font-size: 0.8rem;
+        margin: 0.5rem 0 0;
+    }
+
+    .need-popup dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.15rem 0.6rem;
+        margin: 0.4rem 0 0;
+        font-size: 0.8rem;
+    }
+
+    .need-popup dt {
+        color: #5f6f86;
+        font-weight: 600;
+    }
+
+    .need-popup dd {
+        margin: 0;
+        color: #0f2a4f;
+    }
+
+    .receipt-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .receipt-buttons a {
+        flex: 1 1 220px;
+        text-align: center;
+        border-radius: 3px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        padding: 0.75rem 1rem;
+        text-decoration: none;
+    }
+
+    .receipt-buttons .btn-outline-blue {
+        background-color: #ffffff;
+        border: 1px solid #0f2a4f;
+        color: #0f2a4f;
+    }
+
+    .receipt-buttons .btn-outline-blue:hover {
+        background-color: #eef2f7;
+    }
+
+    .receipt-buttons .btn-solid-blue {
+        background-color: #04245a;
+        border: 1px solid #04245a;
+        color: #ffffff;
+    }
+
+    .receipt-buttons .btn-solid-blue:hover {
+        background-color: #0f3a80;
+    }
 </style>
 
-<h1>Behov opprettet</h1>
-<hr />
+<div class="receipt-page">
+    <div class="receipt-inner">
+        <div class="receipt-success" role="status">
+            <span class="success-icon" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+            <div>
+                <h1>@(ettBehov ? "Behovet er meldt" : $"{antall} behov er meldt")</h1>
+                <p>@(ettBehov ? "Det vises nå på kartet og i behovsoversikten." : "De vises nå på kartet og i behovsoversikten.")</p>
+            </div>
+        </div>
 
-<div class="resizable-container mb-3" id="splitWrapper">
-    <!-- Info-seksjon -->
-    <div class="info-section" id="infoBox">
-        <div class="card p-3 h-100 shadow-sm">
-            <h5>Felles informasjon</h5>
-            <p><strong>Posisjon:</strong> @Model.Latitude, @Model.Longitude</p>
-            <p><strong>Viktighet:</strong> @OversettImportance(Model.Importance)</p>
-            <p><strong>Frist:</strong> @(Model.Deadline.HasValue ? Model.Deadline.Value.ToString("dd.MM.yyyy HH:mm") : "Ingen frist")</p>
-
-            <h5 class="mt-3">Registrerte behov (@Model.NeedList.Count)</h5>
-            <ul class="list-group list-group-flush">
-                @foreach (var need in Model.NeedList)
+        <div class="receipt-card">
+            <h2>Felles for @(ettBehov ? "behovet" : "alle behovene")</h2>
+            <dl class="receipt-facts">
+                <dt>Viktighet</dt>
+                <dd>
+                    <span class="imp-badge @(Model.Importance == ImportanceLevel.Acute ? "acute" : "planned")">
+                        <i class="fa-solid @(Model.Importance == ImportanceLevel.Acute ? "fa-triangle-exclamation" : "fa-clock")" aria-hidden="true"></i>
+                        @OversettImportance(Model.Importance)
+                    </span>
+                </dd>
+                <dt>Frist</dt>
+                <dd>@(Model.Deadline.HasValue ? Model.Deadline.Value.ToString("dd.MM.yyyy 'kl.' HH:mm") : "Ingen frist")</dd>
+                <dt>Kontakt</dt>
+                <dd>@(Model.NeedList.FirstOrDefault()?.Phone ?? "Ikke oppgitt")</dd>
+                <dt>Adresse</dt>
+                <dd id="kvitteringAdresse">Henter adresse...</dd>
+                @if (Model.AreaSquareMeters.HasValue)
                 {
-                    <li class="list-group-item px-0 need-item-clickable" data-need-index="@Model.NeedList.IndexOf(need)" data-need-type="@need.Type" onclick="fokuserPaKart(@Model.NeedList.IndexOf(need))">
-                        <strong>@need.Name</strong> (@OversettNeedType(need.Type))<br />
-                        <span class="text-muted small">Tlf: @need.Phone</span><br />
-                        <small>@need.Description</small>
-                    </li>
+                    <dt>Område</dt>
+                    <dd>ca. @Math.Round(Model.AreaSquareMeters.Value).ToString("N0", CultureInfo.GetCultureInfo("nb-NO")) m²</dd>
                 }
-            </ul>
+            </dl>
+        </div>
+
+        <div class="receipt-card">
+            <h2>@(ettBehov ? "Behovet:" : "Behovene:")</h2>
+            @for (var i = 0; i < antall; i++)
+            {
+                var need = Model.NeedList[i];
+                <div class="need-list-item" data-need-type="@need.Type" onclick="fokuserPaKart(@i)">
+                    <div class="item-text">
+                        <div class="item-name">@need.Name</div>
+                        <div class="item-meta">@OversettNeedType(need.Type)@(string.IsNullOrWhiteSpace(need.Description) ? "" : $" · {need.Description}")</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="receipt-card">
+            <h2>På kartet</h2>
+            <div id="kvitteringBehovKart"></div>
+            <p class="map-note">Trykk på et symbol eller et behov i listen for å se all informasjon.</p>
+        </div>
+
+        <div class="receipt-buttons">
+            <a asp-controller="Need" asp-action="Index" class="btn-outline-blue">Meld flere behov</a>
+            <a asp-controller="Need" asp-action="Overview" class="btn-solid-blue">Gå til oversikt over behov</a>
         </div>
     </div>
-
-    <!-- Drabar skillelinje -->
-    <div class="resizer" id="dragHandle"></div>
-
-    <!-- Kart-seksjon -->
-    <div class="map-section" id="mapBox">
-        <div id="kvitteringBehovKart" class="shadow-sm border"></div>
-    </div>
-</div>
-
-<div class="mb-5 pb-4">
-    <a asp-controller="Need" asp-action="Index" class="btn btn-secondary">Opprett flere behov</a>
-    <a asp-controller="Need" asp-action="Overview" class="btn btn-primary">Gå til oversikt</a>
 </div>
 
 @section Scripts {
@@ -147,122 +304,99 @@
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
     <script>
-        var kart;
-        var marker;
         var needMarkers;
         var receiptMarkers = [];
 
-        function fokuserPaKart(index = 0) {
+        function fokuserPaKart(index) {
             MapSymbols.focus(needMarkers, receiptMarkers[index]);
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            var lat = parseFloat('@Model.Latitude'.replace(',', '.'));
-            var lng = parseFloat('@Model.Longitude'.replace(',', '.'));
+            /// Konverterer tall trygt til punktum som desimaltegn
+            var lat = @(Model.Latitude is double la ? la.ToString(CultureInfo.InvariantCulture) : "null");
+            var lng = @(Model.Longitude is double lo ? lo.ToString(CultureInfo.InvariantCulture) : "null");
             var importanceNumber = @((int)Model.Importance);
-            var behov = @Json.Serialize(
-                        Model.NeedList.Select(n => new { name = n.Name, phone = n.Phone, type = n.Type.ToString() }));
+            var frist = @Json.Serialize(Model.Deadline.HasValue ? Model.Deadline.Value.ToString("dd.MM.yyyy 'kl.' HH:mm") : null);
 
-            document.querySelectorAll('[data-need-type]').forEach(function (row) {
-                row.insertAdjacentHTML('afterbegin', MapSymbols.image(MapSymbols.needUrl(row.dataset.needType), MapSymbols.needClass(importanceNumber)) + ' ');
+            var behov = @Json.Serialize(Model.NeedList.Select(n => new
+            {
+                navn = n.Name,
+                telefon = n.Phone,
+                beskrivelse = n.Description,
+                type = n.Type.ToString(),
+                kategori = OversettNeedType(n.Type)
+            }));
+
+            /// Symbolet foran hvert behov i listen
+            document.querySelectorAll('[data-need-type]').forEach(function (rad) {
+                rad.insertAdjacentHTML('afterbegin', MapSymbols.image(MapSymbols.needUrl(rad.dataset.needType), MapSymbols.needClass(importanceNumber)));
             });
 
-            /// --- KART ---
-            if (!isNaN(lat) && !isNaN(lng)) {
-                kart = L.map('kvitteringBehovKart').setView([lat, lng], 14);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors'
-                }).addTo(kart);
-
-                needMarkers = MapSymbols.createCluster(kart);
-                behov.forEach(function (b) {
-                    var entry = L.marker([lat, lng], { icon: MapSymbols.needIcon(b.type, importanceNumber), title: b.name, alt: b.name }).addTo(needMarkers);
-                    entry.bindPopup('<b>' + MapSymbols.escape(b.name) + '</b><br/>📞 Tlf: ' + MapSymbols.escape(b.phone || 'Ikke oppgitt'));
-                    receiptMarkers.push(entry);
-                });
-                marker = receiptMarkers[0];
-
-                /// Slå opp adressen én gang for alle behov på samme sted.
-                fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng)
-                    .then(response => response.ok ? response.json() : null)
-              
-                                  .then(data => leggTilAdresse(data && data.display_name ? data.display_name : 'Adresse ikke funnet'))
-                    .catch(() => leggTilAdresse('Ikke tilgjengelig'));
-                function leggTilAdresse(address) {
-                    receiptMarkers.forEach(function (entry, index) {
-                        var b = behov[index];
-                        entry.setPopupContent('<b>' + MapSymbols.escape(b.name) + '</b><br/>📞 Tlf: ' + MapSymbols.escape(b.phone || 'Ikke oppgitt') + '<hr class="my-1"/><small>Adresse: ' + MapSymbols.escape(address) + '</small>');
-                    });
-                }
-
-                /// Område
-                var omradeJson = @Json.Serialize(Model.AreaGeoJson);
-                var arealM2 = @Json.Serialize(Model.AreaSquareMeters);
-                var omkretsM = @Json.Serialize(Model.PerimeterMeters);
-
-                if (omradeJson) {
-                    var omrade = L.geoJSON(JSON.parse(omradeJson), {
-                        style: {
-                            color: importanceNumber === 0 ? '#dc3545' : '#fd7e14',
-                            weight: 2,
-                            fillOpacity: 0.15
-                        }
-                    }).addTo(kart);
-
-                    if (arealM2) {
-                        omrade.bindTooltip(
-                            'Område: ca. ' + formaterAreal(arealM2) +
-                            ' · omkrets ca. ' + formaterLengde(omkretsM),
-                            { sticky: true }
-                        );
-                    }
-                    kart.fitBounds(omrade.getBounds(), { padding: [20, 20] });
-                }
-            } else {
-                document.getElementById('mapBox').innerHTML =
-                    '<div class="text-muted p-3">Ingen gyldig posisjon å vise på kart.</div>';
+            if (lat === null || lng === null) {
+                document.getElementById('kvitteringBehovKart').outerHTML =
+                    '<p class="text-muted">Ingen gyldig posisjon å vise på kart.</p>';
+                document.getElementById('kvitteringAdresse').textContent = 'Ikke tilgjengelig';
+                return;
             }
 
-            /// --- DRAG / RESIZE LOGIKK ---
-            const resizer = document.getElementById('dragHandle');
-            const leftSide = document.getElementById('infoBox');
-            const container = document.getElementById('splitWrapper');
+            var kart = L.map('kvitteringBehovKart').setView([lat, lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(kart);
 
-            let x = 0;
-            let leftWidth = 0;
+            /// Full informasjon om behovet i popupen. Feltene som mangler, hoppes over.
+            function popupInnhold(b, adresse) {
+                var rader = [
+                    ['Kategori', b.kategori],
+                    ['Viktighet', importanceNumber === 0 ? 'Akutt' : 'Planlagt'],
+                    ['Frist', frist],
+                    ['Telefon', b.telefon],
+                    ['Beskrivelse', b.beskrivelse],
+                    ['Adresse', adresse]
+                ].filter(rad => rad[1] !== null && rad[1] !== undefined && rad[1] !== '');
 
-            const mouseDownHandler = function (e) {
-                x = e.clientX;
-                leftWidth = leftSide.getBoundingClientRect().width;
-                resizer.classList.add('dragging');
-                document.addEventListener('mousemove', mouseMoveHandler);
-                document.addEventListener('mouseup', mouseUpHandler);
-            };
+                return '<div class="need-popup"><b>' + escapeHtml(b.navn) + '</b><dl>' +
+                    rader.map(rad => '<dt>' + rad[0] + '</dt><dd>' + escapeHtml(rad[1]) + '</dd>').join('') +
+                    '</dl></div>';
+            }
 
-            const mouseMoveHandler = function (e) {
-                const dx = e.clientX - x;
-                const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
+            needMarkers = MapSymbols.createCluster(kart);
+            behov.forEach(function (b) {
+                var marker = L.marker([lat, lng], {
+                    icon: MapSymbols.needIcon(b.type, importanceNumber),
+                    title: b.navn,
+                    alt: b.kategori + ': ' + b.navn,
+                    zIndexOffset: 1000
+                }).addTo(needMarkers);
+                marker.bindPopup(popupInnhold(b, 'Henter adresse...'), { maxWidth: 280 });
+                receiptMarkers.push(marker);
+            });
 
-                /// Tillat justering mellom 15 % og 85 % bredde
-                if (newLeftWidth > 15 && newLeftWidth < 85) {
-                    leftSide.style.flex = `0 0 ${newLeftWidth}%`;
-                    if (kart) kart.invalidateSize();
+            /// Området som ble tegnet
+            var omradeJson = @Json.Serialize(Model.AreaGeoJson);
+            if (omradeJson) {
+                try {
+                    var omrade = L.geoJSON(JSON.parse(omradeJson), {
+                        style: { color: importanceNumber === 0 ? '#c8102e' : '#e0a800', weight: 2, dashArray: '6 4', fillOpacity: 0.15 }
+                    }).addTo(kart);
+                    kart.fitBounds(omrade.getBounds(), { padding: [20, 20] });
+                } catch (err) {
+                    console.error("Feil ved innlasting av GeoJSON-figur:", err);
                 }
-            };
+            }
 
-            const mouseUpHandler = function () {
-                resizer.classList.remove('dragging');
-                document.removeEventListener('mousemove', mouseMoveHandler);
-                document.removeEventListener('mouseup', mouseUpHandler);
-                if (kart) kart.invalidateSize();
-            };
+            /// Adressen er den samme for alle behovene, så den hentes bare én gang
+            var adresseTekst = 'Ikke tilgjengelig';
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+                .then(response => response.ok ? response.json() : null)
+                .then(data => { adresseTekst = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet'; })
+                .catch(function () { /* Beholder «Ikke tilgjengelig» */ })
+                .finally(function () {
+                    document.getElementById('kvitteringAdresse').textContent = adresseTekst;
+                    receiptMarkers.forEach(function (m, i) { m.setPopupContent(popupInnhold(behov[i], adresseTekst)); });
+                });
 
-            resizer.addEventListener('mousedown', mouseDownHandler);
-
-            setTimeout(function () { if (kart) kart.invalidateSize(); }, 200);
-
-            /// Scroll ned slik at kartet fyller skjermen under menylinjen
-            document.getElementById('splitWrapper').scrollIntoView({ block: 'start' });
+            setTimeout(function () { kart.invalidateSize(); }, 200);
         });
     </script>
 }
