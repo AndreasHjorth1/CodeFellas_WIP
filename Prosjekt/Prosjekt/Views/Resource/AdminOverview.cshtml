@@ -42,19 +42,14 @@
     };
 
     /// <summary>
-    /// Teksten og fargen på statusmerket. Utløpt og ikke tilgjengelig går foran tildelinger.
+    /// Samme statusflyt som på «Mine ressurser»: Registrert, Tilgjengelig, Tildelt behov og Utløpt.
     /// </summary>
     (string Tekst, string Klasse) Status(ResourceViewModel r, DateTime naa)
     {
-        if (r.AvailableTo < naa) return ("Utløpt", "status-off");
-        if (!r.Availability) return ("Ikke ledig", "status-off");
-        if (r.Allocated > 0) return ("På oppdrag", "status-busy");
-        if (r.AvailableFrom > naa)
-        {
-            var fra = r.AvailableFrom.Value;
-            return (fra.Date == naa.Date ? $"Fra kl. {fra:HH}" : $"Fra {fra:dd.MM.}", "status-later");
-        }
-        return ("Ledig", "status-free");
+        if (r.AvailableTo < naa) return ("Utløpt", "status-expired");
+        if (r.Allocated > 0) return ("Tildelt behov", "status-busy");
+        if (r.Availability) return ("Tilgjengelig", "status-free");
+        return ("Registrert", "status-off");
     }
 
     string LedigPeriode(ResourceViewModel r)
@@ -325,8 +320,8 @@
 
     .status-free { background-color: #dcefe3; color: #1e6b43; }
     .status-busy { background-color: #dfe5f0; color: #04245a; }
-    .status-later { background-color: #fbecc0; color: #7a5b00; }
     .status-off { background-color: #eceef1; color: #5b6b7f; }
+    .status-expired { background-color: #f8e1e3; color: #9b1c2c; }
 
     .row-actions {
         display: flex;
