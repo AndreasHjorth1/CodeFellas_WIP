@@ -15,12 +15,17 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 {
     public class ResourceControllerTest
     {
-        private static ResourceController CreateController(FakeResourceRepository repo, string userId = "user-1", bool isAdmin = false)
+        private static ResourceController CreateController(FakeResourceRepository repo, string userId =
+        "user-1", bool isAdmin = false, bool isCoordinator = false)
         {
             var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, userId) };
             if (isAdmin)
             {
                 claims.Add(new Claim(ClaimTypes.Role, RoleNames.Admin));
+            }
+            if (isCoordinator)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, RoleNames.Coordinator));
             }
 
             var httpContext = new DefaultHttpContext
@@ -33,6 +38,107 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             {
                 ControllerContext = new ControllerContext { HttpContext = httpContext }
             };
+        }
+
+        [Fact]
+        public async Task Delete_Coordinator_OtherUsersResource_ReturnsForbidAndKeepsResource()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-2",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isCoordinator: true);
+
+            // Act
+            var result = await controller.Delete(1);
+
+            // Assert
+            Assert.IsType<ForbidResult>(result);
+            Assert.Single(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Delete_Coordinator_OwnResource_ReturnsForbidAndKeepsResource()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-1",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isCoordinator: true);
+
+            // Act
+            var result = await controller.Delete(1);
+
+            // Assert
+            Assert.IsType<ForbidResult>(result);
+            Assert.Single(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Delete_RegularUser_OwnResource_RemovesResource()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-1",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo);
+
+            // Act
+            var result = await controller.Delete(1);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Empty(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Overview_Coordinator_SeesAllResources()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-2",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            repo.Resources.Add(new Resource
+            {
+                Id = 2,
+                Name = "Traktor",
+                UserId = "user-3",
+                Coords = new
+        Coordinates(59.9, 10.7)
+            });
+            var controller = CreateController(repo, isCoordinator: true);
+
+            // Act
+            var result = await controller.Overview();
+
+            // Assert
+            var view = Assert.IsType<ViewResult>(result);
+            var resources = Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(view.Model);
+            Assert.Equal(2, resources.Count());
         }
 
         [Fact]

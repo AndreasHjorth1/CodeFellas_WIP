@@ -5,9 +5,10 @@
 <link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
-﻿@{
+@{
     ViewData["Title"] = "Hjem - Kartoversikt";
-    var erAdmin = User.IsInRole(RoleNames.Admin);
+    /// Koordinator ser det samme som admin her: oversiktssiden og knappene til listene
+    var erAdmin = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
 
     /// Satt av «Stort kart» på ressursoversikten, så man finner tilbake dit
     var fraOversikt = Context.Request.Query["fra"] == "oversikt";

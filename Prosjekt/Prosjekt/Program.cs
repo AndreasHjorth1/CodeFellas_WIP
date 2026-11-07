@@ -95,6 +95,7 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
         await IdentitySeeder.SeedDevelopmentAdminAsync(userManager);
         await IdentitySeeder.SeedDevelopmentUserAsync(userManager);
+        await IdentitySeeder.SeedDevelopmentCoordinatorAsync(userManager);
     }
     catch (Exception ex)
     {

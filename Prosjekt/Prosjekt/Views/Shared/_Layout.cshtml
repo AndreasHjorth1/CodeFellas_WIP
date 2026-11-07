@@ -433,9 +433,9 @@
 
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
-                    @if (User.IsInRole("Admin"))
+                    @if (User.IsInRole("Admin") || User.IsInRole("Coordinator"))
                     {
-                        <!-- ADMINMENY -->
+                        <!-- MENY FOR ADMIN OG KOORDINATOR -->
 
                         <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
                             Generelt

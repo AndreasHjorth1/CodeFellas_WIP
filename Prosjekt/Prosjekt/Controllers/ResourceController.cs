@@ -29,12 +29,32 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Bare admin og eieren av ressursen kan endre eller slette den.
+        /// Admin og koordinator ser og kan endre alle ressurser.
         /// </summary>
-        private bool CanModify(Resource resource)
+        private bool CanSeeAllResources()
         {
-            return User.IsInRole(RoleNames.Admin)
+            return User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
+        }
+
+        /// <summary>
+        /// Admin, koordinator og eieren kan endre ressursen.
+        /// </summary>
+        private bool CanEdit(Resource resource)
+        {
+            return CanSeeAllResources()
                 || resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
+        /// <summary>
+        /// Admin kan slette alle ressurser, vanlige brukere bare sine egne.
+        /// Koordinator kan ikke slette ressurser, heller ikke sine egne.
+        /// </summary>
+        private bool CanDelete(Resource resource)
+        {
+            if (User.IsInRole(RoleNames.Admin)) return true;
+            if (User.IsInRole(RoleNames.Coordinator)) return false;
+
+            return resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
         [HttpGet]
@@ -106,7 +126,7 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Admin ser alle ressurser, andre bare sine egne.
+        /// Admin og koordinator ser alle ressurser, andre bare sine egne.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> Overview()
@@ -143,7 +163,7 @@ namespace Prosjekt.Controllers
         {
             var resource = await _repo.GetByIdAsync(id);
             if (resource == null) return NotFound();
-            if (!CanModify(resource)) return Forbid();
+            if (!CanEdit(resource)) return Forbid();
 
             string description = resource.Description ?? "";
             string licensePlate = "";
@@ -214,7 +234,7 @@ namespace Prosjekt.Controllers
 
             var resourceEntity = await _repo.GetByIdAsync(id);
             if (resourceEntity == null) return NotFound();
-            if (!CanModify(resourceEntity)) return Forbid();
+            if (!CanEdit(resourceEntity)) return Forbid();
 
             resourceEntity.Name = model.Name;
             resourceEntity.Description = GetFullDescription(model);
@@ -239,7 +259,7 @@ namespace Prosjekt.Controllers
         {
             var resource = await _repo.GetByIdAsync(id);
             if (resource == null) return NotFound();
-            if (!CanModify(resource)) return Forbid();
+            if (!CanDelete(resource)) return Forbid();
 
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByResourceAsync(id);
@@ -247,7 +267,7 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Data til kartet på Home/Index. Admin får alle ressurser, andre bare sine egne.
+        /// Data til kartet på Home/Index. Admin og koordinator får alle ressurser, andre bare sine egne.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetInformation()
@@ -273,14 +293,14 @@ namespace Prosjekt.Controllers
         /// <summary>
         /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
         /// </summary>
-        [Authorize(Roles = RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
         [HttpGet]
         public IActionResult Export()
         {
             return View();
         }
 
-        [Authorize(Roles = RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
         [HttpGet]
         public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
         {
@@ -312,7 +332,7 @@ namespace Prosjekt.Controllers
         /// <summary>
         /// Eksporter ressurser i JSON-format.
         /// </summary>
-        [Authorize(Roles = RoleNames.Admin)]
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
         [HttpGet]
         public async Task<IActionResult> ExportJson(bool onlyAvailable = true)
         {
@@ -344,11 +364,11 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Admin får alle ressurser, andre bare sine egne.
+        /// Admin og koordinator får alle ressurser, andre bare sine egne.
         /// </summary>
         private Task<IEnumerable<Resource>> GetVisibleResourcesAsync()
         {
-            return User.IsInRole(RoleNames.Admin)
+            return CanSeeAllResources()
                 ? _repo.GetAllAsync()
                 : _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         }

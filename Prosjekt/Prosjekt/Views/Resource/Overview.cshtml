@@ -4,11 +4,14 @@
 @using Prosjekt.Models.ModelView
 @using Prosjekt.Utils
 @using System.Globalization
+@using Prosjekt.Models.Authorization
 @model IEnumerable<ResourceViewModel>
 
 @{
     /// Vanlige brukere ser bare sine egne ressurser
-    var erAdmin = User.IsInRole("Admin");
+/// Admin og koordinator ser alle ressursene, men koordinator kan ikke slette
+    var erAdmin = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
+    var kanSlette = !User.IsInRole(RoleNames.Coordinator);
     ViewData["Title"] = erAdmin ? "Oversikt over ressurser" : "Mine ressurser";
 
     var ressurser = (Model ?? Enumerable.Empty<ResourceViewModel>()).ToList();
@@ -458,11 +461,14 @@
                                 </div>
                                 <div class="card-actions" onclick="event.stopPropagation();">
                                     <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
-                                    @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
-                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="delete-link">Slett</button>
-                                    </form>
+                                    @if (kanSlette)
+                                    {
+                                        @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
+                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="delete-link">Slett</button>
+                                        </form>
+                                    }
                                 </div>
                             </div>
 
