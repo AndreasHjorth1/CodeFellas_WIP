@@ -1,0 +1,568 @@
+﻿<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
+@using Prosjekt.Models.ModelView
+@using Prosjekt.Utils
+@using System.Globalization
+@model IEnumerable<ResourceViewModel>
+
+@{
+    /// Admin sin oversikt over alle ressurser. Vanlige brukere får Overview.cshtml.
+    ViewData["Title"] = "Ressurser";
+
+    var ressurser = (Model ?? Enumerable.Empty<ResourceViewModel>()).ToList();
+    var naa = NorwegianTime.FromUtc(DateTime.UtcNow);
+    var antallPerKategori = ressurser.GroupBy(r => r.Category).ToDictionary(g => g.Key, g => g.Count());
+}
+
+<link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
+
+@functions {
+    string RessursIkon(ResourceViewModel.ResourceType kategori) => kategori switch
+    {
+        ResourceViewModel.ResourceType.Vehicle => "vehicle",
+        ResourceViewModel.ResourceType.Tool => "tool",
+        ResourceViewModel.ResourceType.Clothing => "clothing",
+        ResourceViewModel.ResourceType.Provision => "provision",
+        ResourceViewModel.ResourceType.Materials => "materials",
+        _ => "other"
+    };
+
+    string RessursIkonFil(ResourceViewModel.ResourceType kategori, bool tilgjengelig)
+        => RessursIkon(kategori) + (tilgjengelig ? "" : "-unavailable") + ".svg";
+
+    string OversettKategori(ResourceViewModel.ResourceType k) => k switch
+    {
+        ResourceViewModel.ResourceType.Vehicle => "Kjøretøy",
+        ResourceViewModel.ResourceType.Tool => "Verktøy",
+        ResourceViewModel.ResourceType.Clothing => "Klær",
+        ResourceViewModel.ResourceType.Provision => "Mat og utstyr",
+        ResourceViewModel.ResourceType.Materials => "Materialer",
+        _ => "Annet"
+    };
+
+    /// <summary>
+    /// Teksten og fargen på statusmerket. Utløpt og ikke tilgjengelig går foran tildelinger.
+    /// </summary>
+    (string Tekst, string Klasse) Status(ResourceViewModel r, DateTime naa)
+    {
+        if (r.AvailableTo < naa) return ("Utløpt", "status-off");
+        if (!r.Availability) return ("Ikke ledig", "status-off");
+        if (r.Allocated > 0) return ("På oppdrag", "status-busy");
+        if (r.AvailableFrom > naa)
+        {
+            var fra = r.AvailableFrom.Value;
+            return (fra.Date == naa.Date ? $"Fra kl. {fra:HH}" : $"Fra {fra:dd.MM.}", "status-later");
+        }
+        return ("Ledig", "status-free");
+    }
+
+    string LedigPeriode(ResourceViewModel r)
+    {
+        if (r.AvailableFrom.HasValue && r.AvailableTo.HasValue)
+            return $"{r.AvailableFrom.Value:dd.MM. HH:mm}–{r.AvailableTo.Value:dd.MM. HH:mm}";
+        if (r.AvailableTo.HasValue) return $"til {r.AvailableTo.Value:dd.MM.}";
+        if (r.AvailableFrom.HasValue) return $"fra {r.AvailableFrom.Value:dd.MM.}";
+        return "døgnet rundt";
+    }
+}
+
+<style>
+    /* Fjerner marginene fra layouten så de grå og hvite flatene går helt ut */
+    main {
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .res-page {
+        background-color: #eef1f5;
+        min-height: 100%;
+        color: #0b1f3a;
+    }
+
+    .res-head {
+        background-color: #ffffff;
+        border-bottom: 1px solid #dde3ea;
+    }
+
+    .res-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    .res-head .res-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .res-head h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .res-head-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .res-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        background-color: #ffffff;
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        color: #0b1f3a;
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.45rem 0.9rem;
+        text-decoration: none;
+    }
+
+    .res-btn:hover {
+        background-color: #f4f6f9;
+        color: #0b1f3a;
+    }
+
+    /* Liste / Delt / Kart */
+    .view-toggle {
+        display: inline-flex;
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .view-toggle button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background-color: #ffffff;
+        border: none;
+        border-right: 1px solid #c3ccd8;
+        color: #0b1f3a;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.45rem 0.75rem;
+    }
+
+    .view-toggle button:last-child {
+        border-right: none;
+    }
+
+    .view-toggle button.active {
+        background-color: #04245a;
+        color: #ffffff;
+    }
+
+    .res-body {
+        padding-top: 1rem;
+        padding-bottom: 2.5rem;
+    }
+
+    /* Kategorifilter som «chips» */
+    .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+    }
+
+    .chip {
+        background-color: #ffffff;
+        border: 1px solid #c3ccd8;
+        border-radius: 999px;
+        color: #0b1f3a;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.35rem 0.8rem;
+    }
+
+    .chip:hover {
+        border-color: #04245a;
+    }
+
+    .chip.active {
+        background-color: #04245a;
+        border-color: #04245a;
+        color: #ffffff;
+    }
+
+    .res-map-wrap {
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        background-color: #ffffff;
+    }
+
+    #adminRessursKart {
+        width: 100%;
+        height: 240px;
+    }
+
+    .vis-kart #adminRessursKart {
+        height: calc(100vh - 260px);
+        min-height: 360px;
+    }
+
+    .vis-liste .res-map-wrap,
+    .vis-kart .res-table-section {
+        display: none;
+    }
+
+    .res-table-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .res-table-head h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .res-table-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .res-table-filters .form-control {
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        font-size: 0.85rem;
+        color: #0b1f3a;
+        width: 240px;
+    }
+
+    .res-table-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        overflow-x: auto;
+    }
+
+    .res-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+    .res-table th {
+        background-color: #f4f6f9;
+        color: #5b6b7f;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #dde3ea;
+        white-space: nowrap;
+    }
+
+    .res-table td {
+        padding: 0.7rem 0.75rem;
+        border-bottom: 1px solid #edf0f4;
+        vertical-align: middle;
+    }
+
+    .res-table tbody tr {
+        cursor: pointer;
+    }
+
+    .res-table tbody tr:hover {
+        background-color: #f8f9fb;
+    }
+
+    .res-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .res-name {
+        font-weight: 700;
+    }
+
+    .res-sub {
+        color: #5b6b7f;
+        font-size: 0.75rem;
+        max-width: 260px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mono {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    .mono.phone {
+        font-weight: 700;
+    }
+
+    .status-badge {
+        display: inline-block;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.15rem 0.55rem;
+        white-space: nowrap;
+    }
+
+    .status-free { background-color: #dcefe3; color: #1e6b43; }
+    .status-busy { background-color: #dfe5f0; color: #04245a; }
+    .status-later { background-color: #fbecc0; color: #7a5b00; }
+    .status-off { background-color: #eceef1; color: #5b6b7f; }
+
+    .row-actions {
+        display: flex;
+        gap: 0.75rem;
+        white-space: nowrap;
+    }
+
+    .row-actions a,
+    .row-actions button {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #2d4f86;
+        font-size: 0.85rem;
+        text-decoration: underline;
+    }
+
+    .row-actions button.delete-link {
+        color: #b02a37;
+    }
+
+    .res-empty {
+        padding: 2rem;
+        text-align: center;
+        color: #5b6b7f;
+    }
+
+    @@media print {
+        .res-head-actions, .chip-row, .res-map-wrap, .res-table-filters, .row-actions {
+            display: none !important;
+        }
+    }
+</style>
+
+<div class="res-page vis-delt" id="ressursSide">
+
+    <div class="res-head">
+        <div class="res-inner">
+            <h1>Ressurser</h1>
+            <div class="res-head-actions">
+                <div class="view-toggle" role="group" aria-label="Visning">
+                    <button type="button" data-visning="liste"><i class="fa-solid fa-list" aria-hidden="true"></i> Liste</button>
+                    <button type="button" data-visning="delt" class="active"><i class="fa-regular fa-map" aria-hidden="true"></i> Delt</button>
+                    <button type="button" data-visning="kart"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Kart</button>
+                </div>
+                <a class="res-btn" asp-controller="Need" asp-action="Overview">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Finn til et behov
+                </a>
+                <button type="button" class="res-btn" onclick="window.print()">
+                    <i class="fa-solid fa-print" aria-hidden="true"></i> Skriv ut liste
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="res-inner res-body">
+
+        <div class="chip-row" role="group" aria-label="Kategori">
+            <button type="button" class="chip active" data-kategori="">Alle @ressurser.Count</button>
+            @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+            {
+                <button type="button" class="chip" data-kategori="@k">@OversettKategori(k) @(antallPerKategori.GetValueOrDefault(k))</button>
+            }
+        </div>
+
+        @* settOppFilter i site.js leser kategorien herfra. Chipsene over setter verdien. *@
+        <select id="typeFilter" class="d-none" aria-hidden="true">
+            <option value=""></option>
+            @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+            {
+                <option value="@k"></option>
+            }
+        </select>
+
+        <div class="res-map-wrap">
+            <div id="adminRessursKart"></div>
+        </div>
+
+        <section class="res-table-section">
+            <div class="res-table-head">
+                <h2>Alle ressurser</h2>
+                <div class="res-table-filters">
+                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk på navn, ID, telefon eller utstyr" />
+                    <input type="search" id="stedsFelt" class="form-control" placeholder="Sted eller bydel, trykk Enter" />
+                </div>
+            </div>
+
+            <div class="res-table-card">
+                <table class="res-table">
+                    <thead>
+                        <tr>
+                            <th>Ressurs</th>
+                            <th>Kategori</th>
+                            <th>Status</th>
+                            <th>Ledig</th>
+                            <th>Telefon</th>
+                            <th><span class="visually-hidden">Handlinger</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ressurser.Any())
+                        {
+                            @foreach (var res in ressurser)
+                            {
+                                var status = Status(res, naa);
+                                var lat = (res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture);
+                                var lng = (res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture);
+
+                                <tr class="table-row-clickable"
+                                    data-lat="@lat" data-lng="@lng"
+                                    data-id="@res.Id" data-type="@res.Category"
+                                    data-sok="@(($"{res.Id} {res.Name} {res.Description} {res.PhoneNumber} {OversettKategori(res.Category)}").ToLower())"
+                                    onclick="fokuserPaRessurs('@res.Id')">
+                                    <td>
+                                        <div class="res-name">@res.Name</div>
+                                        <div class="res-sub">@res.Quantity stk@(string.IsNullOrWhiteSpace(res.Description) ? "" : $" · {res.Description}")</div>
+                                    </td>
+                                    <td>@OversettKategori(res.Category)</td>
+                                    <td><span class="status-badge @status.Klasse">@status.Tekst</span></td>
+                                    <td class="mono">@LedigPeriode(res)</td>
+                                    <td class="mono phone">@res.PhoneNumber</td>
+                                    <td onclick="event.stopPropagation();">
+                                        <div class="row-actions">
+                                            <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
+                                            @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
+                                            <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="delete-link">Slett</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="6" class="res-empty">Ingen ressurser registrert ennå.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
+
+    <script>
+        var kart;
+        var markorerMap = {};
+        var symbolMarkers;
+
+        function fokuserPaRessurs(id) {
+            MapSymbols.focus(symbolMarkers, markorerMap[id]);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var ressurser = @Json.Serialize(ressurser.Select(r => new
+            {
+                id = r.Id,
+                name = r.Name,
+                quantity = r.Quantity,
+                phone = r.PhoneNumber,
+                isAvailable = r.Availability,
+                categoryName = OversettKategori(r.Category),
+                iconUrl = Url.Content($"~/images/resources/{RessursIkonFil(r.Category, r.Availability)}"),
+                lat = r.Latitude,
+                lng = r.Longitude
+            }));
+
+            kart = L.map('adminRessursKart', { zoomControl: false }).setView([58.163, 8.003], 12);
+            L.control.zoom({ position: 'topright', zoomInTitle: 'Zoom inn', zoomOutTitle: 'Zoom ut' }).addTo(kart);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(kart);
+
+            var bounds = [];
+            symbolMarkers = MapSymbols.createCluster(kart);
+
+            ressurser.forEach(function (r) {
+                var lat = parseFloat(r.lat);
+                var lng = parseFloat(r.lng);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng) ||
+                    lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+
+                bounds.push([lat, lng]);
+
+                var tittel = r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig');
+                var marker = L.marker([lat, lng], {
+                    icon: MapSymbols.icon(r.iconUrl, 'resource-map-icon'),
+                    title: tittel,
+                    alt: tittel
+                }).addTo(symbolMarkers);
+                markorerMap[r.id] = marker;
+
+                marker.bindPopup(`
+                    <b>${escapeHtml(r.name)}</b> (${r.quantity} stk)<br/>
+                    ${escapeHtml(r.categoryName)}<br/>
+                    Tlf: ${escapeHtml(r.phone || 'Ikke oppgitt')}<br/>
+                    ${r.isAvailable
+                        ? '<span style="color: green; font-weight: bold;">Tilgjengelig</span>'
+                        : '<span style="color: red; font-weight: bold;">Ikke tilgjengelig</span>'}`);
+            });
+
+            var kjorFilter = settOppFilter(kart, [markorerMap], [symbolMarkers]);
+            settOppStedssok(kart, kjorFilter);
+
+            /// Kategorichipsene styrer den skjulte typeFilter-listen som settOppFilter bruker
+            var typeFilter = document.getElementById('typeFilter');
+            document.querySelectorAll('.chip').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    document.querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('active', c === chip); });
+                    typeFilter.value = chip.dataset.kategori;
+                    typeFilter.dispatchEvent(new Event('change'));
+                });
+            });
+
+            /// Liste / Delt / Kart
+            var side = document.getElementById('ressursSide');
+            document.querySelectorAll('.view-toggle button').forEach(function (knapp) {
+                knapp.addEventListener('click', function () {
+                    document.querySelectorAll('.view-toggle button').forEach(function (k) { k.classList.toggle('active', k === knapp); });
+                    side.classList.remove('vis-liste', 'vis-delt', 'vis-kart');
+                    side.classList.add('vis-' + knapp.dataset.visning);
+                    kart.invalidateSize();
+                });
+            });
+
+            if (bounds.length > 0) {
+                kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+            }
+
+            setTimeout(function () { kart.invalidateSize(); }, 200);
+        });
+    </script>
+}

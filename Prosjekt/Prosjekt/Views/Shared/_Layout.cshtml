@@ -237,6 +237,17 @@
         var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
         bool IsCurrent(string controller, string action) => currentController == controller && currentAction == action;
+
+        /// Viser «ola.haugland@...» som «Ola Haugland» og «OH»
+        var userName = User.Identity?.Name ?? "";
+        var nameParts = userName.Split('@')[0]
+            .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        var displayName = nameParts.Length > 0
+            ? string.Join(" ", nameParts.Select(p => char.ToUpper(p[0]) + p[1..]))
+            : userName;
+        var initials = nameParts.Length >= 2
+            ? $"{nameParts[0][0]}{nameParts[1][0]}"
+            : displayName.Length >= 2 ? displayName[..2] : displayName;
     }
 
     @if (User.Identity == null || !User.Identity.IsAuthenticated)
@@ -274,17 +285,6 @@
     }
     else if (!User.IsInRole("Admin"))
     {
-        /// Viser «ola.haugland@...» som «Ola Haugland» og «OH»
-        var userName = User.Identity.Name ?? "";
-        var nameParts = userName.Split('@')[0]
-            .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-        var displayName = nameParts.Length > 0
-            ? string.Join(" ", nameParts.Select(p => char.ToUpper(p[0]) + p[1..]))
-            : userName;
-        var initials = nameParts.Length >= 2
-            ? $"{nameParts[0][0]}{nameParts[1][0]}"
-            : displayName.Length >= 2 ? displayName[..2] : displayName;
-
         <!-- Navbar for innlogget bruker -->
         <header class="sticky-top">
             <nav class="public-navbar">
@@ -336,68 +336,68 @@
     }
     else
     {
-    <header class="sticky-top">
+        /// «Kart» er forsiden med ?visning=kart, så den skal ikke også markere «Oversikt»
+        var visKart = Context.Request.Query["visning"] == "kart";
 
-        <!-- 1. Øverste mørkeblå stripe -->
-        <div class="top-alert-bar py-2 px-4">
-            <div class="container-fluid d-flex justify-content-between align-items-center p-0">
+        <!-- Navbar for admin -->
+        <header class="sticky-top">
+            <nav class="public-navbar">
+                <div class="public-nav-inner">
 
-                <div class="d-flex align-items-center gap-2">
-                    <span class="alert-dot"></span>
-                    <span>Ingen nasjonale varsler akkurat nå</span>
-                </div>
+                    <div class="public-nav-links">
+                        <a class="public-nav-link brand"
+                           asp-controller="Home" asp-action="Index">
+                            Totalforsvaret
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Home", "Index") && !visKart ? "active" : "")"
+                           asp-controller="Home" asp-action="Index">
+                            Oversikt
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Home", "Index") && visKart ? "active" : "")"
+                           asp-controller="Home" asp-action="Index" asp-route-visning="kart">
+                            Kart
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(currentController == "Need" ? "active" : "")"
+                           asp-controller="Need" asp-action="Overview">
+                            Behov
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(currentController == "Resource" ? "active" : "")"
+                           asp-controller="Resource" asp-action="Overview">
+                            Ressurser
+                        </a>
+                    </div>
 
-                <div class="d-none d-md-flex align-items-center gap-3">
-                    <span class="opacity-75">Ved akutt fare</span>
-                    <span>Brann <strong class="text-white">110</strong></span>
-                    <span>Politi <strong class="text-white">112</strong></span>
-                    <span>Ambulanse <strong class="text-white">113</strong></span>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- 2. Hoved-Navbar -->
-        <nav class="navbar navbar-expand-lg custom-navbar grid-border-bottom">
-            <div class="container-fluid px-4 d-flex justify-content-between">
-
-                <div class="d-flex align-items-center gap-3">
-
-                    <button class="btn btn-custom-outline btn-sm"
-                            type="button"
-                            data-bs-toggle="offcanvas"
-                            data-bs-target="#offcanvasMenu"
-                            aria-controls="offcanvasMenu">
-
-                        <i class="fa-solid fa-bars me-1"></i> Meny
-                    </button>
-
-                    <a class="navbar-brand fw-bold text-dark mb-0 h4 d-flex align-items-center gap-2 me-3"
-                       asp-area=""
-                       asp-controller="Home"
-                       asp-action="Index">
-
-                        <div class="logo-line logo-line-red"></div>
-                        <span class="logo-text">Totalforsvaret</span>
-                        <div class="logo-line logo-line-blue"></div>
-
-                    </a>
-                </div>
-
-                <div class="d-flex align-items-center gap-2 ms-auto">
-
-                    <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-
-                        <button type="submit" class="btn btn-custom-outline">
-                            Logg ut (@User.Identity.Name)
+                    <div class="dropdown">
+                        <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="d-none d-sm-inline">@displayName · Admin</span>
+                            <span class="user-avatar">@initials.ToUpper()</span>
                         </button>
-                    </form>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index">Oversikt</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index" asp-route-visning="kart">Kart</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Need" asp-action="Overview">Behov</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Ressurser</a></li>
+                            <li class="d-md-none"><hr class="dropdown-divider" /></li>
+                            <li><a class="dropdown-item" asp-controller="Need" asp-action="Index">Registrer behov</a></li>
+                            <li><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ressurs</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li><a class="dropdown-item" asp-controller="Home" asp-action="CrisisInformation">Kriseinformasjon</a></li>
+                            <li><a class="dropdown-item" asp-controller="Settings" asp-action="Index">Innstillinger</a></li>
+                            <li><a class="dropdown-item" asp-controller="Home" asp-action="UserInstruction">Brukerinstruks</a></li>
+                            <li><a class="dropdown-item" asp-controller="Home" asp-action="Privacy">Personvern</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <form asp-controller="Account" asp-action="Logout" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item">Logg ut</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
 
                 </div>
-            </div>
-        </nav>
-    </header>
+            </nav>
+        </header>
     }
 
 
