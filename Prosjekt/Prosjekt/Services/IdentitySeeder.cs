@@ -11,19 +11,24 @@ namespace Prosjekt.Services
     {
         public const string DevelopmentAdminEmail = "admin@heimevernet.local";
         public const string DevelopmentUserEmail = "user@heimevernet.local";
+        public const string DevelopmentCoordinatorEmail = "koordinator@heimevernet.local";
 
         public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
         {
-            if (await roleManager.RoleExistsAsync(RoleNames.Admin))
+            foreach (var role in new[] { RoleNames.Admin, RoleNames.Coordinator })
             {
-                return;
-            }
+                if (await roleManager.RoleExistsAsync(role))
+                {
+                    continue;
+                }
 
-            var result = await roleManager.CreateAsync(new IdentityRole(RoleNames.Admin));
-            if (!result.Succeeded)
-            {
-                throw new InvalidOperationException(
-                    $"Could not create the {RoleNames.Admin} role: {string.Join(", ", result.Errors.Select(error => error.Description))}");
+                var result = await roleManager.CreateAsync(new IdentityRole(role));
+                if (!result.Succeeded)
+                {
+                    throw new InvalidOperationException(
+                        $"Could not create the {role} role: {string.Join(", ", result.Errors.Select(error =>
+        error.Description))}");
+                }
             }
         }
 
@@ -36,6 +41,18 @@ namespace Prosjekt.Services
                 await EnsureSucceededAsync(
                     userManager.AddToRoleAsync(user, RoleNames.Admin),
                     $"Could not add the development administrator to the {RoleNames.Admin} role.");
+            }
+        }
+
+        public static async Task SeedDevelopmentCoordinatorAsync(UserManager<IdentityUser> userManager)
+        {
+            var user = await FindOrCreateDevelopmentUserAsync(userManager, DevelopmentCoordinatorEmail);
+
+            if (!await userManager.IsInRoleAsync(user, RoleNames.Coordinator))
+            {
+                await EnsureSucceededAsync(
+                    userManager.AddToRoleAsync(user, RoleNames.Coordinator),
+                    $"Could not add the development coordinator to the {RoleNames.Coordinator} role.");
             }
         }
 
