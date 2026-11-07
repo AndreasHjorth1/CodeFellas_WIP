@@ -1,44 +1,404 @@
 <link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
-﻿@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.Enums
 @using System.Globalization
 @model NeedViewModel
-@using Prosjekt.Models.Enums
 
 @{
-    ViewData["Title"] = "Rediger Behov";
+    ViewData["Title"] = "Endre behov";
+    var erAkutt = Model.Importance == ImportanceLevel.Acute;
+    var statusSteg = new[] { (EntryStatus.New, "Meldt"), (EntryStatus.UnderReview, "Vurderes"), (EntryStatus.Assigned, "Tildelt"), (EntryStatus.Resolved, "Løst") };
 }
 
-<div class="row min-vh-100 g-0 mt-2">
-    <div class="col-lg-5 col-md-6 p-3 d-flex flex-column">
-        <h2 class="mb-4">Rediger Behov</h2>
-        <form asp-controller="Need" asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off" class="flex-grow-1">
-            @Html.AntiForgeryToken()
-            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+<style>
+    .register-map-wrapper {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 60px);
+        min-height: 500px;
+        overflow: hidden;
+    }
 
-            <input type="hidden" asp-for="Id" />
+    /* --- Søk, «Velg punkt» og «Tegn område» oppe til venstre --- */
+    .map-tools {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        z-index: 900;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
 
-            <div class="border p-4 mb-3 rounded bg-light shadow-sm">
-                <!-- Navn -->
-                <div class="form-group mb-3">
-                    <label asp-for="Name" class="fw-bold">Navn *</label>
-                    <input asp-for="Name" class="form-control" required />
+    .map-search {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 230px;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 3px;
+        padding: 0.45rem 0.7rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .map-search i {
+        color: #0f2a4f;
+        font-size: 0.85rem;
+    }
+
+    .map-search input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 0.85rem;
+        color: #0f2a4f;
+        background: transparent;
+    }
+
+    .map-tool-group {
+        display: flex;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 3px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .map-tool-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        background-color: #ffffff;
+        border: none;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #0f2a4f;
+    }
+
+    .map-tool-btn + .map-tool-btn {
+        border-left: 1px solid #dde3ea;
+    }
+
+    .map-tool-btn:hover,
+    .map-tool-btn.active {
+        background-color: #eef2f7;
+    }
+
+    .leaflet-bottom.leaflet-left .leaflet-bar {
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-radius: 3px;
+    }
+
+    .leaflet-bar a.locate-btn {
+        color: #0f2a4f;
+        font-size: 0.85rem;
+    }
+
+    /* --- Sidemeny, alltid åpen når man endrer --- */
+    #sideMeny {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 400px;
+        max-width: 100%;
+        z-index: 1000;
+        background-color: #ffffff;
+        overflow-y: auto;
+        box-shadow: -4px 0 15px rgba(0, 0, 0, 0.12);
+    }
+
+    .side-header {
+        position: relative;
+        background-color: #f4f2ec;
+        padding: 1.25rem 1.25rem 1rem;
+    }
+
+    .side-header .eyebrow {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #5f6f86;
+    }
+
+    .side-header h2 {
+        font-family: Georgia, serif;
+        font-size: 1.6rem;
+        color: #0f2a4f;
+        margin: 0.4rem 0 0.5rem;
+    }
+
+    .side-header p {
+        color: #5f6f86;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin-bottom: 0.4rem;
+    }
+
+    .side-header .side-location {
+        font-size: 0.8rem;
+        color: #0f2a4f;
+        margin: 0;
+    }
+
+    .side-header .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        color: #0f2a4f;
+        font-size: 1.1rem;
+        line-height: 1;
+    }
+
+    .side-body {
+        padding: 1rem 1.25rem 1.5rem;
+    }
+
+    .step-title {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: #0f2a4f;
+        font-size: 1rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .step-number {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background-color: #0f2a4f;
+        color: #ffffff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #sideMeny .form-label {
+        color: #0f2a4f;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    #sideMeny .form-control,
+    #sideMeny .form-select {
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        padding: 0.55rem 0.65rem;
+    }
+
+    #sideMeny .form-control:focus,
+    #sideMeny .form-select:focus {
+        border-color: #0f2a4f;
+        box-shadow: 0 0 0 2px rgba(15, 42, 79, 0.15);
+    }
+
+    /* Planlagt / Akutt og statusknappene */
+    .toggle-group {
+        display: grid;
+        gap: 0.4rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .toggle-group.two { grid-template-columns: 1fr 1fr; }
+    .toggle-group.four { grid-template-columns: repeat(4, 1fr); }
+
+    .toggle-group button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        background-color: #ffffff;
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        color: #0f2a4f;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.25rem;
+    }
+
+    .toggle-group button:disabled {
+        color: #b9c4d2;
+        background-color: #f7f8fa;
+    }
+
+    .toggle-group button.active[data-viktighet="Planned"] {
+        background-color: #fdf3d6;
+        border-color: #e0a800;
+    }
+
+    .toggle-group button.active[data-viktighet="Acute"] {
+        background-color: #fbe3e3;
+        border-color: #c8102e;
+        color: #b0102a;
+    }
+
+    .toggle-group button.active[data-status] {
+        background-color: #04245a;
+        border-color: #04245a;
+        color: #ffffff;
+    }
+
+    .status-hint {
+        color: #5f6f86;
+        font-size: 0.75rem;
+        margin: -0.4rem 0 0.9rem;
+    }
+
+    .category-hint {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background-color: #e9eff6;
+        border-radius: 3px;
+        padding: 0.45rem 0.65rem;
+        margin-top: 0.75rem;
+        color: #2d4f86;
+        font-size: 0.8rem;
+    }
+
+    .category-hint img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .side-divider {
+        border-top: 1px solid #dde3ea;
+        margin: 1.25rem 0;
+    }
+
+    .save-buttons {
+        display: flex;
+        gap: 0.6rem;
+    }
+
+    .btn-save {
+        flex: 1;
+        background-color: #0f2a4f;
+        border: none;
+        border-radius: 3px;
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 600;
+        padding: 0.8rem;
+    }
+
+    .btn-save:hover,
+    .btn-save:focus {
+        background-color: #1b3d6e;
+        color: #ffffff;
+    }
+
+    .btn-cancel {
+        flex: 0 0 auto;
+        background-color: #ffffff;
+        border: 1px solid #0f2a4f;
+        border-radius: 3px;
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        padding: 0.8rem 1.25rem;
+        text-decoration: none;
+    }
+
+    .btn-cancel:hover {
+        background-color: #eef2f7;
+        color: #0f2a4f;
+    }
+</style>
+
+<div class="register-map-wrapper" id="kartWrapper">
+    <div id="map" class="w-100 h-100"></div>
+
+    <div class="map-tools">
+        <label class="map-search" for="adresseSok">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input id="adresseSok" type="search" placeholder="Søk etter sted eller adresse" autocomplete="off" />
+        </label>
+        <div class="map-tool-group">
+            <button type="button" class="map-tool-btn" id="velgPunktBtn">
+                <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                <span>Velg punkt</span>
+            </button>
+            <button type="button" class="map-tool-btn" id="tegnOmradeBtn">
+                <i class="fa-solid fa-draw-polygon" aria-hidden="true"></i>
+                <span>Tegn område</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="sideMeny">
+        <div class="side-header">
+            <a asp-action="Overview" class="close-btn" aria-label="Avbryt og gå tilbake til oversikten">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </a>
+            <div class="eyebrow">Endre behov</div>
+            <h2>@Model.Name</h2>
+            <p>Klikk på kartet eller tegn et område for å flytte behovet.</p>
+            <p class="side-location"><i class="fa-solid fa-location-dot me-1" aria-hidden="true"></i><span id="sidePlassering"></span></p>
+            <div id="omradeInfo" class="side-location mt-1 d-none">
+                Område: ca. <span id="omradeAreal"></span> &middot; omkrets ca. <span id="omradeOmkrets"></span>
+            </div>
+        </div>
+
+        <div class="side-body">
+            <form asp-controller="Need" asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off" id="hovedSkjema">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <!-- Steg 1: viktighet, frist og kontakt -->
+                <div class="step-title">
+                    <span class="step-number">1</span>
+                    <span>Viktighet og frist</span>
                 </div>
 
-                <!-- Beskrivelse -->
-                <div class="form-group mb-3">
-                    <label asp-for="Description" class="fw-bold">Beskrivelse *</label>
-                    <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
+                @* Knappene under setter verdien *@
+                <input asp-for="Importance" id="Importance" type="hidden" />
+                <div class="toggle-group two" role="group" aria-label="Viktighet">
+                    <button type="button" data-viktighet="Planned" class="@(erAkutt ? "" : "active")" aria-pressed="@(erAkutt ? "false" : "true")">Planlagt</button>
+                    <button type="button" data-viktighet="Acute" class="@(erAkutt ? "active" : "")" aria-pressed="@(erAkutt ? "true" : "false")">
+                        <i class="fa-regular fa-clock" aria-hidden="true"></i> Akutt
+                    </button>
                 </div>
 
-                <!-- Telefonnummer -->
-                <div class="form-group mb-3">
-                    <label asp-for="Phone" class="fw-bold">Telefonnummer *</label>
-                    <input asp-for="Phone" class="form-control" required />
+                @* Dato og klokkeslett settes sammen til Deadline før innsending *@
+                <input asp-for="Deadline" id="Deadline" type="hidden" asp-format="{0:yyyy-MM-ddTHH:mm}" />
+                <div class="row g-2 mb-1">
+                    <div class="col-7">
+                        <label class="form-label" for="inputFristDato">Behov innen</label>
+                        <input id="inputFristDato" type="date" class="form-control" />
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label" for="inputFristTid">Klokkeslett</label>
+                        <input id="inputFristTid" type="time" class="form-control" value="12:00" />
+                    </div>
+                </div>
+                <span asp-validation-for="Deadline" class="text-danger small d-block mb-2"></span>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Phone">Kontaktinformasjon</label>
+                    <input asp-for="Phone" class="form-control" placeholder="+47" required />
                 </div>
 
-                <!-- Behovstype -->
-                <div class="form-group mb-3">
-                    <label asp-for="Type" class="fw-bold">Behovstype *</label>
+                <div class="side-divider"></div>
+
+                <!-- Steg 2: selve behovet -->
+                <div class="step-title">
+                    <span class="step-number">2</span>
+                    <span>Hva er behovet?</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Type">Kategori</label>
                     <select asp-for="Type" class="form-select">
                         <option value="Food">Mat/Vann</option>
                         <option value="Medicine">Medisiner</option>
@@ -52,60 +412,54 @@
                         <option value="Personnel">Mannskap</option>
                         <option value="Other">Annet</option>
                     </select>
-                    <div id="behovSymbolPreview" class="map-symbol-preview" aria-live="polite"></div>
+                    <div id="behovSymbolPreview" class="category-hint" aria-live="polite"></div>
                 </div>
 
-                <!-- Viktighet -->
-                <div class="form-group mb-3">
-                    <label asp-for="Importance" class="fw-bold">Viktighet *</label>
-                    <select asp-for="Importance" asp-items="Html.GetEnumSelectList<ImportanceLevel>()" class="form-select"></select>
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Name">Tittel</label>
+                    <input asp-for="Name" class="form-control" required />
                 </div>
 
-                <!-- Tidsfrist -->
-                <div class="form-group mb-3">
-                    <label asp-for="Deadline" class="fw-bold">Tidsfrist *</label>
-                    <input asp-for="Deadline" type="datetime-local" class="form-control" required />
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Description">Beskrivelse</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
                 </div>
 
-                <!-- Status / Oppfylt -->
-                <div class="form-group mb-3">
-                    <label asp-for="Status" class="fw-bold">Status</label>
-                    <select asp-for="Status" asp-items="Html.GetEnumSelectList<EntryStatus>()" class="form-select"></select>
-                    <span asp-validation-for="Status" class="text-danger"></span>
+                <div class="side-divider"></div>
+
+                <!-- Steg 3: status. Den kan bare flyttes ett steg om gangen. -->
+                <div class="step-title">
+                    <span class="step-number">3</span>
+                    <span>Status</span>
                 </div>
 
-            </div>
-
-            <!-- Koordinater -->
-            <div class="row g-2 mb-3">
-                <div class="col-6">
-                    <label asp-for="Latitude" class="form-label small fw-bold">Breddegrad *</label>
-                    <input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required />
+                <input asp-for="Status" id="Status" type="hidden" />
+                <div class="toggle-group four" role="group" aria-label="Status">
+                    @foreach (var (verdi, navn) in statusSteg)
+                    {
+                        <button type="button" data-status="@verdi"
+                                class="@(verdi == Model.Status ? "active" : "")"
+                                aria-pressed="@(verdi == Model.Status ? "true" : "false")"
+                                disabled="@(!EntryStatusFlow.CanMove(Model.Status, verdi))">@navn</button>
+                    }
                 </div>
-                <div class="col-6">
-                    <label asp-for="Longitude" class="form-label small fw-bold">Lengdegrad *</label>
-                    <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
+                <p class="status-hint">Status kan bare flyttes ett steg om gangen.</p>
+                <span asp-validation-for="Status" class="text-danger small"></span>
+
+                <input asp-for="Latitude" id="Latitude" type="hidden" />
+                <input asp-for="Longitude" id="Longitude" type="hidden" />
+                <input asp-for="AreaGeoJson" id="AreaGeoJson" type="hidden" />
+                <input asp-for="AreaSquareMeters" id="AreaSquareMeters" type="hidden" />
+                <input asp-for="PerimeterMeters" id="PerimeterMeters" type="hidden" />
+
+                <div class="side-divider"></div>
+
+                <div class="save-buttons">
+                    <a asp-action="Overview" class="btn-cancel">Avbryt</a>
+                    <button type="submit" class="btn-save" onclick="return validerInnsending()">Lagre endringer</button>
                 </div>
-            </div>
-
-            <div id="omradeInfo" class="small text-muted mb-3 d-none">
-                Område: ca. <span id="omradeAreal"></span> &middot; omkrets ca. <span id="omradeOmkrets"></span>
-            </div>
-
-            <input asp-for="AreaGeoJson" id="AreaGeoJson" type="hidden" />
-            <input asp-for="AreaSquareMeters" id="AreaSquareMeters" type="hidden" />
-            <input asp-for="PerimeterMeters" id="PerimeterMeters" type="hidden" />
-
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-50">Lagre</button>
-                <a asp-action="Overview" class="btn btn-secondary w-50">Avbryt</a>
-            </div>
-        </form>
-    </div>
-
-    <!-- Kart-seksjon -->
-    <div class="col-lg-7 col-md-6 d-flex flex-column p-3">
-        <div id="map" class="flex-grow-1 w-100 rounded shadow-sm" style="min-height: 400px; height: 60vh;"></div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -119,26 +473,56 @@
         var harPosisjon = (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng));
         var startPunkt = harPosisjon ? [lat, lng] : [58.163, 8.003];
 
+        var kartWrapper = document.getElementById('kartWrapper');
+        var sideMeny = document.getElementById('sideMeny');
         const behovstype = document.getElementById('Type');
         const viktighet = document.getElementById('Importance');
         function HentValgtIkon() { return MapSymbols.needIcon(behovstype.value, viktighet.value); }
         function hentFarge() { return MapSymbols.isAcute(viktighet.value) ? '#dc3545' : '#fd7e14'; }
 
-        /// 1. Initialiser kartet
-        var map = L.map('map').setView(startPunkt, harPosisjon ? 14 : 13);
+        /// Kartet fyller skjermen under menylinjen
+        function tilpassKarthoyde() {
+            var header = document.querySelector('header');
+            var hoyde = window.innerHeight - (header ? header.offsetHeight : 0);
+            kartWrapper.style.height = Math.max(hoyde, 500) + 'px';
+            if (typeof map !== 'undefined') map.invalidateSize();
+        }
+        tilpassKarthoyde();
+        window.addEventListener('resize', tilpassKarthoyde);
 
-        /// 2. Legg til tile layer
+        /// 1. Kartet. Zoom og min posisjon ligger nede til venstre.
+        var map = L.map('map', { zoomControl: false }).setView(startPunkt, harPosisjon ? 14 : 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        /// 3. Initialiser Leaflet.Draw feature group
+        var MinPosisjon = L.Control.extend({
+            options: { position: 'bottomleft' },
+            onAdd: function () {
+                var boks = L.DomUtil.create('div', 'leaflet-bar');
+                var knapp = L.DomUtil.create('a', 'locate-btn', boks);
+                knapp.href = '#';
+                knapp.title = 'Gå til min posisjon';
+                knapp.setAttribute('role', 'button');
+                knapp.setAttribute('aria-label', 'Gå til min posisjon');
+                knapp.innerHTML = '<i class="fa-solid fa-crosshairs" aria-hidden="true"></i>';
+                L.DomEvent.disableClickPropagation(boks);
+                L.DomEvent.on(knapp, 'click', function (e) {
+                    L.DomEvent.preventDefault(e);
+                    map.locate({ setView: true, maxZoom: 15 });
+                });
+                return boks;
+            }
+        });
+        new MinPosisjon().addTo(map);
+        L.control.zoom({ position: 'bottomleft', zoomInTitle: 'Zoom inn', zoomOutTitle: 'Zoom ut' }).addTo(map);
+
+        /// 2. Det som allerede er lagret: et område eller et punkt
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
         const areaSymbol = createNeedAreaSymbol(map);
 
         var omradeJson = @Json.Serialize(Model.AreaGeoJson);
-
         if (omradeJson) {
             var eksisterende = L.geoJSON(JSON.parse(omradeJson), {
                 style: { color: hentFarge(), weight: 2, fillOpacity: 0.15 }
@@ -146,45 +530,92 @@
             eksisterende.eachLayer(function (l) { drawnItems.addLayer(l); });
             map.fitBounds(eksisterende.getBounds(), { padding: [20, 20] });
         } else if (harPosisjon) {
-            var existingMarker = L.marker(startPunkt, { icon: HentValgtIkon() });
-            drawnItems.addLayer(existingMarker);
+            drawnItems.addLayer(L.marker(startPunkt, { icon: HentValgtIkon() }));
         }
 
-        /// 4. Opprett draw control
+        /// Behovet skal ikke ligge bak sidemenyen
+        if (harPosisjon) {
+            setTimeout(function () { map.panBy([(sideMeny.offsetWidth || 400) / 2, 0], { animate: false }); }, 250);
+        }
+
+        /// 3. Endre og slette det som er tegnet, nede til venstre
         var drawControl = new L.Control.Draw({
-            draw: {
-                polygon: {
-                    allowIntersection: false,
-                    showArea: true,
-                    metric: true,
-                    shapeOptions: { color: hentFarge() }
-                },
-                polyline: false, circle: false, rectangle: false,
-                marker: { icon: HentValgtIkon() }
-            },
+            position: 'bottomleft',
+            draw: { polygon: false, polyline: false, circle: false, rectangle: false, marker: false, circlemarker: false },
             edit: { featureGroup: drawnItems, remove: true }
         });
         map.addControl(drawControl);
 
-        function oppdaterBehovSymbol() {
-            document.getElementById('behovSymbolPreview').innerHTML =
-                MapSymbols.image(MapSymbols.needUrl(behovstype.value), MapSymbols.needClass(viktighet.value)) +
-                '<span>' + MapSymbols.escape(behovstype.options[behovstype.selectedIndex].text) + '</span>';
-            drawnItems.eachLayer(layer => {
-                if (layer instanceof L.Marker) layer.setIcon(HentValgtIkon());
-                if (layer instanceof L.Polygon) layer.setStyle({color:hentFarge()});
-            });
-            drawControl.setDrawingOptions({marker:{icon:HentValgtIkon()},polygon:{shapeOptions:{color:hentFarge()}}});
-            synkroniserBehovsomrade(false);
-        }
-        behovstype.addEventListener('change', oppdaterBehovSymbol);
-        viktighet.addEventListener('change', oppdaterBehovSymbol);
+        /// 4. Søk etter sted eller adresse
+        document.getElementById('adresseSok').addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            var sporring = this.value.trim();
+            if (!sporring) return;
+
+            fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=no&q=' + encodeURIComponent(sporring),
+                { headers: { 'Accept-Language': 'nb' } })
+                .then(function (svar) { return svar.json(); })
+                .then(function (treff) {
+                    if (!treff.length) { alert('Fant ikke stedet "' + sporring + '".'); return; }
+                    map.setView([parseFloat(treff[0].lat), parseFloat(treff[0].lon)], 16);
+                })
+                .catch(function () { alert('Søket feilet. Prøv igjen.'); });
+        });
+
+        /// 5. «Velg punkt» og «Tegn område»
+        var velgPunktBtn = document.getElementById('velgPunktBtn');
+        var tegnOmradeBtn = document.getElementById('tegnOmradeBtn');
+        var markorVerktoy = new L.Draw.Marker(map, { icon: HentValgtIkon() });
+        var omradeVerktoy = new L.Draw.Polygon(map, {
+            allowIntersection: false,
+            showArea: true,
+            metric: true,
+            shapeOptions: { color: hentFarge() }
+        });
+
+        velgPunktBtn.addEventListener('click', function () {
+            if (markorVerktoy.enabled()) { markorVerktoy.disable(); return; }
+            omradeVerktoy.disable();
+            markorVerktoy.setOptions({ icon: HentValgtIkon() });
+            markorVerktoy.enable();
+        });
+
+        tegnOmradeBtn.addEventListener('click', function () {
+            if (omradeVerktoy.enabled()) { omradeVerktoy.disable(); return; }
+            markorVerktoy.disable();
+            omradeVerktoy.setOptions({ shapeOptions: { color: hentFarge() } });
+            omradeVerktoy.enable();
+        });
+
+        var tegnerNaa = false;
+        map.on('draw:drawstart', function (e) {
+            tegnerNaa = true;
+            velgPunktBtn.classList.toggle('active', e.layerType === 'marker');
+            tegnOmradeBtn.classList.toggle('active', e.layerType === 'polygon');
+        });
+        map.on('draw:drawstop', function () {
+            tegnerNaa = false;
+            velgPunktBtn.classList.remove('active');
+            tegnOmradeBtn.classList.remove('active');
+        });
 
         map.on('draw:created', function (e) {
             drawnItems.clearLayers();
-            if (e.layer instanceof L.Polygon) e.layer.setStyle({color:hentFarge(),fillOpacity:.15});
+            if (e.layer instanceof L.Polygon) e.layer.setStyle({ color: hentFarge(), fillOpacity: .15 });
             if (e.layer instanceof L.Marker) e.layer.setIcon(HentValgtIkon());
             drawnItems.addLayer(e.layer);
+            synkroniserBehovsomrade(true);
+        });
+
+        /// Klikk i kartet flytter behovet til et nytt punkt
+        map.on('click', function (e) {
+            if (tegnerNaa) return;
+            var harOmrade = document.getElementById('AreaGeoJson').value !== '';
+            if (harOmrade && !confirm('Behovet har et tegnet område. Vil du erstatte det med en markør?')) return;
+
+            drawnItems.clearLayers();
+            drawnItems.addLayer(L.marker(e.latlng, { icon: HentValgtIkon() }));
             synkroniserBehovsomrade(true);
         });
 
@@ -192,18 +623,91 @@
             const layer = drawnItems.getLayers()[0];
             const polygon = layer instanceof L.Polygon ? layer : null;
             const center = areaSymbol.update(polygon, HentValgtIkon());
-            if (!lagre) return;
-            const position = center || (layer instanceof L.Marker ? layer.getLatLng() : null);
-            if (polygon) lagreOmrade(polygon); else tomOmrade();
-            document.getElementById('Latitude').value = position ? position.lat.toFixed(6) : '';
-            document.getElementById('Longitude').value = position ? position.lng.toFixed(6) : '';
+            if (lagre) {
+                const position = center || (layer instanceof L.Marker ? layer.getLatLng() : null);
+                if (polygon) lagreOmrade(polygon); else tomOmrade();
+                document.getElementById('Latitude').value = position ? position.lat.toFixed(6) : '';
+                document.getElementById('Longitude').value = position ? position.lng.toFixed(6) : '';
+            }
+            visPlassering();
+        }
+
+        function visPlassering() {
+            var la = document.getElementById('Latitude').value;
+            var ln = document.getElementById('Longitude').value;
+            document.getElementById('sidePlassering').textContent = la && ln ? la + ', ' + ln : 'Ingen plassering valgt';
         }
 
         map.on('draw:edited draw:deleted', () => synkroniserBehovsomrade(true));
         map.on('draw:editvertex draw:editstop deletestop draw:deletestop', () => synkroniserBehovsomrade(false));
 
-        oppdaterBehovSymbol();
+        /// 6. Planlagt / Akutt
+        document.querySelectorAll('[data-viktighet]').forEach(function (knapp) {
+            knapp.addEventListener('click', function () {
+                document.querySelectorAll('[data-viktighet]').forEach(function (k) {
+                    k.classList.toggle('active', k === knapp);
+                    k.setAttribute('aria-pressed', k === knapp ? 'true' : 'false');
+                });
+                viktighet.value = knapp.dataset.viktighet;
+                oppdaterBehovSymbol();
+            });
+        });
 
+        /// 7. Status. Knapper mer enn ett steg unna er låst.
+        document.querySelectorAll('[data-status]').forEach(function (knapp) {
+            knapp.addEventListener('click', function () {
+                document.querySelectorAll('[data-status]').forEach(function (k) {
+                    k.classList.toggle('active', k === knapp);
+                    k.setAttribute('aria-pressed', k === knapp ? 'true' : 'false');
+                });
+                document.getElementById('Status').value = knapp.dataset.status;
+            });
+        });
+
+        /// 8. Frist: dato og klokkeslett blir til "2026-11-18T16:00" i det skjulte Deadline-feltet
+        var fristFelt = document.getElementById('Deadline');
+        var fristDato = document.getElementById('inputFristDato');
+        var fristTid = document.getElementById('inputFristTid');
+
+        if (fristFelt.value) {
+            var deler = fristFelt.value.split('T');
+            fristDato.value = deler[0];
+            if (deler[1]) fristTid.value = deler[1].substring(0, 5);
+        }
+
+        function oppdaterFrist() {
+            fristFelt.value = fristDato.value ? fristDato.value + 'T' + (fristTid.value || '12:00') : '';
+        }
+        fristDato.addEventListener('change', oppdaterFrist);
+        fristTid.addEventListener('change', oppdaterFrist);
+
+        function validerInnsending() {
+            oppdaterFrist();
+            if (!fristFelt.value) {
+                alert("Vennligst velg en dato i 'Behov innen'.");
+                fristDato.focus();
+                return false;
+            }
+            if (!document.getElementById('Latitude').value || !document.getElementById('Longitude').value) {
+                alert("Velg et punkt eller tegn et område i kartet.");
+                return false;
+            }
+            return true;
+        }
+
+        function oppdaterBehovSymbol() {
+            document.getElementById('behovSymbolPreview').innerHTML =
+                MapSymbols.image(MapSymbols.needUrl(behovstype.value), MapSymbols.needClass(viktighet.value)) +
+                '<span>' + MapSymbols.escape(behovstype.options[behovstype.selectedIndex].text) + '</span>';
+            drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Marker) layer.setIcon(HentValgtIkon());
+                if (layer instanceof L.Polygon) layer.setStyle({ color: hentFarge() });
+            });
+            synkroniserBehovsomrade(false);
+        }
+        behovstype.addEventListener('change', oppdaterBehovSymbol);
+
+        oppdaterBehovSymbol();
         setTimeout(function () { map.invalidateSize(); }, 200);
     </script>
     <partial name="_ValidationScriptsPartial" />

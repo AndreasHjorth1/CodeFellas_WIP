@@ -505,7 +505,7 @@
 
                 <div class="mb-3">
                     <label class="form-label" for="inputPhone">Kontaktinformasjon</label>
-                    <input id="inputPhone" class="form-control" placeholder="+47" />
+                    <input id="inputPhone" class="form-control" placeholder="+47" value="@(Model?.NeedList?.FirstOrDefault()?.Phone)" />
                 </div>
 
                 <div class="side-divider"></div>
@@ -594,7 +594,11 @@
 
     <script src="~/js/need-area-symbol.js" asp-append-version="true"></script>
     <script>
-        let behovListe = [];
+        /// Hvis serveren avviste skjemaet, kommer behovene tilbake i modellen og legges i listen igjen
+        let behovListe = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            (Model?.NeedList ?? new List<NeedViewModel>())
+                .Where(n => !string.IsNullOrWhiteSpace(n.Name))
+                .Select(n => new { name = n.Name, type = n.Type.ToString(), description = n.Description })));
         var sideMeny = document.getElementById('sideMeny');
         var infoKort = document.getElementById('infoKort');
         var kartWrapper = document.getElementById('kartWrapper');
@@ -956,6 +960,39 @@
             synkroniserBehovsomrade(false);
         }
         document.getElementById('inputType').addEventListener('change', oppdaterBehovSymbol);
+
+        /// Kategorinavnet til behovene som kom tilbake fra serveren hentes fra nedtrekkslisten
+        var typeValg = document.getElementById('inputType');
+        behovListe.forEach(function (b) {
+            var valg = Array.from(typeValg.options).find(function (o) { return o.value === b.type; });
+            b.typeText = valg ? valg.text : b.type;
+        });
+
+        /// Tegner opp igjen plasseringen som ble sendt inn, slik at den ikke må velges på nytt
+        (function gjenopprettPlassering() {
+            var lagretOmrade = document.getElementById('AreaGeoJson').value;
+            var lat = parseFloat(document.getElementById('Latitude').value);
+            var lng = parseFloat(document.getElementById('Longitude').value);
+
+            if (lagretOmrade) {
+                try {
+                    L.geoJSON(JSON.parse(lagretOmrade)).eachLayer(function (l) {
+                        l.setStyle({ color: HentValgtFarge(), fillOpacity: .15 });
+                        drawnItems.addLayer(l);
+                    });
+                } catch (err) {
+                    console.error("Feil ved innlasting av GeoJSON-figur:", err);
+                }
+            } else if (!isNaN(lat) && !isNaN(lng)) {
+                drawnItems.addLayer(L.marker([lat, lng], { icon: HentValgtIkon() }));
+            }
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                document.getElementById('sidePlassering').textContent = lat + ', ' + lng;
+                map.setView([lat, lng], 14);
+            }
+        })();
+
         oppdaterBehovSymbol();
         oppdaterTabell();
         setTimeout(function () { map.invalidateSize(); }, 200);

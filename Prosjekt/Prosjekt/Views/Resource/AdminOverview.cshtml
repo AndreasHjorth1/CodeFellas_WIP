@@ -370,6 +370,9 @@
                 <a class="res-btn" asp-controller="Need" asp-action="Overview">
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Finn til et behov
                 </a>
+                <a class="res-btn" asp-controller="Resource" asp-action="Export">
+                    <i class="fa-solid fa-file-export" aria-hidden="true"></i> Eksporter
+                </a>
                 <button type="button" class="res-btn" onclick="window.print()">
                     <i class="fa-solid fa-print" aria-hidden="true"></i> Skriv ut liste
                 </button>
@@ -404,7 +407,7 @@
             <div class="res-table-head">
                 <h2>Alle ressurser</h2>
                 <div class="res-table-filters">
-                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk på navn, ID, telefon eller utstyr" />
+                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk på navn, telefon eller utstyr" />
                     <input type="search" id="stedsFelt" class="form-control" placeholder="Sted eller bydel, trykk Enter" />
                 </div>
             </div>
@@ -433,7 +436,7 @@
                                 <tr class="table-row-clickable"
                                     data-lat="@lat" data-lng="@lng"
                                     data-id="@res.Id" data-type="@res.Category"
-                                    data-sok="@(($"{res.Id} {res.Name} {res.Description} {res.PhoneNumber} {OversettKategori(res.Category)}").ToLower())"
+                                    data-sok="@(($"{res.Name}{res.Description} {res.PhoneNumber} {OversettKategori(res.Category)}").ToLower())"
                                     onclick="fokuserPaRessurs('@res.Id')">
                                     <td>
                                         <div class="res-name">@res.Name</div>

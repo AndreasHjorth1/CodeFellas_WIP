@@ -1,155 +1,419 @@
 <link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
-﻿@using Prosjekt.Models.ModelView
+@using Prosjekt.Models.ModelView
 @using System.Globalization
 @model ResourceViewModel
 
 @{
-    ViewData["Title"] = "Rediger Ressurs";
+    ViewData["Title"] = "Endre ressurs";
 }
 
-<div class="row min-vh-100 g-0 mt-2">
-    <div class="col-lg-5 col-md-6 p-3 d-flex flex-column">
-        <h2 class="mb-4">Rediger Ressurs</h2>
-        <form asp-controller="Resource" asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off" class="flex-grow-1">
-            @Html.AntiForgeryToken()
-            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+<style>
+    .register-map-wrapper {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 60px);
+        min-height: 500px;
+        overflow: hidden;
+    }
 
-            <input type="hidden" asp-for="Id" />
+    /* --- Søk og «Velg punkt» oppe til venstre --- */
+    .map-tools {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        z-index: 900;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
 
-            <div class="border p-4 mb-3 rounded bg-light shadow-sm">
-                <div class="form-group mb-3">
-                    <label asp-for="Name" class="fw-bold">Navn *</label>
+    .map-search {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 230px;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 3px;
+        padding: 0.45rem 0.7rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .map-search i {
+        color: #0f2a4f;
+        font-size: 0.85rem;
+    }
+
+    .map-search input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 0.85rem;
+        color: #0f2a4f;
+        background: transparent;
+    }
+
+    .map-tool-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 3px;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #0f2a4f;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .map-tool-btn:hover,
+    .map-tool-btn.active {
+        background-color: #eef2f7;
+    }
+
+    .leaflet-bottom.leaflet-left .leaflet-bar {
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-radius: 3px;
+    }
+
+    .leaflet-bar a.locate-btn {
+        color: #0f2a4f;
+        font-size: 0.85rem;
+    }
+
+    /* --- Sidemeny, alltid åpen når man endrer --- */
+    #sideMeny {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 400px;
+        max-width: 100%;
+        z-index: 1000;
+        background-color: #ffffff;
+        overflow-y: auto;
+        box-shadow: -4px 0 15px rgba(0, 0, 0, 0.12);
+    }
+
+    .side-header {
+        position: relative;
+        background-color: #f4f2ec;
+        padding: 1.25rem 1.25rem 1rem;
+    }
+
+    .side-header .eyebrow {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #5f6f86;
+    }
+
+    .side-header h2 {
+        font-family: Georgia, serif;
+        font-size: 1.6rem;
+        color: #0f2a4f;
+        margin: 0.4rem 0 0.5rem;
+    }
+
+    .side-header p {
+        color: #5f6f86;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin-bottom: 0.4rem;
+    }
+
+    .side-header .side-location {
+        font-size: 0.8rem;
+        color: #0f2a4f;
+        margin: 0;
+    }
+
+    .side-header .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        color: #0f2a4f;
+        font-size: 1.1rem;
+        line-height: 1;
+    }
+
+    .side-body {
+        padding: 1rem 1.25rem 1.5rem;
+    }
+
+    .step-title {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: #0f2a4f;
+        font-size: 1rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .step-number {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background-color: #0f2a4f;
+        color: #ffffff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #sideMeny .form-label {
+        color: #0f2a4f;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    #sideMeny .form-control,
+    #sideMeny .form-select {
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        padding: 0.55rem 0.65rem;
+    }
+
+    #sideMeny .form-control:focus,
+    #sideMeny .form-select:focus {
+        border-color: #0f2a4f;
+        box-shadow: 0 0 0 2px rgba(15, 42, 79, 0.15);
+    }
+
+    #sideMeny .form-check-input:checked {
+        background-color: #0f2a4f;
+        border-color: #0f2a4f;
+    }
+
+    #sideMeny .form-check-label {
+        color: #5f6f86;
+        font-size: 0.8rem;
+    }
+
+    .category-hint {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background-color: #e9eff6;
+        border-radius: 3px;
+        padding: 0.45rem 0.65rem;
+        margin-top: 0.75rem;
+        color: #2d4f86;
+        font-size: 0.8rem;
+    }
+
+    .category-hint img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .side-divider {
+        border-top: 1px solid #dde3ea;
+        margin: 1.25rem 0;
+    }
+
+    .save-buttons {
+        display: flex;
+        gap: 0.6rem;
+    }
+
+    .btn-save {
+        flex: 1;
+        background-color: #0f2a4f;
+        border: none;
+        border-radius: 3px;
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 600;
+        padding: 0.8rem;
+    }
+
+    .btn-save:hover,
+    .btn-save:focus {
+        background-color: #1b3d6e;
+        color: #ffffff;
+    }
+
+    .btn-cancel {
+        flex: 0 0 auto;
+        background-color: #ffffff;
+        border: 1px solid #0f2a4f;
+        border-radius: 3px;
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        padding: 0.8rem 1.25rem;
+        text-decoration: none;
+    }
+
+    .btn-cancel:hover {
+        background-color: #eef2f7;
+        color: #0f2a4f;
+    }
+</style>
+
+<div class="register-map-wrapper" id="kartWrapper">
+    <div id="map" class="w-100 h-100"></div>
+
+    <div class="map-tools">
+        <label class="map-search" for="adresseSok">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input id="adresseSok" type="search" placeholder="Søk etter sted eller adresse" autocomplete="off" />
+        </label>
+        <button type="button" class="map-tool-btn" id="velgPunktBtn">
+            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+            <span>Velg punkt</span>
+        </button>
+    </div>
+
+    <div id="sideMeny">
+        <div class="side-header">
+            <a asp-action="Overview" class="close-btn" aria-label="Avbryt og gå tilbake til oversikten">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </a>
+            <div class="eyebrow">Endre ressurs</div>
+            <h2>@Model.Name</h2>
+            <p>Klikk på kartet for å flytte ressursen.</p>
+            <p class="side-location"><i class="fa-solid fa-location-dot me-1" aria-hidden="true"></i><span id="sidePlassering"></span></p>
+        </div>
+
+        <div class="side-body">
+            <form asp-controller="Resource" asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off" id="hovedSkjema">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <!-- Steg 1: ressursdetaljer -->
+                <div class="step-title">
+                    <span class="step-number">1</span>
+                    <span>Ressursdetaljer</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Name">Tittel</label>
                     <input asp-for="Name" class="form-control" required />
                 </div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="Description" class="fw-bold">Beskrivelse *</label>
-                    <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
-                </div>
-
-                <div class="form-group mb-3">
-                    <label asp-for="PhoneNumber" class="fw-bold">Telefonnummer (Kontaktpunkt) *</label>
-                    <input asp-for="PhoneNumber" class="form-control" required />
-                </div>
-
-                <div class="form-check mb-3">
-                    <input asp-for="Availability" class="form-check-input" type="checkbox" id="inputAvailability" />
-                    <label class="form-check-label fw-bold" for="inputAvailability">Er tilgjengelig for oppdrag</label>
-                </div>
-
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label asp-for="AvailableFrom" class="form-label small fw-bold mb-1">Tilgjengelig fra *</label>
-                        <input asp-for="AvailableFrom" type="datetime-local" class="form-control form-control-sm" required />
-                    </div>
-                    <div class="col-6">
-                        <label asp-for="AvailableTo" class="form-label small fw-bold mb-1">Tilgjengelig til *</label>
-                        <input asp-for="AvailableTo" type="datetime-local" class="form-control form-control-sm" required />
-                    </div>
-                </div>
-
-                <div class="form-group mb-3">
-                    <label asp-for="Category" class="fw-bold">Kategori *</label>
+                <div class="mb-3">
+                    <label class="form-label" for="kategoriVelger">Kategori</label>
                     <select asp-for="Category" id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
-                        <option value="Vehicle">Kjøretøy</option>
+                        <option value="Vehicle">Transport og kjøretøy</option>
                         <option value="Provision">Provisjon</option>
                         <option value="Materials">Materialer</option>
                         <option value="Clothing">Klær</option>
                         <option value="Tool">Verktøy</option>
                         <option value="Other">Annet</option>
                     </select>
-                    <div id="ressursSymbolPreview" class="map-symbol-preview" aria-live="polite"></div>
+                    <div id="ressursSymbolPreview" class="category-hint" aria-live="polite"></div>
                 </div>
 
-                <div id="seksjonKjøretøy" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Kjøretøytype</label>
-                    <select id="inputVehicleType" asp-for="VehicleType" class="form-select mb-2">
-                        <option value="Car">Bil</option>
-                        <option value="Bus">Buss</option>
-                        <option value="Bicycle">Sykkel</option>
-                        <option value="Motorcycle">Motorsykkel</option>
-                        <option value="Tractor">Traktor</option>
-                        <option value="Truck">Lastebil</option>
-                        <option value="Dozer">Doser</option>
-                        <option value="Excavator">Gravemaskin</option>
-                        <option value="Other">Annet</option>
-                    </select>
-                    <label class="fw-bold">Skiltnummer</label>
-                    <input id="inputLicensePlate" asp-for="LicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
+                <!-- Underkategori: Kjøretøy -->
+                <div id="seksjonKjøretøy" class="kategori-seksjon" style="display:none;">
+                    <div class="mb-3">
+                        <label class="form-label" for="inputVehicleType">Kjøretøytype</label>
+                        <select id="inputVehicleType" asp-for="VehicleType" class="form-select">
+                            <option value="Car">Bil</option><option value="Bus">Buss</option>
+                            <option value="Bicycle">Sykkel</option><option value="Motorcycle">Motorsykkel</option>
+                            <option value="Tractor">Traktor</option><option value="Truck">Lastebil</option>
+                            <option value="Dozer">Doser</option><option value="Excavator">Gravemaskin</option>
+                            <option value="Other">Annet</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="inputLicensePlate">Skiltnummer</label>
+                        <input id="inputLicensePlate" asp-for="LicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
+                    </div>
                 </div>
 
+                <!-- Underkategori: Verktøy -->
                 <div id="seksjonVerktøy" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Verktøytype</label>
-                    <select id="inputToolType" asp-for="ToolType" class="form-select mb-2">
-                        <option value="HandTool">Håndverktøy</option>
-                        <option value="PowerTool">Elektroverktøy</option>
-                        <option value="GardenTool">Hageverktøy</option>
-                        <option value="MeasuringTool">Måleverktøy</option>
+                    <label class="form-label" for="inputToolType">Verktøytype</label>
+                    <select id="inputToolType" asp-for="ToolType" class="form-select">
+                        <option value="HandTool">Håndverktøy</option><option value="PowerTool">Elektroverktøy</option>
+                        <option value="GardenTool">Hageverktøy</option><option value="MeasuringTool">Måleverktøy</option>
                         <option value="Other">Annet</option>
                     </select>
                 </div>
 
+                <!-- Underkategori: Materialer -->
                 <div id="seksjonMaterialer" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Materialtype</label>
-                    <select id="inputMaterialType" asp-for="MaterialType" class="form-select mb-2">
-                        <option value="Wood">Treverk (meter)</option>
-                        <option value="Metal">Metall (kg)</option>
-                        <option value="Plastic">Plast (kg)</option>
-                        <option value="Glass">Glass (m*2)</option>
-                        <option value="Gravel">Grus (Kg)</option>
-                        <option value="Stone">Stein (Kg)</option>
-                        <option value="Soil">Jord (Kg)</option>
-                        <option value="Sand">Sand (Kg)</option>
+                    <label class="form-label" for="inputMaterialType">Materialtype</label>
+                    <select id="inputMaterialType" asp-for="MaterialType" class="form-select">
+                        <option value="Wood">Treverk (meter)</option><option value="Metal">Metall (kg)</option>
+                        <option value="Plastic">Plast (kg)</option><option value="Glass">Glass (m*2)</option>
+                        <option value="Gravel">Grus (Kg)</option><option value="Stone">Stein (Kg)</option>
+                        <option value="Soil">Jord (Kg)</option><option value="Sand">Sand (Kg)</option>
                         <option value="Other">Annet</option>
                     </select>
                 </div>
 
+                <!-- Underkategori: Klær -->
                 <div id="seksjonKlær" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Størrelse</label>
-                    <select id="inputSize" asp-for="Size" class="form-select mb-2">
-                        <option value="XS">XS</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                        <option value="XXL">XXL</option>
+                    <label class="form-label" for="inputSize">Størrelse</label>
+                    <select id="inputSize" asp-for="Size" class="form-select">
+                        <option value="XS">XS</option><option value="S">S</option><option value="M">M</option>
+                        <option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option>
                     </select>
                 </div>
 
+                <!-- Underkategori: Provisjon -->
                 <div id="seksjonProvisjon" class="kategori-seksjon mb-3" style="display:none;">
-                    <label class="fw-bold">Provisjonstype</label>
-                    <select id="inputProvisionType" asp-for="ProvisionType" class="form-select mb-2">
-                        <option value="Water">Vann (liter)</option>
-                        <option value="FoodOnePortion">Mat (1 porsjon)</option>
+                    <label class="form-label" for="inputProvisionType">Provisjonstype</label>
+                    <select id="inputProvisionType" asp-for="ProvisionType" class="form-select">
+                        <option value="Water">Vann (liter)</option><option value="FoodOnePortion">Mat (1 porsjon)</option>
                     </select>
                 </div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="Quantity" class="fw-bold">Antall *</label>
-                    <input asp-for="Quantity" type="number" min="1" class="form-control" required />
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label" asp-for="Quantity">Antall</label>
+                        <input asp-for="Quantity" type="number" min="1" class="form-control" required />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" asp-for="PhoneNumber">Telefonnummer</label>
+                        <input asp-for="PhoneNumber" class="form-control" required />
+                    </div>
                 </div>
-            </div>
 
-            <div class="row g-2 mb-3">
-                <div class="col-6">
-                    <label asp-for="Latitude" class="form-label small fw-bold">Breddegrad *</label>
-                    <input asp-for="Latitude" id="Latitude" class="form-control form-control-sm" readonly required />
+                <div class="form-check mb-3">
+                    <input asp-for="Availability" class="form-check-input" type="checkbox" id="inputAvailability" />
+                    <label class="form-check-label" for="inputAvailability">Er tilgjengelig for oppdrag</label>
                 </div>
-                <div class="col-6">
-                    <label asp-for="Longitude" class="form-label small fw-bold">Lengdegrad *</label>
-                    <input asp-for="Longitude" id="Longitude" class="form-control form-control-sm" readonly required />
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="AvailableFrom">Tilgjengelig fra</label>
+                    <input asp-for="AvailableFrom" type="datetime-local" class="form-control" required />
                 </div>
-            </div>
 
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-50">Lagre</button>
-                <a asp-action="Overview" class="btn btn-secondary w-50">Avbryt</a>
-            </div>
-        </form>
-    </div>
+                <div class="mb-3">
+                    <label class="form-label" asp-for="AvailableTo">Tilgjengelig til</label>
+                    <input asp-for="AvailableTo" type="datetime-local" class="form-control" required />
+                </div>
 
-    <div class="col-lg-7 col-md-6 d-flex flex-column p-3">
-        <div id="map" class="flex-grow-1 w-100 rounded shadow-sm" style="min-height: 400px; height: 60vh;"></div>
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Description">Beskrivelse</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <input asp-for="Latitude" id="Latitude" type="hidden" />
+                <input asp-for="Longitude" id="Longitude" type="hidden" />
+
+                <div class="side-divider"></div>
+
+                <div class="save-buttons">
+                    <a asp-action="Overview" class="btn-cancel">Avbryt</a>
+                    <button type="submit" class="btn-save" onclick="return validerInnsending()">Lagre endringer</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -163,7 +427,17 @@
             inputMaterialType: @Json.Serialize(Model.MaterialType),
             inputProvisionType: @Json.Serialize(Model.ProvisionType),
             inputSize: @Json.Serialize(Model.Size)
-                };
+        };
+
+        /// Hjelpetekst under kategorivalget, samme som ved registrering
+        var kategoriHjelp = {
+            Vehicle: 'Oppgi kjøretøytype, skiltnummer og tilgjengelighet.',
+            Provision: 'Oppgi type, antall og når det er tilgjengelig.',
+            Materials: 'Oppgi materialtype og mengde.',
+            Clothing: 'Oppgi størrelse og antall.',
+            Tool: 'Oppgi verktøytype og antall.',
+            Other: 'Beskriv ressursen i beskrivelsesfeltet.'
+        };
 
         function settSelectVerdi(el, verdi) {
             if (!el || !verdi) return;
@@ -216,18 +490,21 @@
             oppdaterSkjemavisning();
         });
 
+        var kartWrapper = document.getElementById('kartWrapper');
+        var sideMeny = document.getElementById('sideMeny');
+
+        /// Kartet fyller skjermen under menylinjen
+        function tilpassKarthoyde() {
+            var header = document.querySelector('header');
+            var hoyde = window.innerHeight - (header ? header.offsetHeight : 0);
+            kartWrapper.style.height = Math.max(hoyde, 500) + 'px';
+            if (typeof map !== 'undefined') map.invalidateSize();
+        }
+        tilpassKarthoyde();
+        window.addEventListener('resize', tilpassKarthoyde);
+
         function hentRessursIkon() {
             return MapSymbols.resourceIcon(document.getElementById('kategoriVelger').value, document.getElementById('inputAvailability').checked);
-        }
-
-        function oppdaterRessursSymbol() {
-            const select = document.getElementById('kategoriVelger');
-            const available = document.getElementById('inputAvailability').checked;
-            document.getElementById('ressursSymbolPreview').innerHTML =
-                MapSymbols.image(MapSymbols.resourceUrl(select.value, available)) + '<span>' +
-                MapSymbols.escape(select.options[select.selectedIndex].text) + (available ? ' – Tilgjengelig' : ' – Ikke tilgjengelig') + '</span>';
-            drawnItems.eachLayer(layer => layer.setIcon(hentRessursIkon()));
-            drawControl.setDrawingOptions({marker:{icon:hentRessursIkon()}});
         }
 
         var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
@@ -236,47 +513,137 @@
         var harPosisjon = (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng));
         var startPunkt = harPosisjon ? [lat, lng] : [58.163, 8.003];
 
-        var map = L.map('map').setView(startPunkt, harPosisjon ? 14 : 13);
-
+        /// Kartet. Zoom og min posisjon ligger nede til venstre.
+        var map = L.map('map', { zoomControl: false }).setView(startPunkt, harPosisjon ? 15 : 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
+
+        var MinPosisjon = L.Control.extend({
+            options: { position: 'bottomleft' },
+            onAdd: function () {
+                var boks = L.DomUtil.create('div', 'leaflet-bar');
+                var knapp = L.DomUtil.create('a', 'locate-btn', boks);
+                knapp.href = '#';
+                knapp.title = 'Gå til min posisjon';
+                knapp.setAttribute('role', 'button');
+                knapp.setAttribute('aria-label', 'Gå til min posisjon');
+                knapp.innerHTML = '<i class="fa-solid fa-crosshairs" aria-hidden="true"></i>';
+                L.DomEvent.disableClickPropagation(boks);
+                L.DomEvent.on(knapp, 'click', function (e) {
+                    L.DomEvent.preventDefault(e);
+                    map.locate({ setView: true, maxZoom: 15 });
+                });
+                return boks;
+            }
+        });
+        new MinPosisjon().addTo(map);
+        L.control.zoom({ position: 'bottomleft', zoomInTitle: 'Zoom inn', zoomOutTitle: 'Zoom ut' }).addTo(map);
 
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
         if (harPosisjon) {
-            var existingMarker = L.marker(startPunkt, { icon: hentRessursIkon() });
-            drawnItems.addLayer(existingMarker);
+            drawnItems.addLayer(L.marker(startPunkt, { icon: hentRessursIkon() }));
+            /// Ressursen skal ikke ligge bak sidemenyen
+            setTimeout(function () { map.panBy([(sideMeny.offsetWidth || 400) / 2, 0], { animate: false }); }, 250);
         }
 
+        /// Endre og slette punktet, nede til venstre
         var drawControl = new L.Control.Draw({
-            draw: {
-                polygon: false, polyline: false, circle: false, rectangle: false,
-                marker: { icon: hentRessursIkon() }
-            },
+            position: 'bottomleft',
+            draw: { polygon: false, polyline: false, circle: false, rectangle: false, marker: false, circlemarker: false },
             edit: { featureGroup: drawnItems, remove: true }
         });
         map.addControl(drawControl);
-        document.getElementById('kategoriVelger').addEventListener('change', oppdaterRessursSymbol);
-        document.getElementById('inputAvailability').addEventListener('change', oppdaterRessursSymbol);
-        oppdaterRessursSymbol();
 
-        map.on('draw:created', function (e) {
-            var layer = e.layer;
+        /// Søk etter sted eller adresse
+        document.getElementById('adresseSok').addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            var sporring = this.value.trim();
+            if (!sporring) return;
+
+            fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=no&q=' + encodeURIComponent(sporring),
+                { headers: { 'Accept-Language': 'nb' } })
+                .then(function (svar) { return svar.json(); })
+                .then(function (treff) {
+                    if (!treff.length) { alert('Fant ikke stedet "' + sporring + '".'); return; }
+                    map.setView([parseFloat(treff[0].lat), parseFloat(treff[0].lon)], 16);
+                })
+                .catch(function () { alert('Søket feilet. Prøv igjen.'); });
+        });
+
+        /// «Velg punkt» starter markørverktøyet, så neste klikk setter punktet
+        var velgPunktBtn = document.getElementById('velgPunktBtn');
+        var markorVerktoy = new L.Draw.Marker(map, { icon: hentRessursIkon() });
+
+        velgPunktBtn.addEventListener('click', function () {
+            if (markorVerktoy.enabled()) { markorVerktoy.disable(); return; }
+            markorVerktoy.setOptions({ icon: hentRessursIkon() });
+            markorVerktoy.enable();
+        });
+
+        map.on('draw:drawstart', function () { velgPunktBtn.classList.add('active'); });
+        map.on('draw:drawstop', function () { velgPunktBtn.classList.remove('active'); });
+
+        function settPosisjon(latlng) {
             drawnItems.clearLayers();
-            layer.setIcon(hentRessursIkon());
-            drawnItems.addLayer(layer);
-
-            var latlng = layer.getLatLng();
+            drawnItems.addLayer(L.marker(latlng, { icon: hentRessursIkon() }));
             document.getElementById('Latitude').value = latlng.lat.toFixed(6);
             document.getElementById('Longitude').value = latlng.lng.toFixed(6);
+            visPlassering();
+        }
+
+        map.on('draw:created', function (e) { settPosisjon(e.layer.getLatLng()); });
+
+        map.on('click', function (e) {
+            if (markorVerktoy.enabled()) return;
+            settPosisjon(e.latlng);
+        });
+
+        map.on('draw:edited', function () {
+            var layer = drawnItems.getLayers()[0];
+            if (layer) {
+                document.getElementById('Latitude').value = layer.getLatLng().lat.toFixed(6);
+                document.getElementById('Longitude').value = layer.getLatLng().lng.toFixed(6);
+            }
+            visPlassering();
         });
 
         map.on('draw:deleted', function () {
             document.getElementById('Latitude').value = '';
             document.getElementById('Longitude').value = '';
+            visPlassering();
         });
+
+        function visPlassering() {
+            var la = document.getElementById('Latitude').value;
+            var ln = document.getElementById('Longitude').value;
+            document.getElementById('sidePlassering').textContent = la && ln ? la + ', ' + ln : 'Ingen plassering valgt';
+        }
+
+        function oppdaterRessursSymbol() {
+            const select = document.getElementById('kategoriVelger');
+            const available = document.getElementById('inputAvailability').checked;
+            document.getElementById('ressursSymbolPreview').innerHTML =
+                MapSymbols.image(MapSymbols.resourceUrl(select.value, available)) + '<span>' +
+                MapSymbols.escape(kategoriHjelp[select.value] || '') + '</span>';
+            drawnItems.eachLayer(layer => layer.setIcon(hentRessursIkon()));
+        }
+
+        function validerInnsending() {
+            if (!document.getElementById('Latitude').value || !document.getElementById('Longitude').value) {
+                alert("Velg et punkt i kartet.");
+                return false;
+            }
+            return true;
+        }
+
+        document.getElementById('kategoriVelger').addEventListener('change', oppdaterRessursSymbol);
+        document.getElementById('inputAvailability').addEventListener('change', oppdaterRessursSymbol);
+        oppdaterRessursSymbol();
+        visPlassering();
 
         setTimeout(function () { map.invalidateSize(); }, 200);
     </script>

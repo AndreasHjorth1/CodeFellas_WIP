@@ -532,7 +532,7 @@
 
             <div class="list-filters">
                 <div class="filter-row">
-                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk på navn, ID, telefon eller hva som trengs" />
+                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk på navn, telefon eller hva som trengs" />
 
                     <!-- Resten av filtrene ligger bak Filter-knappen -->
                     <div class="dropdown">
@@ -709,7 +709,7 @@
                 if (valg.viktighet !== '' && String(b.importance) !== valg.viktighet) return false;
                 if (valg.kategori !== '' && String(b.type) !== valg.kategori) return false;
                 if (valg.sok) {
-                    var tekst = (b.id + ' ' + b.name + ' ' + b.description + ' ' + b.phone + ' ' + b.typeName).toLowerCase();
+                    var tekst = (b.name + ' ' + b.description + ' ' + b.phone + ' ' + b.typeName).toLowerCase();
                     if (!tekst.includes(valg.sok)) return false;
                 }
                 return true;
@@ -874,8 +874,7 @@
                     ['Frist', b.fristFull],
                     ['Telefon', b.phone],
                     ['Adresse', adresse],
-                    ['Område', b.areaSquareMeters ? 'ca. ' + Math.round(b.areaSquareMeters).toLocaleString('no-NO') + ' m²' : ''],
-                    ['ID', String(b.id)]
+                    ['Område', b.areaSquareMeters ? 'ca. ' + Math.round(b.areaSquareMeters).toLocaleString('no-NO') + ' m²' : '']
                 ].filter(function (r) { return r[1]; });
 
                 return `
