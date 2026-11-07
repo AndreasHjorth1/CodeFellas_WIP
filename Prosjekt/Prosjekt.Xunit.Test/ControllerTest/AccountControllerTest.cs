@@ -137,9 +137,23 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task Login_Post_Success_WithoutReturnUrl_RedirectsToHome()
+        public async Task Login_Post_Success_WithoutReturnUrl_UserRedirectsToResourceOverview()
         {
             _userManager.UserToFind = TestUser();
+            var model = new LoginViewModel { Email = "ola@test.no", Password = "passord" };
+
+            var result = await _controller.Login(model);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Overview", redirect.ActionName);
+            Assert.Equal("Resource", redirect.ControllerName);
+        }
+
+        [Fact]
+        public async Task Login_Post_Success_WithoutReturnUrl_AdminRedirectsToHome()
+        {
+            _userManager.UserToFind = TestUser();
+            _userManager.IsAdmin = true;
             var model = new LoginViewModel { Email = "ola@test.no", Password = "passord" };
 
             var result = await _controller.Login(model);
@@ -165,15 +179,14 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         [Theory]
         [InlineData("https://evil.example.com")]
         [InlineData("//evil.example.com")]
-        public async Task Login_Post_Success_WithExternalReturnUrl_RedirectsToHome(string returnUrl)
+        public async Task Login_Post_Success_WithExternalReturnUrl_StaysOnSite(string returnUrl)
         {
             _userManager.UserToFind = TestUser();
             var model = new LoginViewModel { Email = "ola@test.no", Password = "passord", ReturnUrl = returnUrl };
 
             var result = await _controller.Login(model);
 
-            var redirect = Assert.IsType<RedirectToActionResult>(result);
-            Assert.Equal("Home", redirect.ControllerName);
+            Assert.IsType<RedirectToActionResult>(result);
         }
 
         // ---------- Logout ----------

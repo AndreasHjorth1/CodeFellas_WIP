@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Text.Encodings.Web;
+using Prosjekt.Models.Authorization;
 using Prosjekt.Models.ModelView.Account;
 
 namespace Prosjekt.Controllers
@@ -55,6 +56,13 @@ namespace Prosjekt.Controllers
                     lockoutOnFailure: true);
                 if (result.Succeeded)
                 {
+                    /// <summary>
+                    /// Ressursgivere startet på oversikts-siden
+                    /// </summary>
+                    if (!Url.IsLocalUrl(model.ReturnUrl) && !await userManager.IsInRoleAsync(user, RoleNames.Admin))
+                    {
+                        return RedirectToAction("Overview", "Resource");
+                    }
                     return RedirectToLocalUrl(model.ReturnUrl);
                 }
             }

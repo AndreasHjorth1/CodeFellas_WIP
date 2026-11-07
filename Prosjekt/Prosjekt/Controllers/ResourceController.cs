@@ -150,7 +150,9 @@ namespace Prosjekt.Controllers
                 Allocated = allocations.Where(a => a.ResourceId == r.Id).Sum(a => a.Quantity),
             }).ToList();
 
-            return View(resourceViewModels);
+            /// Admin har en egen side med tabell og kart, andre får kortene med sine egne ressurser
+            var viewName = User.IsInRole(RoleNames.Admin) ? "AdminOverview" : "Overview";
+            return View(viewName, resourceViewModels);
         }
 
         /// <summary>
