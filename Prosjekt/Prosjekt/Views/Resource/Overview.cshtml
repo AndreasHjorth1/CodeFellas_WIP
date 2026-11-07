@@ -3,12 +3,14 @@
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 ﻿@using Prosjekt.Models.ModelView
 @using System.Globalization
+@using Prosjekt.Models.Authorization
 @model IEnumerable<ResourceViewModel>
 
 @{
     /// Vanlige brukere ser bare sine egne ressurser
-    var erAdmin = User.IsInRole("Admin");
-    ViewData["Title"] = erAdmin ? "Oversikt over ressurser" : "Mine ressurser";
+    var serAlleRessurser = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
+    var kanSlette = !User.IsInRole(RoleNames.Coordinator);
+    ViewData["Title"] = serAlleRessurser ? "Oversikt over ressurser" : "Mine ressurser";
 }
 
 <link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
@@ -103,7 +105,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">@ViewData["Title"]</h1>
-    @if (User.IsInRole(Prosjekt.Models.Authorization.RoleNames.Admin))
+    @if (serAlleRessurser)
     {
         <a asp-controller="Resource" asp-action="Export" class="btn btn-outline-success">Eksporter ressurser</a>
     }
@@ -199,11 +201,14 @@
                                 <td class="text-nowrap" onclick="event.stopPropagation();">
                                     <div class="d-flex gap-1">
                                         <a asp-action="Edit" asp-route-id="@res.Id" class="btn btn-sm btn-warning">Rediger</a>
+                                        @if (kanSlette)
+                                        {
                                         @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
                                         <form asp-action="Delete" asp-route-id="@res.Id" method="post" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-sm btn-danger">Slett</button>
                                         </form>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -211,7 +216,7 @@
                     }
                     else
                     {
-                        <tr><td colspan="6" class="text-muted text-center py-4">@(erAdmin ? "Ingen ressurser registrert ennå." : "Du har ikke registrert noen ressurser ennå.")</td></tr>
+                        <tr><td colspan="6" class="text-muted text-center py-4">@(serAlleRessurser ? "Ingen ressurser registrert ennå." : "Du har ikke registrert noen ressurser ennå.")</td></tr>
                     }
                 </tbody>
             </table>

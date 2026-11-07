@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 ﻿@{
     ViewData["Title"] = "Hjem - Kartoversikt";
-    var erAdmin = User.IsInRole(RoleNames.Admin);
+    var kanFiltrere = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
 }
 
 <style>
@@ -98,7 +98,7 @@
 
 <!-- Kartbeholder -->
 <div id="homeMap" style="height: calc(100vh - 80px); width: 100%; margin: 0; padding: 0;"></div>
-@if (erAdmin)
+@if (kanFiltrere)
 {
     <div id="filterPanel" class="bg-white shadow rounded" style="width: 260px; display: none;">
 
