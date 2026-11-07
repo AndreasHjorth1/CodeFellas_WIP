@@ -10,9 +10,9 @@ using Prosjekt.Utils;
 namespace Prosjekt.Controllers
 {
     /// <summary>
-    /// Registrering, oversikt, endring og tildeling av behov. Bare for admin, unntatt GetInformation.
+    /// Registrering, oversikt, endring og tildeling av behov. Bare for admin og koordinator, unntatt GetInformation.
     /// </summary>
-    [Authorize(Roles = RoleNames.Admin)]
+    [Authorize(Roles = RoleNames.AdminOrCoordinator)]
     public class NeedController : Controller
     {
         private readonly INeedRepository _repo;
@@ -177,8 +177,8 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Data til kartet. [AllowAnonymous] opphever admin-kravet, så alle innloggede kan se behovene.
-        /// Den som ikke er logget inn, sendes til innlogging. Bare admin får telefonnumrene.
+        /// Data til kartet. [AllowAnonymous] opphever rollekravet, så alle innloggede kan se behovene.
+        /// Den som ikke er logget inn, sendes til innlogging. Bare admin og koordinator får telefonnumrene.
         /// </summary>
         [AllowAnonymous]
         [HttpGet]
@@ -186,7 +186,7 @@ namespace Prosjekt.Controllers
         {
             if (User.Identity?.IsAuthenticated != true) return Challenge();
 
-            var isAdmin = User.IsInRole(RoleNames.Admin);
+            var canSeePhone = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
             var needs = await _repo.GetAllAsync();
 
             var result = needs
@@ -194,7 +194,7 @@ namespace Prosjekt.Controllers
                 {
                     Id = n.Id,
                     Name = n.Name,
-                    Phone = isAdmin ? n.PhoneNumber : string.Empty,
+                    Phone = canSeePhone ? n.PhoneNumber : string.Empty,
                     Description = n.Description,
                     Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
                         ? cat
