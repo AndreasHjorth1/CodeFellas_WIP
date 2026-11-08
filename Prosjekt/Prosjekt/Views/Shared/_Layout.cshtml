@@ -264,6 +264,8 @@
 
             .profile-menu-icons {
                 display: flex;
+                flex-direction: column;
+                gap: 0.6rem;
                 padding: 0.3rem 0.6rem;
             }
 
@@ -458,6 +460,13 @@
                                    title="Min profil" aria-label="Min profil">
                                     <i class="fa-regular fa-user" aria-hidden="true"></i>
                                 </a>
+                                @if (!erKoordinator)
+                                {
+                                    <a class="profile-menu-icon" asp-controller="Account" asp-action="CreateUser"
+                                       title="Opprett bruker" aria-label="Opprett bruker">
+                                        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                                    </a>
+                                }
                             </div>
                             <hr class="profile-menu-divider" />
                             <form asp-controller="Account" asp-action="Logout" method="post" data-confirm-logout>
