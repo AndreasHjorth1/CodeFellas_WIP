@@ -1,6 +1,331 @@
 ﻿@{
-    ViewData["Title"] = "Innstillinger";
-}
-<h1>@ViewData["Title"]</h1>
+    ViewData["Title"] = "Min profil";
 
-<p>Dette blir siden for innstillinger. Vi fikk ikke tid til å se med på dette. Dette er en placeholder for nå.</p>
+    /// Samme visning av navn og initialer som i _Layout: «ola.haugland@...» blir «Ola Haugland» og «OH»
+    var email = User.Identity?.Name ?? "";
+    var nameParts = email.Split('@')[0]
+        .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+    var displayName = nameParts.Length > 0
+        ? string.Join(" ", nameParts.Select(p => char.ToUpper(p[0]) + p[1..]))
+        : email;
+    var initials = nameParts.Length >= 2
+        ? $"{nameParts[0][0]}{nameParts[1][0]}"
+        : displayName.Length >= 2 ? displayName[..2] : displayName;
+}
+
+<style>
+    .profile-page {
+        min-height: 100%;
+        background-color: #f0f3f7;
+        color: #04245a;
+        padding: 1.5rem 2.25rem 4rem;
+    }
+
+    .profile-breadcrumb {
+        font-size: 0.85rem;
+        color: #5b6b82;
+        text-decoration: underline;
+    }
+
+    .profile-layout {
+        display: flex;
+        gap: 2.75rem;
+        max-width: 860px;
+        margin: 3.5rem 0 0 1.5rem;
+    }
+
+    /* Venstremeny */
+    .profile-sidebar {
+        flex: 0 0 165px;
+    }
+
+    .profile-sidebar-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #3a4a63;
+        margin: 0 0 0.75rem 0.5rem;
+    }
+
+    .profile-sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        width: 100%;
+        padding: 0.45rem 0.6rem;
+        border: none;
+        border-left: 2px solid transparent;
+        border-radius: 6px;
+        background: transparent;
+        color: #04245a;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: left;
+        margin-bottom: 0.35rem;
+    }
+
+    .profile-sidebar-link i {
+        width: 1rem;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+
+    .profile-sidebar-link.active {
+        background-color: #e3e8f0;
+        border-left-color: #04245a;
+    }
+
+    .profile-sidebar hr {
+        margin: 0.6rem 0;
+        border-top: 1px solid #c9ceda;
+        opacity: 1;
+    }
+
+    /* Innhold */
+    .profile-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .profile-heading {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-bottom: 2.75rem;
+    }
+
+    .profile-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background-color: #04245a;
+        color: #ffffff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .profile-heading h1 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #000000;
+    }
+
+    .profile-card {
+        background-color: #ffffff;
+        border: 1px solid #e3e6ec;
+        border-radius: 4px;
+        padding: 1rem 1.25rem 1.1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .profile-card h2 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0;
+        border-bottom: 1px solid #e3e6ec;
+    }
+
+    .profile-row {
+        display: flex;
+        align-items: center;
+        padding: 1.1rem 0;
+        font-size: 0.85rem;
+    }
+
+    .profile-row + .profile-row {
+        border-top: 1px solid #e3e6ec;
+    }
+
+    .profile-row-label {
+        flex: 0 0 205px;
+        font-weight: 600;
+    }
+
+    .profile-row-value {
+        flex: 1;
+    }
+
+    .profile-change {
+        border: none;
+        background: transparent;
+        padding: 0;
+        color: #6b7a90;
+        font-size: 0.85rem;
+        text-decoration: underline;
+    }
+
+    .profile-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin: 1rem 0 0;
+    }
+
+    .profile-label + .profile-label {
+        margin-top: 0.75rem;
+    }
+
+    .profile-text {
+        font-size: 0.85rem;
+        max-width: 310px;
+        margin: 1rem 0;
+    }
+
+    .profile-btn-dark {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        background-color: #04245a;
+        color: #ffffff;
+        border: 1px solid #04245a;
+        border-radius: 3px;
+        padding: 0.45rem 1.1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .profile-btn-dark:hover {
+        background-color: #021738;
+    }
+
+    .profile-btn-light {
+        background-color: #f0f3f7;
+        color: #000000;
+        border: 1px solid #5b6b82;
+        border-radius: 3px;
+        padding: 0.45rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .profile-theme-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 0.6rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .profile-theme-buttons {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    @@media (max-width: 767px) {
+        .profile-page {
+            padding: 1rem 1rem 3rem;
+        }
+
+        .profile-layout {
+            flex-direction: column;
+            gap: 1.5rem;
+            margin: 1.5rem 0 0;
+        }
+
+        .profile-sidebar {
+            flex: none;
+        }
+
+        .profile-row-label {
+            flex-basis: 90px;
+        }
+    }
+</style>
+
+<div class="profile-page">
+    <a class="profile-breadcrumb" asp-controller="Profile" asp-action="Index">Min Profil</a>
+
+    <div class="profile-layout">
+
+        <!-- Venstremeny -->
+        <nav class="profile-sidebar" aria-label="Min konto">
+            <div class="profile-sidebar-title">Min konto</div>
+
+            <a class="profile-sidebar-link active" asp-controller="Profile" asp-action="Index" aria-current="page">
+                <i class="fa-regular fa-user" aria-hidden="true"></i>
+                Min profil
+            </a>
+            <a class="profile-sidebar-link" asp-controller="Home" asp-action="Privacy">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                Personvern
+            </a>
+
+            <hr />
+
+            <form asp-controller="Account" asp-action="Logout" method="post" data-confirm-logout>
+                @Html.AntiForgeryToken()
+                <button type="submit" class="profile-sidebar-link">
+                    <i class="fa-solid fa-arrow-right-from-bracket fa-flip-horizontal" aria-hidden="true"></i>
+                    Logg ut
+                </button>
+            </form>
+        </nav>
+
+        <!-- Innhold -->
+        <div class="profile-content">
+            <div class="profile-heading">
+                <span class="profile-avatar">@initials.ToUpper()</span>
+                <h1>@displayName</h1>
+            </div>
+
+            <section class="profile-card">
+                <h2>Kontaktinformasjon</h2>
+
+                <div class="profile-row">
+                    <span class="profile-row-label">Navn</span>
+                    <span class="profile-row-value">@displayName</span>
+                    <button type="button" class="profile-change">Endre</button>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-row-label">Mobil</span>
+                    <span class="profile-row-value">Ikke registrert</span>
+                    <button type="button" class="profile-change">Endre</button>
+                </div>
+                <div class="profile-row">
+                    <span class="profile-row-label">E-post</span>
+                    <span class="profile-row-value">@email</span>
+                    <button type="button" class="profile-change">Endre</button>
+                </div>
+            </section>
+
+            <section class="profile-card">
+                <h2>Passord og innlogging</h2>
+
+                <p class="profile-label">Passord</p>
+                <p class="profile-label">Sist endret</p>
+
+                <p class="profile-text">
+                    Vi sender en lenke til den epostadresse. Der lager du et nytt passord
+                </p>
+
+                @* Bruker den eksisterende «Glemt passord»-funksjonen med e-posten til den innloggede brukeren *@
+                <form asp-controller="Account" asp-action="ForgotPassword" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Email" value="@email" />
+                    <button type="submit" class="profile-btn-dark">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        Tilbakestill Passord
+                    </button>
+                </form>
+            </section>
+
+            <section class="profile-card">
+                <h2>Visning</h2>
+
+                <div class="profile-theme-row">
+                    <span>Farger</span>
+                    <div class="profile-theme-buttons">
+                        <button type="button" class="profile-btn-light">Lys</button>
+                        <button type="button" class="profile-btn-dark">Mørk</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </div>
+</div>
