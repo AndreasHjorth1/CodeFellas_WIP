@@ -5,6 +5,8 @@ using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.Enums;
 using Xunit;
+using Microsoft.AspNetCore.Http;
+using Prosjekt.Services;
 
 namespace Prosjekt.Xunit
 {
@@ -16,7 +18,11 @@ namespace Prosjekt.Xunit
             using var context = CreateContext();
             AddNeed(context, "Vann");
             AddNeed(context, "Mat");
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetAllAsync();
 
@@ -29,7 +35,11 @@ namespace Prosjekt.Xunit
         public async Task GetAllAsync_WhenEmpty_ReturnsEmptyList()
         {
             using var context = CreateContext();
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetAllAsync();
 
@@ -41,7 +51,11 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             var need = AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetByIdAsync(need.Id);
 
@@ -54,7 +68,11 @@ namespace Prosjekt.Xunit
         public async Task GetByIdAsync_WhenNeedDoesNotExist_ReturnsNull()
         {
             using var context = CreateContext();
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetByIdAsync(404);
 
@@ -65,7 +83,11 @@ namespace Prosjekt.Xunit
         public async Task AddAsync_SavesNeed()
         {
             using var context = CreateContext();
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService); ;
             var need = CreateNeed("Strøm");
 
             await repository.AddAsync(need);
@@ -82,7 +104,11 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             var need = AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             need.Name = "Oppdatert navn";
             need.Status = EntryStatus.Assigned;
@@ -99,7 +125,11 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             var need = AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService); ;
 
             await repository.DeleteAsync(need.Id);
 
@@ -111,7 +141,11 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             await repository.DeleteAsync(404);
 

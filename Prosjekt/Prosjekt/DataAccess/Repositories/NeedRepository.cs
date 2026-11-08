@@ -2,16 +2,21 @@
 using Prosjekt.Models.Entities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Prosjekt.Services;
 
 namespace Prosjekt.DataAccess.Repositories
 {
     public class NeedRepository : INeedRepository
     {
         private readonly ApplicationDbContext _context;
+        private readonly AuditLogService _auditLogService;
 
-        public NeedRepository(ApplicationDbContext context)
+        public NeedRepository(
+            ApplicationDbContext context,
+            AuditLogService auditLogService)
         {
             _context = context;
+            _auditLogService = auditLogService;
         }
 
         public async Task<IEnumerable<Need>> GetAllAsync()
