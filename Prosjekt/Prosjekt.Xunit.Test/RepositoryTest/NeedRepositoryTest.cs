@@ -136,11 +136,15 @@ namespace Prosjekt.Xunit
     context,
     new HttpContextAccessor());
 
-            var repository = new NeedRepository(context, auditLogService); ;
+            var repository = new NeedRepository(context, auditLogService); 
 
             await repository.DeleteAsync(need.Id);
 
             Assert.Empty(context.Needs);
+            var log = Assert.Single(context.AuditLogs);
+            Assert.Equal("Delete", log.Action);
+            Assert.Equal("Need", log.EntityType);
+            Assert.Equal(need.Id, log.EntityId);
         }
 
         [Fact]

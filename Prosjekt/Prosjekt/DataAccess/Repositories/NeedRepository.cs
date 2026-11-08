@@ -64,8 +64,14 @@ namespace Prosjekt.DataAccess.Repositories
         public async Task DeleteAsync(int id)
         {
             var need = await _context.Needs.FindAsync(id);
+
             if (need != null)
             {
+                _auditLogService.Add(
+                    action: "Delete",
+                    entityType: "Need",
+                    entityId: need.Id);
+
                 _context.Needs.Remove(need);
                 await _context.SaveChangesAsync();
             }
