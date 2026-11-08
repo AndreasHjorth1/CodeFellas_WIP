@@ -118,6 +118,13 @@ namespace Prosjekt.Xunit
             Assert.NotNull(updated);
             Assert.Equal("Oppdatert navn", updated.Name);
             Assert.Equal(EntryStatus.Assigned, updated.Status);
+            var log = Assert.Single(context.AuditLogs);
+            Assert.Equal("Update", log.Action);
+            Assert.Equal("Need", log.EntityType);
+            Assert.Equal(need.Id, log.EntityId);
+            Assert.Equal("Status", log.FieldName);
+            Assert.Equal(EntryStatus.New.ToString(), log.OldValue);
+            Assert.Equal(EntryStatus.Assigned.ToString(), log.NewValue);
         }
 
         [Fact]

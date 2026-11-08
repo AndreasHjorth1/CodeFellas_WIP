@@ -37,6 +37,26 @@ namespace Prosjekt.DataAccess.Repositories
 
         public async Task UpdateAsync(Need need)
         {
+            var original = await _context.Needs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == need.Id);
+
+            if (original == null)
+            {
+                throw new InvalidOperationException("Behovet finnes ikke.");
+            }
+
+            if (original.Status != need.Status)
+            {
+                _auditLogService.Add(
+                    action: "Update",
+                    entityType: "Need",
+                    entityId: need.Id,
+                    fieldName: "Status",
+                    oldValue: original.Status.ToString(),
+                    newValue: need.Status.ToString());
+            }
+
             _context.Needs.Update(need);
             await _context.SaveChangesAsync();
         }
