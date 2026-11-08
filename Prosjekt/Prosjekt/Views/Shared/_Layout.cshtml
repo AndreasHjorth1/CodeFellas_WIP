@@ -283,7 +283,7 @@
             </nav>
         </header>
     }
-    else if (!User.IsInRole("Admin"))
+    else if (!User.IsInRole("Admin") && !User.IsInRole("Coordinator"))
     {
         <!-- Navbar for innlogget bruker -->
         <header class="sticky-top">
@@ -339,7 +339,10 @@
         /// «Kart» er forsiden med ?visning=kart, så den skal ikke også markere «Oversikt»
         var visKart = Context.Request.Query["visning"] == "kart";
 
-        <!-- Navbar for admin -->
+        var erKoordinator = !User.IsInRole("Admin");
+        var rolleNavn = erKoordinator ? "Koordinator" : "Admin";
+
+        <!-- Navbar for admin og koordinator -->
         <header class="sticky-top">
             <nav class="public-navbar">
                 <div class="public-nav-inner">
@@ -361,15 +364,30 @@
                            asp-controller="Need" asp-action="Overview">
                             Behov
                         </a>
-                        <a class="public-nav-link d-none d-md-inline @(currentController == "Resource" ? "active" : "")"
-                           asp-controller="Resource" asp-action="Overview">
-                            Ressurser
-                        </a>
+                        @* d-md-flex og ikke d-md-inline, ellers havner lenken litt lavere enn de andre *@
+                        <div class="dropdown d-none d-md-flex">
+                            @* Ikke Bootstrap sin dropdown-toggle, den bruker ::after som også er den rosa streken *@
+                            <a class="public-nav-link @(currentController == "Resource" ? "active" : "")"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Ressurser <i class="fa-solid fa-chevron-down ms-1 small" aria-hidden="true"></i>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Oversikt</a></li>
+                                @if (erKoordinator)
+                                {
+                                    <li><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
+                                }
+                                else
+                                {
+                                    <li><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
+                                }
+                            </ul>
+                        </div>
                     </div>
 
                     <div class="dropdown">
                         <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="d-none d-sm-inline">@displayName · Admin</span>
+                            <span class="d-none d-sm-inline">@displayName · @rolleNavn</span>
                             <span class="user-avatar">@initials.ToUpper()</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -377,6 +395,10 @@
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index" asp-route-visning="kart">Kart</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Need" asp-action="Overview">Behov</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Ressurser</a></li>
+                            @if (erKoordinator)
+                            {
+                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
+                            }
                             <li class="d-md-none"><hr class="dropdown-divider" /></li>
                             <li><a class="dropdown-item" asp-controller="Need" asp-action="Index">Registrer behov</a></li>
                             <li><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ressurs</a></li>

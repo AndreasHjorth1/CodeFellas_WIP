@@ -8,11 +8,9 @@
 @model IEnumerable<ResourceViewModel>
 
 @{
-    /// Vanlige brukere ser bare sine egne ressurser
-/// Admin og koordinator ser alle ressursene, men koordinator kan ikke slette
-    var erAdmin = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
-    var kanSlette = !User.IsInRole(RoleNames.Coordinator);
-    ViewData["Title"] = erAdmin ? "Oversikt over ressurser" : "Mine ressurser";
+    /// Viser bare brukerens egne ressurser, som de kan slette.
+    /// Brukes av vanlige brukere og av koordinator under «Mine ressurser». Admin og koordinator sin oversikt er AdminOverview.cshtml.
+    ViewData["Title"] = "Mine ressurser";
 
     var ressurser = (Model ?? Enumerable.Empty<ResourceViewModel>()).ToList();
     var naa = NorwegianTime.FromUtc(DateTime.UtcNow);
@@ -378,11 +376,6 @@
                 <div class="overview-head">
                     <h1>@ViewData["Title"]</h1>
                     <div class="d-flex flex-wrap gap-2 head-buttons">
-                        @if (erAdmin)
-                        {
-                            <a asp-controller="Resource" asp-action="Export" class="btn-light-outline">Eksporter</a>
-                        }
-
                         <button type="button" class="btn-light-outline" onclick="window.print()">
                             <i class="fa-solid fa-print me-1" aria-hidden="true"></i> Skriv ut liste
                         </button>
@@ -461,14 +454,11 @@
                                 </div>
                                 <div class="card-actions" onclick="event.stopPropagation();">
                                     <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
-                                    @if (kanSlette)
-                                    {
-                                        @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
-                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="delete-link">Slett</button>
-                                        </form>
-                                    }
+                                    @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
+                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="delete-link">Slett</button>
+                                    </form>
                                 </div>
                             </div>
 
@@ -489,7 +479,7 @@
                 else
                 {
                     <div class="overview-empty">
-                        @(erAdmin ? "Ingen ressurser registrert ennå." : "Du har ikke registrert noen ressurser ennå.")
+                        Du har ikke registrert noen ressurser ennå.
                     </div>
                 }
             </div>
@@ -499,7 +489,7 @@
                 <div class="overview-side">
                     <div class="side-card">
                         <div class="side-card-head">
-                            <h3>@(erAdmin ? "Ressurser og behov" : "Ressursene dine og behov")</h3>
+                            <h3>Ressursene dine og behov</h3>
                             <a asp-controller="Home" asp-action="Index" asp-route-fra="oversikt">Stort kart</a>
                         </div>
                         <div id="oversiktRessursKart"></div>
