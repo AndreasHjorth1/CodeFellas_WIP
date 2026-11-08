@@ -125,6 +125,52 @@ namespace Prosjekt.Controllers
         }
 
 
+        [Authorize(Roles = RoleNames.Admin)]
+        [HttpGet]
+        public IActionResult CreateUser()
+        {
+            return View(new CreateUserViewModel());
+        }
+
+
+        [Authorize(Roles = RoleNames.Admin)]
+        [HttpPost]
+        public async Task<IActionResult> CreateUser(CreateUserViewModel model)
+        {
+            if (model.Role != RoleNames.Admin && model.Role != RoleNames.Coordinator)
+            {
+                ModelState.AddModelError(nameof(model.Role), "Velg enten admin eller koordinator.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = new IdentityUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                EmailConfirmed = true
+            };
+            var result = await userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(user, model.Role);
+                TempData["CreateUserSuccess"] = $"Brukeren {model.Email} ble opprettet.";
+                return RedirectToAction(nameof(CreateUser));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+
         [AllowAnonymous]
         [HttpGet]
         public IActionResult ForgotPassword()
