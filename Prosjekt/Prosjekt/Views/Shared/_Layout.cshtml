@@ -268,10 +268,6 @@
                            asp-controller="Home" asp-action="CrisisInformation">
                             Kriseinformasjon
                         </a>
-                        <a class="public-nav-link d-none d-md-inline @(IsCurrentHome("UserInstruction") ? "active" : "")"
-                           asp-controller="Home" asp-action="UserInstruction">
-                            Slik fungerer det
-                        </a>
                     </div>
 
                     <div class="public-nav-buttons">
@@ -319,7 +315,6 @@
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ressurs</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="CrisisInformation">Kriseinformasjon</a></li>
                             <li><a class="dropdown-item" asp-controller="Settings" asp-action="Index">Innstillinger</a></li>
-                            <li><a class="dropdown-item" asp-controller="Home" asp-action="UserInstruction">Brukerinstruks</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
                                 <form asp-controller="Account" asp-action="Logout" method="post">
@@ -405,7 +400,6 @@
                             <li><hr class="dropdown-divider" /></li>
                             <li><a class="dropdown-item" asp-controller="Home" asp-action="CrisisInformation">Kriseinformasjon</a></li>
                             <li><a class="dropdown-item" asp-controller="Settings" asp-action="Index">Innstillinger</a></li>
-                            <li><a class="dropdown-item" asp-controller="Home" asp-action="UserInstruction">Brukerinstruks</a></li>
                             <li><a class="dropdown-item" asp-controller="Home" asp-action="Privacy">Personvern</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
@@ -561,11 +555,6 @@
                 <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
                    asp-controller="Settings" asp-action="Index">
                     Innstillinger
-                </a>
-
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
-                   asp-controller="Home" asp-action="UserInstruction">
-                    Brukerinstruks
                 </a>
 
             </div>
