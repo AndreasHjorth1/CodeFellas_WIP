@@ -4,12 +4,12 @@ using Xunit;
 
 namespace Prosjekt.Xunit
 {
-    public class InnstillingerControllerTest
+    public class ProfileControllerTest
     {
         [Fact]
         public void Index_ReturnsViewResult()
         {
-            var controller = new SettingsController();
+            var controller = new ProfileController();
 
             var result = controller.Index();
 

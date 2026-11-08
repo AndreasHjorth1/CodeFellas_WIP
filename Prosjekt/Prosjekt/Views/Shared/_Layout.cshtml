@@ -228,6 +228,67 @@
                 border-radius: 4px;
                 font-size: 0.95rem;
             }
+
+            /* Profilmeny for admin og koordinator */
+            .profile-menu .profile-chevron {
+                font-size: 0.8rem;
+                margin-left: -0.3rem;
+                transition: transform 0.2s;
+            }
+
+            .profile-menu .user-menu-toggle[aria-expanded="true"] .profile-chevron {
+                transform: rotate(180deg);
+            }
+
+            .public-navbar .profile-menu .dropdown-menu {
+                min-width: 230px;
+                margin-top: 0.6rem !important;
+                padding: 1.1rem 0.9rem 0.6rem;
+                border: 1px solid #e3e6ec;
+                border-radius: 8px;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+                color: #04245a;
+            }
+
+            .profile-menu-header {
+                padding: 0 0.6rem;
+                line-height: 1.75;
+                font-size: 0.95rem;
+            }
+
+            .profile-menu-divider {
+                margin: 0.8rem 0;
+                border-top: 1px solid #c9ceda;
+                opacity: 1;
+            }
+
+            .profile-menu-icons {
+                display: flex;
+                padding: 0.3rem 0.6rem;
+            }
+
+            .profile-menu-icon {
+                color: #04245a;
+                font-size: 1.15rem;
+                text-decoration: none;
+            }
+
+            .profile-menu-icon:hover {
+                color: #04245a;
+            }
+
+            .profile-menu-logout {
+                display: flex;
+                align-items: center;
+                gap: 0.8rem;
+                width: 100%;
+                padding: 0.3rem 0.6rem;
+                background: transparent;
+                border: none;
+                color: #04245a;
+                font-size: 1.05rem;
+                text-align: left;
+            }
     </style>
 </head>
 
@@ -314,10 +375,10 @@
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Mine ressurser</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ressurs</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="CrisisInformation">Kriseinformasjon</a></li>
-                            <li><a class="dropdown-item" asp-controller="Settings" asp-action="Index">Innstillinger</a></li>
+                            <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">Min profil</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
-                                <form asp-controller="Account" asp-action="Logout" method="post">
+                                <form asp-controller="Account" asp-action="Logout" method="post" data-confirm-logout>
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="dropdown-item">Logg ut</button>
                                 </form>
@@ -380,35 +441,33 @@
                         </div>
                     </div>
 
-                    <div class="dropdown">
+                    <div class="dropdown profile-menu">
                         <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="d-none d-sm-inline">@displayName · @rolleNavn</span>
+                            <span class="d-none d-sm-inline">@displayName</span>
                             <span class="user-avatar">@initials.ToUpper()</span>
+                            <i class="fa-solid fa-chevron-down profile-chevron" aria-hidden="true"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index">Oversikt</a></li>
-                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index" asp-route-visning="kart">Kart</a></li>
-                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Need" asp-action="Overview">Behov</a></li>
-                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Ressurser</a></li>
-                            @if (erKoordinator)
-                            {
-                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
-                            }
-                            <li class="d-md-none"><hr class="dropdown-divider" /></li>
-                            <li><a class="dropdown-item" asp-controller="Need" asp-action="Index">Registrer behov</a></li>
-                            <li><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ressurs</a></li>
-                            <li><hr class="dropdown-divider" /></li>
-                            <li><a class="dropdown-item" asp-controller="Home" asp-action="CrisisInformation">Kriseinformasjon</a></li>
-                            <li><a class="dropdown-item" asp-controller="Settings" asp-action="Index">Innstillinger</a></li>
-                            <li><a class="dropdown-item" asp-controller="Home" asp-action="Privacy">Personvern</a></li>
-                            <li><hr class="dropdown-divider" /></li>
-                            <li>
-                                <form asp-controller="Account" asp-action="Logout" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="dropdown-item">Logg ut</button>
-                                </form>
-                            </li>
-                        </ul>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <div class="profile-menu-header">
+                                <div>@displayName</div>
+                                <div>@rolleNavn</div>
+                            </div>
+                            <hr class="profile-menu-divider" />
+                            <div class="profile-menu-icons">
+                                <a class="profile-menu-icon" asp-controller="Profile" asp-action="Index"
+                                   title="Min profil" aria-label="Min profil">
+                                    <i class="fa-regular fa-user" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                            <hr class="profile-menu-divider" />
+                            <form asp-controller="Account" asp-action="Logout" method="post" data-confirm-logout>
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="profile-menu-logout">
+                                    <i class="fa-solid fa-arrow-right-from-bracket fa-flip-horizontal" aria-hidden="true"></i>
+                                    Logg ut
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
                 </div>
@@ -552,15 +611,29 @@
                     Kriseinformasjon
                 </a>
 
-                <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
-                   asp-controller="Settings" asp-action="Index">
-                    Innstillinger
-                </a>
-
             </div>
         </div>
     </div>
 
+
+    <!-- POPUP SOM BEKREFTER UTLOGGING -->
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="color: #04245a; border-radius: 8px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-semibold" id="logoutConfirmTitle">Logg ut</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Lukk"></button>
+                </div>
+                <div class="modal-body">
+                    Er du sikker på at du vil logge ut?
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Avbryt</button>
+                    <button type="button" class="btn text-white" id="logoutConfirmButton" style="background-color: #04245a;">Logg ut</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <!-- SKRIPTER -->
@@ -572,6 +645,31 @@
             integrity="sha512-ozq8xQKq6urvuU6jNgkfqAmT7jKN2XumbrX1JiB3TnF7tI48DPI4Gy1GXKD/V3EExgAs1V+pRO7vwtS1LHg0Gw=="
             crossorigin="anonymous"></script>
     <script src="~/js/leaflet-draw-no.js" asp-append-version="true"></script>
+
+    <script>
+        // Spør om brukeren vil logge ut før skjemaet sendes
+        (function () {
+            const modalElement = document.getElementById("logoutConfirmModal");
+            if (!modalElement) return;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            let pendingForm = null;
+
+            document.addEventListener("submit", function (event) {
+                const form = event.target.closest("form[data-confirm-logout]");
+                if (!form) return;
+
+                event.preventDefault();
+                pendingForm = form;
+                modal.show();
+            });
+
+            // form.submit() utløser ikke submit-hendelsen, så popupen vises ikke på nytt
+            document.getElementById("logoutConfirmButton").addEventListener("click", function () {
+                if (pendingForm) pendingForm.submit();
+            });
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 
