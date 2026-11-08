@@ -68,6 +68,12 @@
 }
 
 <style>
+    /* _Layout setter body til høyden på skjermen. Da slipper menyen øverst taket etter én skjermhøyde,
+       og kartet blir hengende med et hull over seg. Med auto følger body innholdet, og menyen står fast hele veien. */
+    body {
+        height: auto !important;
+    }
+
     /* Fjerner marginene fra layouten så de grå og hvite flatene går helt ut */
     main {
         max-width: 100% !important;
@@ -207,17 +213,18 @@
 
     #adminRessursKart {
         width: 100%;
-        height: 240px;
+        /* Større kart, men aldri mer enn en tredjedel av skjermen, så listen fortsatt får plass */
+        height: clamp(240px, 34vh, 340px);
     }
 
     /* Kartet står fast under menyen mens man blar i listen (bare på større skjermer) */
     @@media (min-width: 768px) {
+        /* Når man blar, legger kartet seg rett under menyen uten mellomrom, så listen ikke synes over eller under det.
+           Før man blar har kartet de vanlige avstandene. */
         .vis-delt .res-map-wrap {
             position: sticky;
-            top: 63px; /* høyden på menyen øverst */
+            top: 62px; /* høyden på menyen øverst */
             z-index: 5;
-            /* Dekker listen som blar forbi i mellomrommet over og under kartet */
-            box-shadow: 0 -1rem 0 #eef1f5, 0 1rem 0 #eef1f5;
         }
     }
 
