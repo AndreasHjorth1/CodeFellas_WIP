@@ -445,7 +445,7 @@
                                     onclick="fokuserPaRessurs('@res.Id')">
                                     <td>
                                         <div class="res-name">@res.Name</div>
-                                        <div class="res-sub">@res.Quantity stk@(string.IsNullOrWhiteSpace(res.Description) ? "" : $" · {res.Description}")</div>
+                                        <div class="res-sub">@res.Available av @res.Quantity stk@(res.Allocated > 0 ? $" ({res.Allocated} i bruk)" : "")@(string.IsNullOrWhiteSpace(res.Description) ? "" : $" · {res.Description}")</div>
                                     </td>
                                     <td>@OversettKategori(res.Category)</td>
                                     <td><span class="status-badge @status.Klasse">@status.Tekst</span></td>
