@@ -59,7 +59,9 @@ namespace Prosjekt.Controllers
                     /// <summary>
                     /// Ressursgivere startet på oversikts-siden
                     /// </summary>
-                    if (!Url.IsLocalUrl(model.ReturnUrl) && !await userManager.IsInRoleAsync(user, RoleNames.Admin))
+                    if (!Url.IsLocalUrl(model.ReturnUrl)
+                        && !await userManager.IsInRoleAsync(user, RoleNames.Admin)
+                        && !await userManager.IsInRoleAsync(user, RoleNames.Coordinator))
                     {
                         return RedirectToAction("Overview", "Resource");
                     }

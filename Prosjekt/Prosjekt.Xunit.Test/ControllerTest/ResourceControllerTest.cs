@@ -64,7 +64,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task Delete_Coordinator_OwnResource_ReturnsForbidAndKeepsResource()
+        public async Task Delete_Coordinator_OwnResource_RemovesResource()
         {
             // Arrange
             var repo = new FakeResourceRepository();
@@ -82,8 +82,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var result = await controller.Delete(1);
 
             // Assert
-            Assert.IsType<ForbidResult>(result);
-            Assert.Single(repo.Resources);
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Empty(repo.Resources);
         }
 
         [Fact]

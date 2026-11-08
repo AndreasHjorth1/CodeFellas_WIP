@@ -894,8 +894,8 @@ else
                 noWrap: true
             });
 
-            var geonorgeFlybilder = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '&copy; Midlertidig satellitt (Esri) - Venter på Geonorge-tilgang',
+            var esriSatellitt = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; Esri',
                 noWrap: true
             });
             /// Alle kartlag med egenskapene vi filtrerer på
@@ -1125,7 +1125,7 @@ else
             var bakgrunnsKart = {
                 "Standard (OSM)": osmKart,
                 "Topografisk (Geonorge)": geonorgeTopo,
-                "Flybilder (Geonorge)": geonorgeFlybilder
+                "Satellitt (Esri)": esriSatellitt
             };
             L.control.layers(bakgrunnsKart).addTo(map);
 

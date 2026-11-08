@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Authorization;
@@ -46,13 +46,11 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Admin kan slette alle ressurser, vanlige brukere bare sine egne.
-        /// Koordinator kan ikke slette ressurser, heller ikke sine egne.
+        /// Admin kan slette alle ressurser, andre (også koordinator) bare sine egne.
         /// </summary>
         private bool CanDelete(Resource resource)
         {
             if (User.IsInRole(RoleNames.Admin)) return true;
-            if (User.IsInRole(RoleNames.Coordinator)) return false;
 
             return resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
@@ -131,12 +129,32 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
-            var resourceEntities = await GetVisibleResourcesAsync();
+            var resourceViewModels = await ToOverviewViewModelsAsync(await GetVisibleResourcesAsync());
+
+            /// Admin og koordinator har en egen side med tabell og kart, andre får kortene med sine egne ressurser
+            var viewName = CanSeeAllResources() ? "AdminOverview" : "Overview";
+            return View(viewName, resourceViewModels);
+        }
+
+        /// <summary>
+        /// Koordinatorens egne ressurser, vist med kortene som vanlige brukere får.
+        /// </summary>
+        [HttpGet]
+        [Authorize(Roles = RoleNames.Coordinator)]
+        public async Task<IActionResult> MyResources()
+        {
+            var ownResources = await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            return View("Overview", await ToOverviewViewModelsAsync(ownResources));
+        }
+
+        private async Task<List<ResourceViewModel>> ToOverviewViewModelsAsync(IEnumerable<Resource> resourceEntities)
+        {
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
-            var resourceViewModels = resourceEntities.Select(r => new ResourceViewModel
+            return resourceEntities.Select(r => new ResourceViewModel
             {
                 Id = r.Id,
+                UserId = r.UserId,
                 Name = r.Name,
                 Description = r.Description,
                 PhoneNumber = r.PhoneNumber,
@@ -149,10 +167,6 @@ namespace Prosjekt.Controllers
                 AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
                 Allocated = allocations.Where(a => a.ResourceId == r.Id).Sum(a => a.Quantity),
             }).ToList();
-
-            /// Admin har en egen side med tabell og kart, andre får kortene med sine egne ressurser
-            var viewName = User.IsInRole(RoleNames.Admin) ? "AdminOverview" : "Overview";
-            return View(viewName, resourceViewModels);
         }
 
         /// <summary>

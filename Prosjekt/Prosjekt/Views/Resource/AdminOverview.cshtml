@@ -4,11 +4,16 @@
 @using Prosjekt.Models.ModelView
 @using Prosjekt.Utils
 @using System.Globalization
+@using System.Security.Claims
+@using Prosjekt.Models.Authorization
 @model IEnumerable<ResourceViewModel>
 
 @{
-    /// Admin sin oversikt over alle ressurser. Vanlige brukere får Overview.cshtml.
+    /// Admin og koordinator sin oversikt over alle ressurser. Vanlige brukere får Overview.cshtml.
+    /// Admin kan slette alle ressurser, koordinator bare sine egne.
     ViewData["Title"] = "Ressurser";
+    var erAdmin = User.IsInRole(RoleNames.Admin);
+    var minId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     var ressurser = (Model ?? Enumerable.Empty<ResourceViewModel>()).ToList();
     var naa = NorwegianTime.FromUtc(DateTime.UtcNow);
@@ -449,11 +454,14 @@
                                     <td onclick="event.stopPropagation();">
                                         <div class="row-actions">
                                             <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
-                                            @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
-                                            <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="delete-link">Slett</button>
-                                            </form>
+                                            @if (erAdmin || res.UserId == minId)
+                                            {
+                                                @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
+                                                <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="delete-link">Slett</button>
+                                                </form>
+                                            }
                                         </div>
                                     </td>
                                 </tr>
