@@ -87,7 +87,7 @@ namespace Prosjekt.Xunit
     context,
     new HttpContextAccessor());
 
-            var repository = new NeedRepository(context, auditLogService); ;
+            var repository = new NeedRepository(context, auditLogService); 
             var need = CreateNeed("Strøm");
 
             await repository.AddAsync(need);
@@ -97,6 +97,10 @@ namespace Prosjekt.Xunit
             Assert.Equal("Strøm", saved.Name);
             Assert.Equal(58.1467, saved.Coords.Latitude);
             Assert.Equal(7.9956, saved.Coords.Longitude);
+            var log = Assert.Single(context.AuditLogs);
+            Assert.Equal("Create", log.Action);
+            Assert.Equal("Need", log.EntityType);
+            Assert.Equal(saved.Id, log.EntityId);
         }
 
         [Fact]
@@ -136,7 +140,7 @@ namespace Prosjekt.Xunit
     context,
     new HttpContextAccessor());
 
-            var repository = new NeedRepository(context, auditLogService); 
+            var repository = new NeedRepository(context, auditLogService); ;
 
             await repository.DeleteAsync(need.Id);
 

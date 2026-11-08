@@ -31,8 +31,25 @@ namespace Prosjekt.DataAccess.Repositories
 
         public async Task AddAsync(Need need)
         {
-            _context.Needs.Add(need);
-            await _context.SaveChangesAsync();
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync();
+
+                _context.Needs.Add(need);
+                await _context.SaveChangesAsync();
+
+                _auditLogService.Add(
+                    action: "Create",
+                    entityType: "Need",
+                    entityId: need.Id);
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+            });
         }
 
         public async Task UpdateAsync(Need need)
