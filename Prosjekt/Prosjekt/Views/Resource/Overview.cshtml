@@ -166,7 +166,6 @@
         border-radius: 4px;
         padding: 1.1rem 1.1rem 1rem;
         margin-bottom: 1rem;
-        cursor: pointer;
     }
 
     .resource-card:hover {
@@ -259,6 +258,72 @@
         color: #0f2a4f;
         font-size: 0.9rem;
         margin: 0;
+    }
+
+    /* «Se mer» og informasjonen som vises under kortet */
+    .resource-card .card-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .resource-card .see-more-btn {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        padding: 0;
+        color: #2d4f86;
+        font-size: 0.9rem;
+        text-decoration: underline;
+    }
+
+    .resource-card .see-more-btn i {
+        font-size: 0.75rem;
+        margin-left: 0.2rem;
+        transition: transform 0.2s;
+    }
+
+    .resource-card .see-more-btn:not(.collapsed) i {
+        transform: rotate(180deg);
+    }
+
+    /* Kortet man har åpnet får en annen farge */
+    .resource-card:has(.see-more-btn:not(.collapsed)) {
+        background-color: #f3f6fb;
+        border-color: #04245a;
+        box-shadow: inset 3px 0 0 #04245a;
+    }
+
+    .resource-details {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        gap: 0.5rem 1rem;
+        margin: 1rem 0 0;
+        padding-top: 1rem;
+        border-top: 1px solid #dde3ea;
+        font-size: 0.9rem;
+        color: #0f2a4f;
+    }
+
+    .resource-details dt {
+        font-weight: 600;
+    }
+
+    .resource-details dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    @@media (max-width: 575px) {
+        .resource-details {
+            grid-template-columns: 1fr;
+            gap: 0.15rem;
+        }
+
+        .resource-details dd {
+            margin-bottom: 0.5rem;
+        }
     }
 
     .overview-empty {
@@ -358,7 +423,7 @@
     }
 
     @@media print {
-        .overview-side, .head-buttons, .card-actions, .breadcrumb-line {
+        .overview-side, .head-buttons, .card-actions, .breadcrumb-line, .see-more-btn {
             display: none !important;
         }
     }
@@ -436,10 +501,10 @@
                             ? "ikke tilgjengelig"
                             : res.AvailableTo.HasValue ? $"ledig til {res.AvailableTo.Value:dd.MM. 'kl.' HH:mm}" : "ledig";
 
+                        @* table-row-clickable må stå, filteret i site.js finner kortene med den *@
                         <div class="resource-card table-row-clickable @(steg == 3 ? "is-allocated" : "")"
                              data-lat="@lat" data-lng="@lng"
-                             data-id="@res.Id" data-type="@res.Category" data-sok="@(($"{res.Name} {res.Description}").ToLower())"
-                             onclick="fokuserPaRessurs('@res.Id')">
+                             data-id="@res.Id" data-type="@res.Category" data-sok="@(($"{res.Name} {res.Description}").ToLower())">
 
                             <div class="resource-card-head">
                                 <span class="icon-circle">
@@ -472,7 +537,73 @@
                                 }
                             </div>
 
-                            <p class="card-status">@StatusTekst(res, steg)</p>
+                            <div class="card-bottom">
+                                <p class="card-status">@StatusTekst(res, steg)</p>
+                                <button type="button" class="see-more-btn collapsed"
+                                        data-bs-toggle="collapse" data-bs-target="#ressursInfo-@res.Id"
+                                        aria-expanded="false" aria-controls="ressursInfo-@res.Id">
+                                    Se mer <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+
+                            @* Mer informasjon om ressursen, vises under kortet når man trykker «Se mer» *@
+                            <div class="collapse" id="ressursInfo-@res.Id">
+                                <dl class="resource-details">
+                                    <dt>Kategori</dt>
+                                    <dd>@OversettKategori(res.Category)</dd>
+
+                                    <dt>Antall</dt>
+                                    <dd>@res.Quantity stk (@res.Allocated i bruk, @res.Available ledig)</dd>
+
+                                    <dt>Status</dt>
+                                    <dd>@(res.Availability ? "Tilgjengelig" : "Ikke tilgjengelig")</dd>
+
+                                    <dt>Tilgjengelig fra</dt>
+                                    <dd>@(res.AvailableFrom.HasValue ? res.AvailableFrom.Value.ToString("dd.MM.yyyy 'kl.' HH:mm") : "Ikke satt")</dd>
+
+                                    <dt>Tilgjengelig til</dt>
+                                    <dd>@(res.AvailableTo.HasValue ? res.AvailableTo.Value.ToString("dd.MM.yyyy 'kl.' HH:mm") : "Ikke satt")</dd>
+
+                                    @if (!string.IsNullOrWhiteSpace(res.VehicleType))
+                                    {
+                                        <dt>Type kjøretøy</dt>
+                                        <dd>@res.VehicleType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.LicensePlate))
+                                    {
+                                        <dt>Registreringsnummer</dt>
+                                        <dd>@res.LicensePlate</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.ToolType))
+                                    {
+                                        <dt>Type verktøy</dt>
+                                        <dd>@res.ToolType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.Size))
+                                    {
+                                        <dt>Størrelse</dt>
+                                        <dd>@res.Size</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.MaterialType))
+                                    {
+                                        <dt>Type materiale</dt>
+                                        <dd>@res.MaterialType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.ProvisionType))
+                                    {
+                                        <dt>Type mat og utstyr</dt>
+                                        <dd>@res.ProvisionType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.PhoneNumber))
+                                    {
+                                        <dt>Telefon</dt>
+                                        <dd>@res.PhoneNumber</dd>
+                                    }
+
+                                    <dt>Beskrivelse</dt>
+                                    <dd>@(string.IsNullOrWhiteSpace(res.Description) ? "Ingen beskrivelse" : res.Description)</dd>
+                                </dl>
+                            </div>
                         </div>
                     }
                 }
@@ -497,7 +628,7 @@
                             <span><img src="@Url.Content("~/images/resources/other.svg")" alt="" />Ressurs</span>
                             <span><img src="@Url.Content("~/images/needs/other.svg")" alt="" />Behov</span>
                         </div>
-                        <p class="side-note">Klikk på en ressurs i listen for å se den i kartet. Behovene fra kommunen vises med egne symboler.</p>
+                        <p class="side-note">Trykk på «Se mer» på en ressurs for å se mer informasjon. Behovene fra kommunen vises med egne symboler i kartet.</p>
                     </div>
                 </div>
             </div>
