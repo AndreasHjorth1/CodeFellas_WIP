@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Services; // IdentitySeeder og ConsoleEmailSender
+using NetTopologySuite.IO.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,9 @@ builder.AddServiceDefaults();
 
 /// 3. MVC med anti-forgery på alle POST-forespørsler
 builder.Services.AddControllersWithViews(options =>
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+        options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(new GeoJsonConverterFactory()));
 
 /// 4. Tilkoblingsstreng: Aspire sender den inn som ConnectionStrings:Mapdb
 var connectionString = builder.Configuration.GetConnectionString("Mapdb")
@@ -134,5 +137,7 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.Run();
+
+
 
 

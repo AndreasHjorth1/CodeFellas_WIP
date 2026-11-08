@@ -1005,8 +1005,9 @@ else
                         fetch('@Url.Action("GetInformation", "Need")')
                     ]);
 
-                    var ressurser = resResponse.ok ? await resResponse.json() : [];
-                    var behov = needResponse.ok ? await needResponse.json() : [];
+                    /// Dataene kommer som GeoJSON. fraGeoJson (i site.js) gjør dem om til vanlige lister
+                    var ressurser = resResponse.ok ? fraGeoJson(await resResponse.json()) : [];
+                    var behov = needResponse.ok ? fraGeoJson(await needResponse.json()) : [];
 
                     ressurser.forEach(function (res) {
                         var lat = parseFloat(res.latitude);
@@ -1037,7 +1038,8 @@ else
 
                         if (b.areaGeoJson) {
                             try {
-                                var omrade = L.geoJSON(JSON.parse(b.areaGeoJson), {
+                                /// areaGeoJson er allerede et GeoJSON-objekt, så vi trenger ikke JSON.parse
+                                var omrade = L.geoJSON(b.areaGeoJson, {
                                     style: { color: akutt ? '#c8102e' : '#f2b705', weight: 2, dashArray: '6 4', fillOpacity: 0.15 }
                                 }).addTo(map);
                                 bounds.push(omrade.getBounds());
@@ -1278,7 +1280,8 @@ else
               const resResponse = await fetch('@Url.Action("GetInformation", "Resource")');
               
                 if (resResponse.ok) {
-                    const resourcesData = await resResponse.json();
+                    /// Ressursene kommer som GeoJSON. fraGeoJson (i site.js) gjør dem om til en vanlig liste
+                    const resourcesData = fraGeoJson(await resResponse.json());
 
                     resourcesData.forEach(function (res) {
                         var lat = parseFloat(res.latitude ?? res.Latitude);
@@ -1311,7 +1314,8 @@ else
               const needResponse = await fetch('@Url.Action("GetInformation", "Need")');
               
                 if (needResponse.ok) {
-                    const needsData = await needResponse.json();
+                    /// Behovene kommer som GeoJSON. fraGeoJson pakker ut punktet og eventuelt tegnet område
+                    const needsData = fraGeoJson(await needResponse.json());
 
                     needsData.forEach(function (need) {
                         var lat = parseFloat(need.latitude ?? need.Latitude);

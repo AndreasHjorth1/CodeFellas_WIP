@@ -9,6 +9,43 @@ function escapeHtml(verdi) {
 }
 
 /// <summary>
+/// GetInformation i Resource- og NeedController sender data som GeoJSON (en FeatureCollection).
+/// Denne funksjonen pakker GeoJSON-en ut til en vanlig liste med objekter, slik at kartkoden
+/// kan bruke feltene direkte, for eksempel res.name, res.latitude og need.areaGeoJson.
+/// </summary>
+function fraGeoJson(featureCollection) {
+    /// Får vi noe annet enn en FeatureCollection, returnerer vi en tom liste så kartet ikke krasjer
+    if (!featureCollection || !Array.isArray(featureCollection.features)) return [];
+
+    return featureCollection.features.map(function (feature) {
+        var geometri = feature.geometry;
+        var punkt = null;
+        var omrade = null;
+
+        if (geometri && geometri.type === 'Point') {
+            /// Vanlig ressurs eller behov: bare ett punkt
+            punkt = geometri;
+        } else if (geometri && geometri.type === 'GeometryCollection') {
+            /// Behov med tegnet område: serveren legger punktet først og området etterpå
+            punkt = geometri.geometries[0];
+            omrade = geometri.geometries[1] || null;
+        }
+
+        /// Alle feltene (navn, telefon, kategori osv.) ligger i feature.properties
+        var element = Object.assign({}, feature.properties);
+
+        /// NB: GeoJSON lagrer koordinater som [lengdegrad, breddegrad], altså motsatt av Leaflet
+        element.longitude = punkt ? punkt.coordinates[0] : null;
+        element.latitude = punkt ? punkt.coordinates[1] : null;
+
+        /// Området er et GeoJSON-objekt (ikke tekst), og kan sendes rett inn i L.geoJSON()
+        element.areaGeoJson = omrade;
+
+        return element;
+    });
+}
+
+/// <summary>
 /// Formatering av areal og lengde fra kartet. Brukes av flere views.
 /// </summary>
 function formaterAreal(m2) {

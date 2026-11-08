@@ -8,11 +8,26 @@ using Prosjekt.Models.Enums;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Xunit.Test.Fakes;
 using System.Security.Claims;
+using NetTopologySuite.Features;
+// NetTopologySuite har også en klasse som heter Coordinates, som kolliderer med vår egen.
+// Derfor henter vi bare de to geometri-typene vi trenger, med egne navn.
+using NtsPoint = NetTopologySuite.Geometries.Point;
+using NtsGeometryCollection = NetTopologySuite.Geometries.GeometryCollection;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
 {
     public class NeedControllerTest
     {
+        /// <summary>
+        /// GetInformation returnerer GeoJSON: en FeatureCollection inne i et JsonResult.
+        /// Denne hjelpemetoden sjekker at det stemmer, og gir oss FeatureCollection-en.
+        /// </summary>
+        private static FeatureCollection GetFeatures(IActionResult result)
+        {
+            var jsonResult = Assert.IsType<JsonResult>(result);
+            return Assert.IsType<FeatureCollection>(jsonResult.Value);
+        }
+
         private static NeedController CreateSignedInController(FakeNeedRepository repo, bool isAdmin)
         {
             var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user-1") };
@@ -562,16 +577,20 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var result = await controller.GetInformation();
 
             // Assert
-            var jsonResult = Assert.IsType<JsonResult>(result);
-            var needs =
-Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value).ToList();
-            Assert.Equal(2, needs.Count);
+            // Hvert behov blir en Feature i FeatureCollection-en
+            var features = GetFeatures(result);
+            Assert.Equal(2, features.Count);
 
-            var vann = needs.Single(n => n.Name == "Vann");
-            Assert.Equal(NeedViewModel.NeedType.Food, vann.Type);
-            Assert.Equal(ImportanceLevel.Acute, vann.Importance);
-            Assert.Equal(EntryStatus.Assigned, vann.Status);
-            Assert.Equal(58.1467, vann.Latitude);
+            // Feltene (navn, type osv.) ligger i Attributes, som blir "properties" i GeoJSON
+            var vann = features.Single(f => (string)f.Attributes["name"] == "Vann");
+            Assert.Equal(NeedViewModel.NeedType.Food, (NeedViewModel.NeedType)vann.Attributes["type"]);
+            Assert.Equal(ImportanceLevel.Acute, (ImportanceLevel)vann.Attributes["importance"]);
+            Assert.Equal(EntryStatus.Assigned, (EntryStatus)vann.Attributes["status"]);
+
+            // Posisjonen ligger i geometrien. NB: X = lengdegrad (longitude), Y = breddegrad (latitude)
+            var punkt = Assert.IsType<NtsPoint>(vann.Geometry);
+            Assert.Equal(58.1467, punkt.Y);
+            Assert.Equal(7.9956, punkt.X);
         }
 
         [Fact]
@@ -593,11 +612,10 @@ Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value).ToList();
             var result = await controller.GetInformation();
 
             // Assert
-            var jsonResult = Assert.IsType<JsonResult>(result);
-            var need =
-Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value));
-            Assert.Equal(NeedViewModel.NeedType.Other, need.Type);
-            Assert.Equal(ImportanceLevel.Planned, need.Importance);
+            // Ukjent kategori og viktighet skal bli "Annet" og "Planlagt"
+            var need = Assert.Single(GetFeatures(result));
+            Assert.Equal(NeedViewModel.NeedType.Other, (NeedViewModel.NeedType)need.Attributes["type"]);
+            Assert.Equal(ImportanceLevel.Planned, (ImportanceLevel)need.Attributes["importance"]);
         }
 
         [Fact]
@@ -622,7 +640,9 @@ Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Val
         public async Task GetInformation_RegularUser_HidesPhoneButKeepsArea()
         {
             // Arrange
-            const string area = "{\"type\":\"Polygon\",\"coordinates\":[]}";
+            // Slik lagrer Leaflet et tegnet område (layer.toGeoJSON()): en hel Feature med en trekant.
+            // Et polygon må starte og slutte i samme punkt.
+            const string area = "{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[7.99,58.14],[8.00,58.14],[8.00,58.15],[7.99,58.14]]]}}";
             var repo = new FakeNeedRepository();
             repo.Needs.Add(new Need { Id = 1, Name = "Vann", PhoneNumber = "12345678", AreaGeoJson = area, Status = EntryStatus.Resolved, Coords = new Coordinates(58.1467, 7.9956) });
             var controller = CreateSignedInController(repo, isAdmin: false);
@@ -631,10 +651,52 @@ Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Val
             var result = await controller.GetInformation();
 
             // Assert
-            var jsonResult = Assert.IsType<JsonResult>(result);
-            var need = Assert.Single(Assert.IsAssignableFrom<IEnumerable<NeedViewModel>>(jsonResult.Value));
-            Assert.Equal(area, need.AreaGeoJson);
-            Assert.Equal(string.Empty, need.Phone);
+            var need = Assert.Single(GetFeatures(result));
+
+            // Behov med område sendes som en GeometryCollection: punktet først, så området
+            var samling = Assert.IsType<NtsGeometryCollection>(need.Geometry);
+            Assert.Equal(2, samling.NumGeometries);
+            Assert.IsType<NtsPoint>(samling.GetGeometryN(0));
+            Assert.Equal("Polygon", samling.GetGeometryN(1).GeometryType);
+
+            // Vanlige brukere får ikke se telefonnummeret
+            Assert.Equal(string.Empty, need.Attributes["phone"]);
+        }
+
+        [Fact]
+        public async Task GetInformation_AreaAsPlainGeometry_IsAlsoIncluded()
+        {
+            // Arrange
+            // Området er lagret som en ren geometri (ikke en Feature). Det skal også fungere.
+            const string area = "{\"type\":\"Polygon\",\"coordinates\":[[[7.99,58.14],[8.00,58.14],[8.00,58.15],[7.99,58.14]]]}";
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need { Id = 1, Name = "Vann", AreaGeoJson = area, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = CreateSignedInController(repo, isAdmin: true);
+
+            // Act
+            var result = await controller.GetInformation();
+
+            // Assert
+            var need = Assert.Single(GetFeatures(result));
+            var samling = Assert.IsType<NtsGeometryCollection>(need.Geometry);
+            Assert.Equal("Polygon", samling.GetGeometryN(1).GeometryType);
+        }
+
+        [Fact]
+        public async Task GetInformation_InvalidArea_ReturnsOnlyPoint()
+        {
+            // Arrange
+            // Ødelagt tekst i AreaGeoJson skal ikke krasje kartet. Da sendes bare punktet.
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need { Id = 1, Name = "Vann", AreaGeoJson = "ikke gyldig json", Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = CreateSignedInController(repo, isAdmin: true);
+
+            // Act
+            var result = await controller.GetInformation();
+
+            // Assert
+            var need = Assert.Single(GetFeatures(result));
+            Assert.IsType<NtsPoint>(need.Geometry);
         }
 
         [Fact]

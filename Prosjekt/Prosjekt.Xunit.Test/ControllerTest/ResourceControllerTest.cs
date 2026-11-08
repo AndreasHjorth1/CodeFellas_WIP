@@ -10,11 +10,25 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
+using NetTopologySuite.Features;
+// NetTopologySuite har også en klasse som heter Coordinates, som kolliderer med vår egen.
+// Derfor henter vi bare Point-typen, med eget navn.
+using NtsPoint = NetTopologySuite.Geometries.Point;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
 {
     public class ResourceControllerTest
     {
+        /// <summary>
+        /// GetInformation returnerer GeoJSON: en FeatureCollection inne i et JsonResult.
+        /// Denne hjelpemetoden sjekker at det stemmer, og gir oss FeatureCollection-en.
+        /// </summary>
+        private static FeatureCollection GetFeatures(IActionResult result)
+        {
+            var jsonResult = Assert.IsType<JsonResult>(result);
+            return Assert.IsType<FeatureCollection>(jsonResult.Value);
+        }
+
         private static ResourceController CreateController(FakeResourceRepository repo, string userId =
         "user-1", bool isAdmin = false, bool isCoordinator = false)
         {
@@ -715,15 +729,20 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var result = await controller.GetInformation();
 
             // Assert
-            var jsonResult = Assert.IsType<JsonResult>(result);
-            var resources = Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value).ToList();
-            Assert.Equal(2, resources.Count);
+            // GetInformation returnerer GeoJSON: en FeatureCollection med én Feature per ressurs
+            var features = GetFeatures(result);
+            Assert.Equal(2, features.Count);
 
-            var aggregat = resources.Single(r => r.Name == "Aggregat");
-            Assert.Equal(ResourceViewModel.ResourceType.Tool, aggregat.Category);
-            Assert.Equal(2, aggregat.Quantity);
-            Assert.False(aggregat.Availability);
-            Assert.Equal(58.1467, aggregat.Latitude);
+            // Feltene (navn, kategori osv.) ligger i Attributes, som blir "properties" i GeoJSON
+            var aggregat = features.Single(f => (string)f.Attributes["name"] == "Aggregat");
+            Assert.Equal(ResourceViewModel.ResourceType.Tool, (ResourceViewModel.ResourceType)aggregat.Attributes["category"]);
+            Assert.Equal(2, (int)aggregat.Attributes["quantity"]);
+            Assert.False((bool)aggregat.Attributes["availability"]);
+
+            // Posisjonen ligger i geometrien. NB: X = lengdegrad (longitude), Y = breddegrad (latitude)
+            var punkt = Assert.IsType<NtsPoint>(aggregat.Geometry);
+            Assert.Equal(58.1467, punkt.Y);
+            Assert.Equal(7.9956, punkt.X);
         }
 
         [Fact]
@@ -744,9 +763,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var result = await controller.GetInformation();
 
             // Assert
-            var jsonResult = Assert.IsType<JsonResult>(result);
-            var resource = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value));
-            Assert.Equal(ResourceViewModel.ResourceType.Other, resource.Category);
+            // Ukjent kategori skal bli "Annet"
+            var resource = Assert.Single(GetFeatures(result));
+            Assert.Equal(ResourceViewModel.ResourceType.Other, (ResourceViewModel.ResourceType)resource.Attributes["category"]);
         }
 
         [Fact]
@@ -830,7 +849,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task ExportJson_ReturnsAvailableResourcesWithNorwegianCategory()
+        public async Task ExportGeoJson_ReturnsAvailableResourcesWithNorwegianCategory()
         {
             // Arrange
             var repo = new FakeResourceRepository();
@@ -839,24 +858,35 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
-            var result = await controller.ExportJson();
+            var result = await controller.ExportGeoJson();
 
             // Assert
             var file = Assert.IsType<FileContentResult>(result);
-            Assert.Equal("application/json", file.ContentType);
+            Assert.Equal("application/geo+json", file.ContentType);
             Assert.StartsWith("ressurser_tilgjengelige_", file.FileDownloadName);
+            Assert.EndsWith(".geojson", file.FileDownloadName);
 
+            // Filen skal være en FeatureCollection med bare den tilgjengelige ressursen
             using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
-            var ressurs = Assert.Single(json.RootElement.EnumerateArray());
-            Assert.Equal(1, ressurs.GetProperty("Id").GetInt32());
-            Assert.Equal("Traktor", ressurs.GetProperty("Name").GetString());
-            Assert.Equal("Kjøretøy", ressurs.GetProperty("Category").GetString());
-            Assert.True(ressurs.GetProperty("IsAvailable").GetBoolean());
-            Assert.Equal("98765432", ressurs.GetProperty("PhoneNumber").GetString());
+            Assert.Equal("FeatureCollection", json.RootElement.GetProperty("type").GetString());
+            var ressurs = Assert.Single(json.RootElement.GetProperty("features").EnumerateArray());
+
+            // GeoJSON lagrer koordinatene som [lengdegrad, breddegrad]
+            var geometri = ressurs.GetProperty("geometry");
+            Assert.Equal("Point", geometri.GetProperty("type").GetString());
+            Assert.Equal(8.77, geometri.GetProperty("coordinates")[0].GetDouble());
+            Assert.Equal(58.46, geometri.GetProperty("coordinates")[1].GetDouble());
+
+            var egenskaper = ressurs.GetProperty("properties");
+            Assert.Equal(1, egenskaper.GetProperty("id").GetInt32());
+            Assert.Equal("Traktor", egenskaper.GetProperty("navn").GetString());
+            Assert.Equal("Kjøretøy", egenskaper.GetProperty("kategori").GetString());
+            Assert.True(egenskaper.GetProperty("tilgjengelig").GetBoolean());
+            Assert.Equal("98765432", egenskaper.GetProperty("telefon").GetString());
         }
 
         [Fact]
-        public async Task ExportJson_AllResources_IncludesUnavailable()
+        public async Task ExportGeoJson_AllResources_IncludesUnavailable()
         {
             // Arrange
             var repo = new FakeResourceRepository();
@@ -865,16 +895,17 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var controller = new ResourceController(repo, new FakeAllocationRepository());
 
             // Act
-            var result = await controller.ExportJson(onlyAvailable: false);
+            var result = await controller.ExportGeoJson(onlyAvailable: false);
 
             // Assert
             var file = Assert.IsType<FileContentResult>(result);
             Assert.StartsWith("ressurser_alle_", file.FileDownloadName);
 
             using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
-            var ressurser = json.RootElement.EnumerateArray().ToList();
+            var ressurser = json.RootElement.GetProperty("features").EnumerateArray().ToList();
             Assert.Equal(2, ressurser.Count);
-            Assert.False(ressurser.Single(r => r.GetProperty("Name").GetString() == "Aggregat").GetProperty("IsAvailable").GetBoolean());
+            var aggregat = ressurser.Single(r => r.GetProperty("properties").GetProperty("navn").GetString() == "Aggregat");
+            Assert.False(aggregat.GetProperty("properties").GetProperty("tilgjengelig").GetBoolean());
         }
     }
 }

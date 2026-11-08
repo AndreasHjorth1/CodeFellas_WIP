@@ -10,6 +10,13 @@ using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using NetTopologySuite;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO.Converters;
+// NetTopologySuite har også en klasse som heter Coordinates. Her sier vi at det er vår egen som gjelder.
+using Coordinates = Prosjekt.Models.Entities.Coordinates;
+
 
 namespace Prosjekt.Controllers
 {
@@ -283,26 +290,35 @@ namespace Prosjekt.Controllers
         /// <summary>
         /// Data til kartet på Home/Index. Admin og koordinator får alle ressurser, andre bare sine egne.
         /// </summary>
+        /// 
         [HttpGet]
         public async Task<IActionResult> GetInformation()
         {
             var resources = await GetVisibleResourcesAsync();
+            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            var collection = new FeatureCollection();
 
-            var result = resources.Select(r => new ResourceViewModel
+            foreach (var r in resources)
             {
-                Id = r.Id,
-                Name = r.Name,
-                PhoneNumber = r.PhoneNumber,
-                Description = r.Description,
-                Quantity = r.Quantity,
-                Availability = r.IsAvailable,
-                Category = ParseCategory(r.Category),
-                Latitude = r.Coords.Latitude,
-                Longitude = r.Coords.Longitude
-            });
+                // NTS: X = lengdegrad (longitude), Y = breddegrad (latitude)
+                var point = factory.CreatePoint(new Coordinate(r.Coords.Longitude, r.Coords.Latitude));
 
-            return Json(result);
-        }
+                var props = new AttributesTable
+                {
+                    { "id", r.Id },
+                    { "name", r.Name },
+                    { "phoneNumber", r.PhoneNumber },
+                    { "description", r.Description },
+                    { "quantity", r.Quantity },
+                    { "availability", r.IsAvailable },
+                    { "category", ParseCategory(r.Category) }
+                };
+
+                collection.Add(new Feature(point, props));
+            }
+
+            return Json(collection);
+    }
 
         /// <summary>
         /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
@@ -344,37 +360,51 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Eksporter ressurser i JSON-format.
+        /// Eksporter ressurser som GeoJSON. Filen kan åpnes direkte i kartprogrammer
+        /// som QGIS, ArcGIS eller geojson.io, og hver ressurs vises som et punkt på kartet.
         /// </summary>
         [Authorize(Roles = RoleNames.AdminOrCoordinator)]
         [HttpGet]
-        public async Task<IActionResult> ExportJson(bool onlyAvailable = true)
+        public async Task<IActionResult> ExportGeoJson(bool onlyAvailable = true)
         {
             var resources = await RetrieveResourcesForExport(onlyAvailable);
 
-            var data = resources.Select(r => new
-            {
-                r.Id,
-                r.Name,
-                Category = TranslateCategory(r.Category),
-                r.Quantity,
-                r.IsAvailable,
-                r.PhoneNumber,
-                r.Description,
-                AvailableFrom = NorwegianTime.FromUtc(r.AvailableFrom),
-                AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
-                r.Coords.Latitude,
-                r.Coords.Longitude
-            });
+            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            var collection = new FeatureCollection();
 
+            foreach (var r in resources)
+            {
+                // NTS: X = lengdegrad (longitude), Y = breddegrad (latitude)
+                var point = factory.CreatePoint(new Coordinate(r.Coords.Longitude, r.Coords.Latitude));
+
+                // Egenskapene (properties) får norske navn, slik som i CSV-eksporten
+                var props = new AttributesTable
+                {
+                    { "id", r.Id },
+                    { "navn", r.Name },
+                    { "kategori", TranslateCategory(r.Category) },
+                    { "antall", r.Quantity },
+                    { "tilgjengelig", r.IsAvailable },
+                    { "telefon", r.PhoneNumber },
+                    { "beskrivelse", r.Description },
+                    { "tilgjengeligFra", NorwegianTime.FromUtc(r.AvailableFrom) },
+                    { "tilgjengeligTil", NorwegianTime.FromUtc(r.AvailableTo) }
+                };
+
+                collection.Add(new Feature(point, props));
+            }
+
+            // Pene linjeskift, æ/ø/å som vanlig tekst, og GeoJSON-støtte fra NetTopologySuite
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
+            options.Converters.Add(new GeoJsonConverterFactory());
 
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
-            return File(bytes, "application/json", $"{FileName(onlyAvailable)}.json");
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(collection, options);
+            // application/geo+json er den offisielle filtypen for GeoJSON
+            return File(bytes, "application/geo+json", $"{FileName(onlyAvailable)}.geojson");
         }
 
         /// <summary>
