@@ -644,11 +644,11 @@
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
+        /// Punktet velges med «Velg punkt» oppe til venstre. Kontrollen her brukes bare til å endre og slette.
         var drawControl = new L.Control.Draw({
             position: 'bottomleft',
             draw: {
-                polygon: false, polyline: false, circle: false, rectangle: false,
-                marker: { icon: HentRessursIkon() }
+                polygon: false, polyline: false, circle: false, rectangle: false, marker: false, circlemarker: false
             },
             edit: { featureGroup: drawnItems, remove: true }
         });
@@ -746,7 +746,6 @@
             const preview = document.getElementById('ressursSymbolPreview');
             preview.innerHTML = MapSymbols.image(MapSymbols.resourceUrl(select.value, available)) + '<span>' + MapSymbols.escape(kategoriHjelp[select.value] || '') + '</span>';
             drawnItems.eachLayer(layer => { if (layer instanceof L.Marker) layer.setIcon(HentRessursIkon()); });
-            drawControl.setDrawingOptions({marker:{icon:HentRessursIkon()}});
         }
 
         function leggTilIListe() {
