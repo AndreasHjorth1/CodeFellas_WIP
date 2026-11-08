@@ -26,6 +26,7 @@ namespace Prosjekt.Xunit.Test.Fakes
         public string? CreatedPassword { get; private set; }
         public string? UsedResetCode { get; private set; }
         public string? NewPassword { get; private set; }
+        public string? AddedRole { get; private set; }
 
         public FakeUserManager()
             : base(new FakeUserStore(), null!, null!, null!, null!, null!, null!, null!,
@@ -47,6 +48,11 @@ namespace Prosjekt.Xunit.Test.Fakes
             CreatedUser = user;
             CreatedPassword = password;
             return Task.FromResult(CreateResult);
+        }
+        public override Task<IdentityResult> AddToRoleAsync(IdentityUser user, string role)
+        {
+            AddedRole = role;
+            return Task.FromResult(IdentityResult.Success);
         }
 
         public override Task<IdentityResult> ResetPasswordAsync(IdentityUser user, string token, string newPassword)
