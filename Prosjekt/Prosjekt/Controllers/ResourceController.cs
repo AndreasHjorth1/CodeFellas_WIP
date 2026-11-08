@@ -46,13 +46,11 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Admin kan slette alle ressurser, vanlige brukere bare sine egne.
-        /// Koordinator kan ikke slette ressurser, heller ikke sine egne.
+        /// Admin kan slette alle ressurser, andre (også koordinator) bare sine egne.
         /// </summary>
         private bool CanDelete(Resource resource)
         {
             if (User.IsInRole(RoleNames.Admin)) return true;
-            if (User.IsInRole(RoleNames.Coordinator)) return false;
 
             return resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
