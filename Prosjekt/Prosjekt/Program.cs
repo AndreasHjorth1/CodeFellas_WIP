@@ -44,6 +44,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // 6. E-postsender for Identity (skriver e-post til loggen, sender ikke ekte e-post)
 builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AuditLogService>();
 // 7. Identity: innlogging, brukere og roller
 var identityBuilder = builder.Services
     .AddIdentity<IdentityUser, IdentityRole>(options =>
