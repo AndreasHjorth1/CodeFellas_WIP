@@ -29,10 +29,6 @@ public class HomeController : Controller
     {
         return View();
     }
-    public IActionResult UserInstruction()
-    {
-        return View();
-    }
     public IActionResult CrisisInformation()
     {
         return View();

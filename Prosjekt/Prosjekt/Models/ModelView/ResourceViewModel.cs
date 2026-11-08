@@ -9,6 +9,8 @@ namespace Prosjekt.Models.ModelView
         /// </summary>
         public int Id { get; set; }
 
+        public string? UserId { get; set; }
+
         public enum ResourceType
         {
             [Display(Name = "Provisjon")]
