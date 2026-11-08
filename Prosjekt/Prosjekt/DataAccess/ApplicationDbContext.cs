@@ -52,6 +52,10 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
                 entity.Property(e => e.Priority).HasMaxLength(50);
 
+                entity.HasOne<IdentityUser>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.ComplexProperty(e => e.Coords, coord =>
                 {
