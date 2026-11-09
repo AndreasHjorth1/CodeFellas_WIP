@@ -133,7 +133,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeNeedRepository();
-            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository());
+            var controller = CreateSignedInController(repo, isAdmin: true);
 
             var model = new NeedCreatorViewModel
             {
@@ -154,6 +154,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 
             var savedNeed = Assert.Single(repo.Needs);
             Assert.Equal("Vann", savedNeed.Name);
+            Assert.Equal("user-1", savedNeed.UserId);
         }
 
         [Fact]
@@ -161,7 +162,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeNeedRepository();
-            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository());
+            var controller = CreateSignedInController(repo, isAdmin: true);
             controller.ModelState.AddModelError("NeedList[0].Deadline", "Required");
 
             var model = new NeedCreatorViewModel
@@ -188,7 +189,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeNeedRepository();
-            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository());
+            var controller = CreateSignedInController(repo, isAdmin: true);
 
             var model = new NeedCreatorViewModel
             {

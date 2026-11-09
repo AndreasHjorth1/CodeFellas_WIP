@@ -6,6 +6,7 @@ using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Prosjekt.Utils;
+using System.Security.Claims;
 
 namespace Prosjekt.Controllers
 {
@@ -93,7 +94,8 @@ namespace Prosjekt.Controllers
                     Coords = coords,
                     AreaGeoJson = model.AreaGeoJson,
                     AreaSquareMeters = model.AreaSquareMeters,
-                    PerimeterMeters = model.PerimeterMeters
+                    PerimeterMeters = model.PerimeterMeters,
+                    UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(needEntity);
