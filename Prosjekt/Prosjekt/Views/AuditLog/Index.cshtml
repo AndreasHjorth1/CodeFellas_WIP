@@ -1,54 +1,343 @@
-﻿@model List<Prosjekt.Models.Entities.AuditLog>
+﻿@using Prosjekt.Utils
+@model List<Prosjekt.Models.Entities.AuditLog>
 
 @{
-    ViewData["Title"] = "Endringshistorikk";
+    ViewData["Title"] = "Logg";
+
+    /// Oppslagene fra AuditLogController: bruker-ID til e-post og behov-ID til navn
+    var brukere = ViewBag.Brukere as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var behovsnavn = ViewBag.Behov as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
-<h1>Endringshistorikk</h1>
+@functions {
+    /// Statusene lagres på engelsk (EntryStatus), men vises med de norske navnene
+    string OversettStatus(string? verdi) => verdi switch
+    {
+        "New" => "Ny",
+        "UnderReview" => "Vurderes",
+        "Assigned" => "Tildelt",
+        "Resolved" => "Løst",
+        null or "" => "–",
+        _ => verdi
+    };
 
-<p>De 100 nyeste loggpostene for behov. Tidspunkter vises i UTC.</p>
+    string OversettFelt(string? felt) => felt switch
+    {
+        "Status" => "status",
+        null or "" => "et felt",
+        _ => felt.ToLower()
+    };
 
-@if (Model.Count == 0)
-{
-    <p>Ingen hendelser er loggført ennå.</p>
+    /// Ikon, filtertype og setning for hver handling
+    (string Ikon, string Type, string Tekst) Handling(Prosjekt.Models.Entities.AuditLog log) => log.Action switch
+    {
+        "Create" => ("fa-plus", "opprettet", "meldte et behov"),
+        "Update" => ("fa-pen", "endret", $"endret {OversettFelt(log.FieldName)}"),
+        "Delete" => ("fa-xmark", "slettet", "slettet et behov"),
+        _ => ("fa-circle-info", "annet", log.Action)
+    };
+
+    /// Samme visning som i toppmenyen: «ola.haugland@...» blir «Ola Haugland»
+    string NavnFraEpost(string epost)
+    {
+        var deler = epost.Split('@')[0]
+            .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        return deler.Length > 0
+            ? string.Join(" ", deler.Select(d => char.ToUpper(d[0]) + d[1..]))
+            : epost;
+    }
+
+    /// Samme format som i bildet: BH-0012 for behov
+    string Referanse(Prosjekt.Models.Entities.AuditLog log) =>
+        (log.EntityType == "Need" ? "BH-" : log.EntityType + "-") + log.EntityId.ToString("D4");
 }
-else
-{
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th scope="col">Tidspunkt (UTC)</th>
-                    <th scope="col">Bruker-ID</th>
-                    <th scope="col">Handling</th>
-                    <th scope="col">Behov-ID</th>
-                    <th scope="col">Felt</th>
-                    <th scope="col">Gammel verdi</th>
-                    <th scope="col">Ny verdi</th>
-                </tr>
-            </thead>
-            <tbody>
+
+<style>
+    .log-page {
+        background-color: #eef1f5;
+        min-height: 100%;
+        color: #0b1f3a;
+        padding: 2rem 1rem 3rem;
+    }
+
+    .log-inner {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .log-page h1 {
+        font-size: 1.9rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+    }
+
+    .log-intro {
+        color: #5b6b7f;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Søk, tidsrom og filterknapper */
+    .log-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0.6rem;
+        margin-bottom: 1rem;
+    }
+
+    .log-filters label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+
+    .log-filters .form-control,
+    .log-filters .form-select {
+        border: 1px solid #8a97a8;
+        border-radius: 3px;
+        font-size: 0.9rem;
+        color: #0b1f3a;
+    }
+
+    .log-search {
+        flex: 1 1 260px;
+        max-width: 340px;
+    }
+
+    .log-period {
+        flex: 0 1 180px;
+    }
+
+    .log-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding-bottom: 0.15rem;
+    }
+
+    .log-chip {
+        background-color: #ffffff;
+        border: 1px solid #8a97a8;
+        border-radius: 999px;
+        color: #0b1f3a;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.4rem 0.85rem;
+    }
+
+    .log-chip.active {
+        background-color: #04245a;
+        border-color: #04245a;
+        color: #ffffff;
+    }
+
+    /* Selve loggen */
+    .log-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        padding: 0 0.75rem;
+    }
+
+    .log-row {
+        display: grid;
+        grid-template-columns: 90px 24px minmax(0, 1fr) auto;
+        gap: 0.75rem;
+        align-items: start;
+        padding: 0.85rem 0.25rem;
+        border-bottom: 1px solid #e6eaef;
+    }
+
+    .log-row:last-child {
+        border-bottom: none;
+    }
+
+    .log-time,
+    .log-ref {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 0.78rem;
+        color: #3a4a5f;
+        line-height: 1.5;
+    }
+
+    .log-ref {
+        color: #5b6b7f;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .log-icon {
+        color: #0b1f3a;
+        font-size: 0.9rem;
+        text-align: center;
+        padding-top: 0.1rem;
+    }
+
+    .log-icon.slettet {
+        color: #b02a37;
+    }
+
+    .log-text {
+        font-size: 0.95rem;
+    }
+
+    .log-sub {
+        color: #5b6b7f;
+        font-size: 0.82rem;
+        margin-top: 0.15rem;
+    }
+
+    .log-empty {
+        padding: 2rem;
+        text-align: center;
+        color: #5b6b7f;
+    }
+
+    .log-footnote {
+        color: #5b6b7f;
+        font-size: 0.8rem;
+        margin-top: 0.75rem;
+    }
+
+    @@media (max-width: 575px) {
+        .log-row {
+            grid-template-columns: 70px 20px minmax(0, 1fr);
+        }
+
+        .log-ref {
+            grid-column: 3;
+            text-align: left;
+        }
+    }
+</style>
+
+<div class="log-page">
+    <div class="log-inner">
+        <h1>Logg</h1>
+        <p class="log-intro">Alt som endres på behovene. Loggen kan ikke redigeres.</p>
+
+        <div class="log-filters">
+            <div class="log-search">
+                <label for="loggSok">Søk</label>
+                <input type="search" id="loggSok" class="form-control" placeholder="Navn, e-post, behov eller ID" />
+            </div>
+            <div class="log-period">
+                <label for="loggTidsrom">Tidsrom</label>
+                <select id="loggTidsrom" class="form-select">
+                    <option value="1">Siste døgn</option>
+                    <option value="7">Siste uke</option>
+                    <option value="30">Siste 30 dager</option>
+                    <option value="" selected>Alt</option>
+                </select>
+            </div>
+            <div class="log-chips" role="group" aria-label="Type hendelse">
+                <button type="button" class="log-chip active" data-type="">Alt</button>
+                <button type="button" class="log-chip" data-type="opprettet">Opprettet</button>
+                <button type="button" class="log-chip" data-type="endret">Endret</button>
+                <button type="button" class="log-chip" data-type="slettet">Slettet</button>
+            </div>
+        </div>
+
+        <div class="log-card">
+            @if (Model.Count == 0)
+            {
+                <div class="log-empty">Ingen hendelser er loggført ennå.</div>
+            }
+            else
+            {
                 @foreach (var log in Model)
                 {
-                    var action = log.Action switch
-                    {
-                        "Create" => "Opprettet",
-                        "Update" => "Endret",
-                        "Delete" => "Slettet",
-                        _ => log.Action
-                    };
+                    var handling = Handling(log);
+                    var tid = NorwegianTime.FromUtc(log.Timestamp.UtcDateTime);
+                    var epost = log.UserId != null && brukere.TryGetValue(log.UserId, out var funnetEpost) ? funnetEpost : null;
+                    var hvem = log.UserId == null ? "System"
+                        : !string.IsNullOrEmpty(epost) ? NavnFraEpost(epost)
+                        : "Ukjent bruker";
 
-                    <tr>
-                        <td>@log.Timestamp.UtcDateTime.ToString("dd.MM.yyyy HH:mm:ss")</td>
-                        <td>@(log.UserId ?? "Ikke innlogget / system")</td>
-                        <td>@action</td>
-                        <td>@log.EntityId</td>
-                        <td>@(log.FieldName ?? "–")</td>
-                        <td>@(log.OldValue ?? "–")</td>
-                        <td>@(log.NewValue ?? "–")</td>
-                    </tr>
+                    /// Behovet kan være slettet, og da finnes ikke navnet lenger
+                    var behov = log.EntityType == "Need" && behovsnavn.TryGetValue(log.EntityId, out var funnetNavn)
+                        ? funnetNavn
+                        : "Behovet finnes ikke lenger";
+
+                    var endring = log.Action == "Update" && log.FieldName == "Status"
+                        ? $"{OversettStatus(log.OldValue)} → {OversettStatus(log.NewValue)}"
+                        : log.Action == "Update"
+                            ? $"{log.OldValue ?? "–"} → {log.NewValue ?? "–"}"
+                            : "";
+                    var referanse = Referanse(log);
+
+                    <div class="log-row"
+                         data-type="@handling.Type"
+                         data-tid="@log.Timestamp.ToUnixTimeMilliseconds()"
+                         data-sok="@($"{hvem} {epost} {handling.Tekst} {behov} {endring} {referanse} {log.EntityId}".ToLower())">
+                        <div class="log-time">@tid.ToString("dd.MM.")<br />@tid.ToString("HH:mm:ss")</div>
+                        <div class="log-icon @handling.Type"><i class="fa-solid @handling.Ikon" aria-hidden="true"></i></div>
+                        <div>
+                            <div class="log-text">
+                                <strong>@hvem</strong> @handling.Tekst
+                            </div>
+                            <div class="log-sub">
+                                <span class="@(behovsnavn.ContainsKey(log.EntityId) ? "" : "fst-italic")">@behov</span>
+                                @if (!string.IsNullOrEmpty(endring))
+                                {
+                                    <span> · @endring</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(epost))
+                            {
+                                <div class="log-sub">@epost</div>
+                            }
+                        </div>
+                        <div class="log-ref">@referanse</div>
+                    </div>
                 }
-            </tbody>
-        </table>
+                <div class="log-empty d-none" id="loggIngenTreff">Ingen hendelser passer filteret.</div>
+            }
+        </div>
+
+        <p class="log-footnote">Viser de 100 nyeste hendelsene. Tider er i norsk tid.</p>
     </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Filtrerer radene som allerede er på siden. Henter ingenting nytt fra serveren.
+        (function () {
+            var sok = document.getElementById('loggSok');
+            var tidsrom = document.getElementById('loggTidsrom');
+            var chips = document.querySelectorAll('.log-chip');
+            var ingenTreff = document.getElementById('loggIngenTreff');
+            var valgtType = '';
+
+            function filtrer() {
+                var tekst = sok.value.toLowerCase().trim();
+                var dager = Number(tidsrom.value);
+                var grense = dager ? Date.now() - dager * 24 * 60 * 60 * 1000 : 0;
+                var antall = 0;
+
+                document.querySelectorAll('.log-row').forEach(function (rad) {
+                    var vis = (!valgtType || rad.dataset.type === valgtType)
+                        && (!tekst || rad.dataset.sok.includes(tekst))
+                        && Number(rad.dataset.tid) >= grense;
+                    rad.classList.toggle('d-none', !vis);
+                    if (vis) antall++;
+                });
+
+                if (ingenTreff) ingenTreff.classList.toggle('d-none', antall > 0);
+            }
+
+            chips.forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    chips.forEach(function (c) { c.classList.toggle('active', c === chip); });
+                    valgtType = chip.dataset.type;
+                    filtrer();
+                });
+            });
+
+            sok.addEventListener('input', filtrer);
+            tidsrom.addEventListener('change', filtrer);
+        })();
+    </script>
 }

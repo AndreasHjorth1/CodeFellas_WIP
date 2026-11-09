@@ -378,6 +378,10 @@
                                 }
                             </ul>
                         </div>
+                        <a class="public-nav-link d-none d-md-inline @(currentController == "AuditLog" ? "active" : "")"
+                           asp-controller="AuditLog" asp-action="Index">
+                            Logg
+                        </a>
                     </div>
 
                     <div class="dropdown">
@@ -398,6 +402,7 @@
                             {
                                 <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
                             }
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="AuditLog" asp-action="Index">Logg</a></li>
                             <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">Min profil</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
