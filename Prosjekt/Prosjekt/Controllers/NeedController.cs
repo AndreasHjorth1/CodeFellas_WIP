@@ -82,6 +82,12 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            if (!model.Deadline.HasValue)
+            {
+                ModelState.AddModelError(nameof(model.Deadline), "En tidsfrist må registreres.");
+                return View("Index", model);
+            }
+
             foreach (var baseNeed in model.NeedList.Where(n => !string.IsNullOrWhiteSpace(n.Name)))
             {
                 var needEntity = new Need
@@ -91,7 +97,7 @@ namespace Prosjekt.Controllers
                     Category = baseNeed.Type.ToString(),
                     PhoneNumber = baseNeed.Phone ?? string.Empty,
                     Priority = model.Importance.ToString(),
-                    NeededBy = NorwegianTime.ToUtc(baseNeed.Deadline ?? model.Deadline),
+                    NeededBy = NorwegianTime.ToUtc(baseNeed.Deadline ?? model.Deadline.Value),
                     Coords = coords,
                     AreaGeoJson = model.AreaGeoJson,
                     AreaSquareMeters = model.AreaSquareMeters,
@@ -144,6 +150,12 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
+            if (!model.Deadline.HasValue)
+            {
+                ModelState.AddModelError(nameof(model.Deadline), "En tidsfrist må registreres.");
+                return View(model);
+            }
+
             var existingNeed = await _repo.GetByIdAsync(id);
             if (existingNeed == null) return NotFound();
 
@@ -159,7 +171,7 @@ namespace Prosjekt.Controllers
             existingNeed.PhoneNumber = model.Phone;
             existingNeed.Category = model.Type.ToString();
             existingNeed.Priority = model.Importance.ToString();
-            existingNeed.NeededBy = NorwegianTime.ToUtc(model.Deadline);
+            existingNeed.NeededBy = NorwegianTime.ToUtc(model.Deadline.Value);
             existingNeed.Status = model.Status;
             existingNeed.Coords = coords;
             existingNeed.AreaGeoJson = model.AreaGeoJson;
@@ -399,7 +411,6 @@ namespace Prosjekt.Controllers
             PerimeterMeters = n.PerimeterMeters
         };
    
-        /// holder IsAvailable i takt med tildelingene.
         private async Task UpdateAvailabilityAsync(int resourceId)
         {
             var resource = await _resourceRepo.GetByIdAsync(resourceId);

@@ -36,9 +36,9 @@ namespace Prosjekt.Models.Entities
         /// </summary>
         public int Quantity { get; set; } = 1;
 
-        public DateTime? AvailableFrom { get; set; }
+        public DateTime AvailableFrom { get; set; }
 
-        public DateTime? AvailableTo { get; set; }
+        public DateTime AvailableTo { get; set; }
 
         public Coordinates Coords { get; set; }
 

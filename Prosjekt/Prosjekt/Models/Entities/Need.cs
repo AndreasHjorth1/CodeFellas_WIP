@@ -30,7 +30,7 @@ namespace Prosjekt.Models.Entities
         [StringLength(50)]
         public string Priority { get; set; } = "Medium";
 
-        public DateTime? NeededBy { get; set; }
+        public DateTime NeededBy { get; set; }
 
         /// <summary>
         /// Hvor i statusflyten behovet er. Ny => Vurderes => Tildelt => Løst
