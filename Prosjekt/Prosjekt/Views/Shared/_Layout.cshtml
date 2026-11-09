@@ -229,66 +229,6 @@
                 font-size: 0.95rem;
             }
 
-            /* Profilmeny for admin og koordinator */
-            .profile-menu .profile-chevron {
-                font-size: 0.8rem;
-                margin-left: -0.3rem;
-                transition: transform 0.2s;
-            }
-
-            .profile-menu .user-menu-toggle[aria-expanded="true"] .profile-chevron {
-                transform: rotate(180deg);
-            }
-
-            .public-navbar .profile-menu .dropdown-menu {
-                min-width: 230px;
-                margin-top: 0.6rem !important;
-                padding: 1.1rem 0.9rem 0.6rem;
-                border: 1px solid #e3e6ec;
-                border-radius: 8px;
-                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-                color: #04245a;
-            }
-
-            .profile-menu-header {
-                padding: 0 0.6rem;
-                line-height: 1.75;
-                font-size: 0.95rem;
-            }
-
-            .profile-menu-divider {
-                margin: 0.8rem 0;
-                border-top: 1px solid #c9ceda;
-                opacity: 1;
-            }
-
-            .profile-menu-icons {
-                display: flex;
-                padding: 0.3rem 0.6rem;
-            }
-
-            .profile-menu-icon {
-                color: #04245a;
-                font-size: 1.15rem;
-                text-decoration: none;
-            }
-
-            .profile-menu-icon:hover {
-                color: #04245a;
-            }
-
-            .profile-menu-logout {
-                display: flex;
-                align-items: center;
-                gap: 0.8rem;
-                width: 100%;
-                padding: 0.3rem 0.6rem;
-                background: transparent;
-                border: none;
-                color: #04245a;
-                font-size: 1.05rem;
-                text-align: left;
-            }
     </style>
 </head>
 
@@ -396,7 +336,6 @@
         var visKart = Context.Request.Query["visning"] == "kart";
 
         var erKoordinator = !User.IsInRole("Admin");
-        var rolleNavn = erKoordinator ? "Koordinator" : "Admin";
 
         <!-- Navbar for admin og koordinator -->
         <header class="sticky-top">
@@ -441,33 +380,33 @@
                         </div>
                     </div>
 
-                    <div class="dropdown profile-menu">
+                    <div class="dropdown">
                         <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="d-none d-sm-inline">@displayName</span>
                             <span class="user-avatar">@initials.ToUpper()</span>
-                            <i class="fa-solid fa-chevron-down profile-chevron" aria-hidden="true"></i>
                         </button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <div class="profile-menu-header">
-                                <div>@displayName</div>
-                                <div>@rolleNavn</div>
-                            </div>
-                            <hr class="profile-menu-divider" />
-                            <div class="profile-menu-icons">
-                                <a class="profile-menu-icon" asp-controller="Profile" asp-action="Index"
-                                   title="Min profil" aria-label="Min profil">
-                                    <i class="fa-regular fa-user" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                            <hr class="profile-menu-divider" />
-                            <form asp-controller="Account" asp-action="Logout" method="post" data-confirm-logout>
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="profile-menu-logout">
-                                    <i class="fa-solid fa-arrow-right-from-bracket fa-flip-horizontal" aria-hidden="true"></i>
-                                    Logg ut
-                                </button>
-                            </form>
-                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index">Oversikt</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index" asp-route-visning="kart">Kart</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Need" asp-action="Overview">Behov</a></li>
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Ressurser</a></li>
+                            @if (erKoordinator)
+                            {
+                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
+                            }
+                            else
+                            {
+                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
+                            }
+                            <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">Min profil</a></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <form asp-controller="Account" asp-action="Logout" method="post" data-confirm-logout>
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item">Logg ut</button>
+                                </form>
+                            </li>
+                        </ul>
                     </div>
 
                 </div>

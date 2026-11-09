@@ -164,6 +164,15 @@ namespace Prosjekt.Controllers
                     $"Reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
             }
 
+            /// <summary>   
+            /// Ber en innlogget bruker om nytt passord (fra Min profil), logges de ut og må logge inn igjen
+            /// <summary>
+           
+            if (signInManager.IsSignedIn(User))
+            {
+                await signInManager.SignOutAsync();
+            }
+
             return RedirectToAction(nameof(ForgotPasswordConfirmation));
         }
 
