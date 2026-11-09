@@ -335,8 +335,6 @@
         /// «Kart» er forsiden med ?visning=kart, så den skal ikke også markere «Oversikt»
         var visKart = Context.Request.Query["visning"] == "kart";
 
-        var erKoordinator = !User.IsInRole("Admin");
-
         <!-- Navbar for admin og koordinator -->
         <header class="sticky-top">
             <nav class="public-navbar">
@@ -368,14 +366,7 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Oversikt</a></li>
-                                @if (erKoordinator)
-                                {
-                                    <li><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
-                                }
-                                else
-                                {
-                                    <li><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
-                                }
+                                <li><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
                             </ul>
                         </div>
                     </div>
@@ -390,14 +381,7 @@
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index" asp-route-visning="kart">Kart</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Need" asp-action="Overview">Behov</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Ressurser</a></li>
-                            @if (erKoordinator)
-                            {
-                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
-                            }
-                            else
-                            {
-                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
-                            }
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
                             <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">Min profil</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>

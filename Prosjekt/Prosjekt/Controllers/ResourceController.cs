@@ -134,10 +134,10 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Koordinatorens egne ressurser, vist med kortene som vanlige brukere får.
+        /// Admin og koordinator sine egne ressurser, vist med kortene som vanlige brukere får.
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = RoleNames.Coordinator)]
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
         public async Task<IActionResult> MyResources()
         {
             var ownResources = await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
