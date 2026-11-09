@@ -42,8 +42,13 @@ jobs:
           --no-build
           --no-restore
           --verbosity normal
-          --logger trx
-          --collect:"XPlat Code Coverage"
+          --output Detailed
+          --report-xunit-trx
+          --coverlet
+          --coverlet-output-format cobertura
+          --coverlet-exclude-by-file "**/*.cshtml"
+          --coverlet-exclude-by-file "**/Migrations/*.cs"
+          --coverlet-include "[Prosjekt]*"
           --results-directory ./TestResults
           
       - name: Generate coverage report

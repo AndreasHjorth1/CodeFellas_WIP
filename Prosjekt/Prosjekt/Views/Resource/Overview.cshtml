@@ -1,9 +1,21 @@
-﻿@using Prosjekt.Models.ModelView
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
+@using Prosjekt.Models.ModelView
+@using Prosjekt.Utils
 @using System.Globalization
+@using Prosjekt.Models.Authorization
 @model IEnumerable<ResourceViewModel>
 
 @{
-    ViewData["Title"] = "Oversikt over ressurser";
+    /// Viser bare brukerens egne ressurser, som de kan slette.
+    /// Brukes av vanlige brukere og av koordinator under «Mine ressurser». Admin og koordinator sin oversikt er AdminOverview.cshtml.
+    ViewData["Title"] = "Mine ressurser";
+
+    var ressurser = (Model ?? Enumerable.Empty<ResourceViewModel>()).ToList();
+    var naa = NorwegianTime.FromUtc(DateTime.UtcNow);
+    var antallTildelt = ressurser.Count(r => r.Allocated > 0 && !(r.AvailableTo < naa));
+    var stegNavn = new[] { "Registrert", "Tilgjengelig", "Tildelt behov", "Utløpt" };
 }
 
 <link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
@@ -31,205 +43,628 @@
         ResourceViewModel.ResourceType.Materials => "Materialer",
         _ => "Annet"
     };
+
+    /// <summary>
+    /// Hvor langt ressursen har kommet: 1 registrert, 2 tilgjengelig, 3 tildelt et behov, 4 utløpt.
+    /// </summary>
+    int Steg(ResourceViewModel r, DateTime naa)
+    {
+        if (r.AvailableTo < naa) return 4;
+        if (r.Allocated > 0) return 3;
+        return r.Availability ? 2 : 1;
+    }
+
+    string StatusTekst(ResourceViewModel r, int steg) => steg switch
+    {
+        4 => "Perioden er over. Endre ressursen hvis den fortsatt kan brukes.",
+        3 => $"Tildelt et behov. {r.Allocated} av {r.Quantity} er i bruk.",
+        2 => "Klar. Ingen tildelinger ennå.",
+        _ => "Ikke tilgjengelig for oppdrag."
+    };
 }
 
 <style>
-    .resizable-container {
+    .overview-page {
+        background-color: #eff3f6;
+        min-height: 100%;
+        padding: 2rem 1rem 3rem;
+    }
+
+    .overview-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    .overview-page .breadcrumb-line {
+        font-size: 0.85rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .overview-page .breadcrumb-line a {
+        color: #5f6f86;
+    }
+
+    .overview-head {
         display: flex;
-        width: 100%;
-        height: calc(100vh - 120px);
-        min-height: 500px;
-        position: relative;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
     }
 
-    /* Ressursoversikten starter på 45 % av bredden */
-    .table-section {
-        flex: 0 0 45%;
-        min-width: 250px;
-        overflow-y: auto;
-        padding-right: 10px;
+    .overview-head h1 {
+        color: #0f2a4f;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
     }
 
-    /* Kartet tar resten av bredden */
-    .map-section {
-        flex: 1 1 0;
-        min-width: 200px;
-        position: relative;
+    .btn-dark-blue {
+        background-color: #04245a;
+        border: none;
+        border-radius: 3px;
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 700;
+        padding: 0.65rem 1.1rem;
+        text-decoration: none;
     }
 
-    /* Drabar skillelinje */
-    .resizer {
-        width: 10px;
-        background: #e0e0e0;
-        cursor: col-resize;
-        transition: background 0.2s;
+    .btn-dark-blue:hover,
+    .btn-dark-blue:focus {
+        background-color: #0f3a80;
+        color: #ffffff;
+    }
+
+    .btn-light-outline {
+        background-color: #ffffff;
+        border: 1px solid #0f2a4f;
+        border-radius: 3px;
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        padding: 0.6rem 1rem;
+        text-decoration: none;
+    }
+
+    .btn-light-outline:hover {
+        background-color: #eef2f7;
+        color: #0f2a4f;
+    }
+
+    /* Gult varsel øverst */
+    .overview-alert {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background-color: #fdf0c4;
         border-radius: 4px;
-        margin: 0 4px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .overview-alert .alert-icon {
+        color: #8a6d1d;
+        font-size: 1.1rem;
+    }
+
+    .overview-alert .alert-text {
+        flex: 1;
+        color: #0f2a4f;
+        font-size: 0.95rem;
+    }
+
+    .overview-alert .alert-text strong {
+        display: block;
+        margin-bottom: 0.15rem;
+    }
+
+    /* Ressurskort */
+    .resource-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        padding: 1.1rem 1.1rem 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .resource-card:hover {
+        border-color: #b9c4d3;
+    }
+
+    .resource-card-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+    }
+
+    .resource-card .icon-circle {
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: #e9eff6;
         display: flex;
         align-items: center;
         justify-content: center;
-        user-select: none;
     }
 
-        .resizer:hover, .resizer.dragging {
-            background: #0d6efd;
+    .resource-card .icon-circle img {
+        width: 26px;
+        height: 26px;
+    }
+
+    .resource-card .card-title-block {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .resource-card h2 {
+        color: #0f2a4f;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 0.15rem;
+    }
+
+    .resource-card .card-sub {
+        color: #5f6f86;
+        font-size: 0.85rem;
+    }
+
+    .resource-card .card-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        font-size: 0.9rem;
+    }
+
+    .resource-card .card-actions a,
+    .resource-card .card-actions button {
+        color: #2d4f86;
+        text-decoration: underline;
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 0.9rem;
+    }
+
+    .resource-card .card-actions button.delete-link {
+        color: #b02a37;
+    }
+
+    .progress-steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.35rem;
+        margin: 1rem 0 0.75rem;
+    }
+
+    .progress-steps .step-bar {
+        height: 3px;
+        background-color: #dde3ea;
+        margin-bottom: 0.4rem;
+    }
+
+    .progress-steps .step.done .step-bar {
+        background-color: #04245a;
+    }
+
+    .progress-steps .step-label {
+        color: #5f6f86;
+        font-size: 0.75rem;
+    }
+
+    .resource-card .card-status {
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* «Se mer» og informasjonen som vises under kortet */
+    .resource-card .card-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .resource-card .see-more-btn {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        padding: 0;
+        color: #2d4f86;
+        font-size: 0.9rem;
+        text-decoration: underline;
+    }
+
+    .resource-card .see-more-btn i {
+        font-size: 0.75rem;
+        margin-left: 0.2rem;
+        transition: transform 0.2s;
+    }
+
+    .resource-card .see-more-btn:not(.collapsed) i {
+        transform: rotate(180deg);
+    }
+
+    /* Kortet man har åpnet får en annen farge */
+    .resource-card:has(.see-more-btn:not(.collapsed)) {
+        background-color: #f3f6fb;
+        border-color: #04245a;
+        box-shadow: inset 3px 0 0 #04245a;
+    }
+
+    .resource-details {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        gap: 0.5rem 1rem;
+        margin: 1rem 0 0;
+        padding-top: 1rem;
+        border-top: 1px solid #dde3ea;
+        font-size: 0.9rem;
+        color: #0f2a4f;
+    }
+
+    .resource-details dt {
+        font-weight: 600;
+    }
+
+    .resource-details dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    @@media (max-width: 575px) {
+        .resource-details {
+            grid-template-columns: 1fr;
+            gap: 0.15rem;
         }
 
-        .resizer::after {
-            content: "⋮";
-            color: #666;
-            font-weight: bold;
+        .resource-details dd {
+            margin-bottom: 0.5rem;
         }
+    }
 
-        .resizer:hover::after, .resizer.dragging::after {
-            color: white;
-        }
+    .overview-empty {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        padding: 2rem;
+        text-align: center;
+        color: #5f6f86;
+    }
+
+    /* Høyre kolonne */
+    .side-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .side-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .side-card h3 {
+        color: #0f2a4f;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .side-card-head a {
+        color: #5f6f86;
+        font-size: 0.9rem;
+    }
 
     #oversiktRessursKart {
         width: 100%;
-        height: 100%;
-        border-radius: 8px;
+        height: 230px;
+        border-radius: 3px;
     }
 
-    .table-row-clickable {
-        cursor: pointer;
+    .map-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.6rem;
+        color: #0f2a4f;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .map-legend img {
+        width: 20px;
+        height: 20px;
+        margin-right: 0.3rem;
+    }
+
+    .side-card .side-note {
+        color: #5f6f86;
+        font-size: 0.85rem;
+        margin: 0.75rem 0 0;
+    }
+
+    /* Filtermenyen under Filter-knappen */
+    .filter-menu {
+        width: 280px;
+        padding: 1rem;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-menu .form-control,
+    .filter-menu .form-select {
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        font-size: 0.9rem;
+        color: #0f2a4f;
+    }
+
+    .filter-menu .form-label {
+        color: #0f2a4f;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+
+    @@media (min-width: 992px) {
+        .overview-side {
+            position: sticky;
+            top: 80px;
+        }
+    }
+
+    @@media print {
+        .overview-side, .head-buttons, .card-actions, .breadcrumb-line, .see-more-btn {
+            display: none !important;
+        }
     }
 </style>
 
-<h1 class="mb-3">Oversikt over ressurser</h1>
+<div class="overview-page">
+    <div class="overview-inner">
+        <div class="breadcrumb-line">
+            <a asp-controller="Home" asp-action="Index">Forside</a> &rsaquo; <a asp-controller="Resource" asp-action="Overview">@ViewData["Title"]</a>
+        </div>
 
-<div class="resizable-container" id="splitWrapper">
-    <!-- Tabell-seksjon (Ressursoversikt) -->
-    <div class="table-section" id="tableBox">
-        <div class="table-responsive bg-white p-3 shadow-sm border rounded h-100">
-            <div class="row g-2 mb-3">
-                <div class="col-md-7">
-                    <input type="search" id="sokeFelt" class="form-control"
-                           placeholder="Søk i navn eller beskrivelse" />
-                </div>
-                <div class="col-md-5">
-                    <select id="typeFilter" class="form-select">
-                        <option value="">Alle kategorier</option>
-                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
-                        {
-                            <option value="@k">@OversettKategori(k)</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-12">
-                    <input type="search" id="stedsFelt" class="form-control" placeholder="Søk på sted, f.eks. Kristiansand - trykk Enter"/>
-                </div>
-                <div class="col-md-12">
+        <div class="row g-4">
+            <!-- Venstre kolonne: ressursene -->
+            <div class="col-lg-8">
+                <div class="overview-head">
+                    <h1>@ViewData["Title"]</h1>
+                    <div class="d-flex flex-wrap gap-2 head-buttons">
+                        <button type="button" class="btn-light-outline" onclick="window.print()">
+                            <i class="fa-solid fa-print me-1" aria-hidden="true"></i> Skriv ut liste
+                        </button>
 
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
-                        🖨️ Skriv ut listen
-                    </button>
+                        <div class="dropdown">
+                            <button type="button" class="btn-light-outline" id="filterKnapp"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                <i class="fa-solid fa-sliders me-1" aria-hidden="true"></i> Filter
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end filter-menu" aria-labelledby="filterKnapp">
+                                <div class="mb-2">
+                                    <label class="form-label" for="typeFilter">Kategori</label>
+                                    <select id="typeFilter" class="form-select">
+                                        <option value="">Alle kategorier</option>
+                                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+                                        {
+                                            <option value="@k">@OversettKategori(k)</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label" for="sokeFelt">Navn</label>
+                                    <input type="search" id="sokeFelt" class="form-control" placeholder="Søk i navn eller beskrivelse" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label" for="stedsFelt">Sted</label>
+                                    <input type="search" id="stedsFelt" class="form-control" placeholder="F.eks. Kristiansand, trykk Enter" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <a asp-controller="Resource" asp-action="Index" class="btn-dark-blue">Registrer ny ressurs</a>
+                    </div>
                 </div>
-                <div class="col-md-6 d-flex gap-2 align-items-center">
-                    <button type="button" id="velgPunktBtn" class="btn btn-outline-primary btn-sm text-nowrap">
-                        Velg punkt
-                    </button>
-                    <input type="number" id="radiusFelt" class="form-control form-control-sm" value="5" min="1" max="500" step="1" style="max-width: 90px;" />
-                    <span class="small text-muted">km</span>
+
+                @if (antallTildelt > 0)
+                {
+                    <div class="overview-alert">
+                        <i class="fa-solid fa-triangle-exclamation alert-icon" aria-hidden="true"></i>
+                        <div class="alert-text">
+                            <strong>@(antallTildelt == 1 ? "1 ressurs er tildelt et behov" : $"{antallTildelt} ressurser er tildelt et behov")</strong>
+                            Kommunen har koblet @(antallTildelt == 1 ? "den" : "dem") til et behov. Sjekk at opplysningene fortsatt stemmer.
+                        </div>
+                        <button type="button" class="btn-dark-blue" onclick="visForsteTildelte()">Se ressurs</button>
+                    </div>
+                }
+
+                @if (ressurser.Any())
+                {
+                    @foreach (var res in ressurser)
+                    {
+                        var steg = Steg(res, naa);
+                        var lat = (res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture);
+                        var lng = (res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture);
+                        var ledigTekst = !res.Availability
+                            ? "ikke tilgjengelig"
+                            : res.AvailableTo.HasValue ? $"ledig til {res.AvailableTo.Value:dd.MM. 'kl.' HH:mm}" : "ledig";
+
+                        @* table-row-clickable må stå, filteret i site.js finner kortene med den *@
+                        <div class="resource-card table-row-clickable @(steg == 3 ? "is-allocated" : "")"
+                             data-lat="@lat" data-lng="@lng"
+                             data-id="@res.Id" data-type="@res.Category" data-sok="@(($"{res.Name} {res.Description}").ToLower())">
+
+                            <div class="resource-card-head">
+                                <span class="icon-circle">
+                                    <img src="@Url.Content($"~/images/resources/{RessursIkonFil(res.Category, res.Availability)}")" alt="" />
+                                </span>
+                                <div class="card-title-block">
+                                    <h2>@res.Name</h2>
+                                    <div class="card-sub">
+                                        <span data-adresse-for="@res.Id">@OversettKategori(res.Category)</span>
+                                        · @res.Available av @res.Quantity stk
+                                        @if (res.Allocated > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">@res.Allocated i bruk</span>
+                                        }
+                                        · @ledigTekst
+                                    </div>
+                                </div>
+                                <div class="card-actions" onclick="event.stopPropagation();">
+                                    <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
+                                    @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
+                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="delete-link">Slett</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="progress-steps" aria-label="Status: @stegNavn[steg - 1]">
+                                @for (int i = 0; i < stegNavn.Length; i++)
+                                {
+                                    <div class="step @(i < steg ? "done" : "")">
+                                        <div class="step-bar"></div>
+                                        <div class="step-label">@stegNavn[i]</div>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="card-bottom">
+                                <p class="card-status">@StatusTekst(res, steg)</p>
+                                <button type="button" class="see-more-btn collapsed"
+                                        data-bs-toggle="collapse" data-bs-target="#ressursInfo-@res.Id"
+                                        aria-expanded="false" aria-controls="ressursInfo-@res.Id">
+                                    Se mer <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+
+                            @* Mer informasjon om ressursen, vises under kortet når man trykker «Se mer» *@
+                            <div class="collapse" id="ressursInfo-@res.Id">
+                                <dl class="resource-details">
+                                    <dt>Kategori</dt>
+                                    <dd>@OversettKategori(res.Category)</dd>
+
+                                    <dt>Antall</dt>
+                                    <dd>@res.Quantity stk (@res.Allocated i bruk, @res.Available ledig)</dd>
+
+                                    <dt>Status</dt>
+                                    <dd>@(res.Availability ? "Tilgjengelig" : "Ikke tilgjengelig")</dd>
+
+                                    <dt>Tilgjengelig fra</dt>
+                                    <dd>@(res.AvailableFrom.HasValue ? res.AvailableFrom.Value.ToString("dd.MM.yyyy 'kl.' HH:mm") : "Ikke satt")</dd>
+
+                                    <dt>Tilgjengelig til</dt>
+                                    <dd>@(res.AvailableTo.HasValue ? res.AvailableTo.Value.ToString("dd.MM.yyyy 'kl.' HH:mm") : "Ikke satt")</dd>
+
+                                    @if (!string.IsNullOrWhiteSpace(res.VehicleType))
+                                    {
+                                        <dt>Type kjøretøy</dt>
+                                        <dd>@res.VehicleType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.LicensePlate))
+                                    {
+                                        <dt>Registreringsnummer</dt>
+                                        <dd>@res.LicensePlate</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.ToolType))
+                                    {
+                                        <dt>Type verktøy</dt>
+                                        <dd>@res.ToolType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.Size))
+                                    {
+                                        <dt>Størrelse</dt>
+                                        <dd>@res.Size</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.MaterialType))
+                                    {
+                                        <dt>Type materiale</dt>
+                                        <dd>@res.MaterialType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.ProvisionType))
+                                    {
+                                        <dt>Type mat og utstyr</dt>
+                                        <dd>@res.ProvisionType</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(res.PhoneNumber))
+                                    {
+                                        <dt>Telefon</dt>
+                                        <dd>@res.PhoneNumber</dd>
+                                    }
+
+                                    <dt>Beskrivelse</dt>
+                                    <dd>@(string.IsNullOrWhiteSpace(res.Description) ? "Ingen beskrivelse" : res.Description)</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="overview-empty">
+                        Du har ikke registrert noen ressurser ennå.
+                    </div>
+                }
+            </div>
+
+            <!-- Høyre kolonne: kart og filter -->
+            <div class="col-lg-4">
+                <div class="overview-side">
+                    <div class="side-card">
+                        <div class="side-card-head">
+                            <h3>Ressursene dine og behov</h3>
+                            <a asp-controller="Home" asp-action="Index" asp-route-fra="oversikt">Stort kart</a>
+                        </div>
+                        <div id="oversiktRessursKart"></div>
+                        <div class="map-legend">
+                            <span><img src="@Url.Content("~/images/resources/other.svg")" alt="" />Ressurs</span>
+                            <span><img src="@Url.Content("~/images/needs/other.svg")" alt="" />Behov</span>
+                        </div>
+                        <p class="side-note">Trykk på «Se mer» på en ressurs for å se mer informasjon. Behovene fra kommunen vises med egne symboler i kartet.</p>
+                    </div>
                 </div>
             </div>
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
-                    <tr>
-                        <th>Navn / Beskrivelse</th>
-                        <th>Kategori</th>
-                        <th>Antall</th>
-                        <th>Status</th>
-                        <th>Tidsrom</th>
-                        <th>Handlinger</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        @foreach (var res in Model)
-                        {
-                            <tr class="table-row-clickable" data-lat="@((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture))" data-lng="@((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture))"
-                                data-id="@res.Id" data-type="@res.Category" data-sok="@(($"{res.Name} {res.Description}").ToLower())" 
-                                onclick="fokuserPaRessurs('@res.Id', @((res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture)), @((res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture)))">
-                                <td>
-                                    <strong>@res.Name</strong><br />
-                                    <small class="text-secondary">@res.Description</small>
-                                </td>
-                                <td>
-                                    <span class="resource-category">
-                                        <img class="resource-category-icon"
-                                             src="@Url.Content($"~/images/resources/{RessursIkonFil(res.Category, res.Availability)}")"
-                                             width="28" height="28" alt="" />
-                                        <span class="badge bg-secondary">@OversettKategori(res.Category)</span>
-                                    </span>
-                                </td>
-                                <td class="small">
-                                    @res.Available av @res.Quantity
-                                    @if (res.Allocated > 0)
-                                    {
-                                        <br /><span class="badge bg-warning text-dark">@res.Allocated i bruk</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (res.Availability)
-                                    {
-                                        <span class="badge bg-success">Tilgjengelig</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">Ikke tilgjengelig</span>
-                                    }
-                                </td>
-                                <td class="small">
-                                    Fra: @(res.AvailableFrom?.ToString("dd.MM.yyyy HH:mm") ?? "-")<br />
-                                    Til: @(res.AvailableTo?.ToString("dd.MM.yyyy HH:mm") ?? "-")
-                                </td>
-                                <td class="text-nowrap" onclick="event.stopPropagation();">
-                                    <div class="d-flex gap-1">
-                                        <a asp-action="Edit" asp-route-id="@res.Id" class="btn btn-sm btn-warning">Rediger</a>
-                                        <form asp-action="Delete" asp-route-id="@res.Id" method="post" onsubmit="return confirm('Er du sikker på at du vil slette @res.Name?');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-danger">Slett</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr><td colspan="6" class="text-muted text-center py-4">Ingen ressurser registrert ennå.</td></tr>
-                    }
-                </tbody>
-            </table>
         </div>
-    </div>
-
-    <!-- Drabar skillelinje -->
-    <div class="resizer" id="dragHandle"></div>
-
-    <!-- Kart-seksjon -->
-    <div class="map-section" id="mapBox">
-        <div id="oversiktRessursKart" class="shadow-sm border"></div>
     </div>
 </div>
 
 @section Scripts {
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
+    <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
+
     <script>
         var kart;
         var markorerMap = {};
+        var symbolMarkers;
 
-        function fokuserPaRessurs(id, lat, lng) {
-            if (lat && lng && markorerMap[id]) {
-                kart.flyTo([lat, lng], 15, { duration: 1 });
-                markorerMap[id].openPopup();
-            }
+        function fokuserPaRessurs(id) {
+            MapSymbols.focus(symbolMarkers, markorerMap[id]);
+        }
+
+        /// Knappen i det gule varselet: scroller til første tildelte ressurs og viser den i kartet
+        function visForsteTildelte() {
+            var kort = document.querySelector('.resource-card.is-allocated:not(.d-none)');
+            if (!kort) return;
+            kort.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            fokuserPaRessurs(kort.dataset.id);
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            // Konverter C#-modellen til JS uten kontaktinfo/reg-nr
-            var ressurser = @Json.Serialize((Model ?? Enumerable.Empty<ResourceViewModel>()).Select(r => new
+            /// Konverter C#-modellen til JS uten kontaktinfo/reg-nr
+            var ressurser = @Json.Serialize(ressurser.Select(r => new
             {
                 id = r.Id,
                 name = r.Name,
@@ -241,14 +676,17 @@
                 lng = r.Longitude
             }));
 
-            // Initialiser kartet
-            kart = L.map('oversiktRessursKart').setView([58.163, 8.003], 12);
+            /// Initialiser kartet
+            kart = L.map('oversiktRessursKart', { zoomControl: false }).setView([58.163, 8.003], 12);
+            L.control.zoom({ position: 'bottomright' }).addTo(kart);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(kart);
 
             var bounds = [];
+            symbolMarkers = MapSymbols.createCluster(kart);
+            var adresseKo = [];
 
             ressurser.forEach(function (r) {
                 var lat = parseFloat(r.lat);
@@ -260,85 +698,70 @@
 
                 var statusTekst = r.isAvailable
                     ? '<span style="color: green; font-weight: bold;">Tilgjengelig</span>'
-                    : '<span style="color: red; font-weight: bold;">Opptatt</span>';
-
-                var resourceIcon = L.icon({
-                    iconUrl: r.iconUrl,
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 20],
-                    popupAnchor: [0, -22],
-                    className: 'resource-map-icon'
-                });
+                    : '<span style="color: red; font-weight: bold;">Ikke tilgjengelig</span>';
 
                 var marker = L.marker([lat, lng], {
-                    icon: resourceIcon,
+                    icon: MapSymbols.icon(r.iconUrl, 'resource-map-icon'),
                     title: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig'),
                     alt: r.categoryName + ': ' + r.name + (r.isAvailable ? ' – Tilgjengelig' : ' – Ikke tilgjengelig')
-                }).addTo(kart);
+                }).addTo(symbolMarkers);
                 markorerMap[r.id] = marker;
 
                 var toppInnhold = `
-                    <b>${r.name}</b> (${r.quantity} stk)<br/>
+                    <b>${escapeHtml(r.name)}</b> (${r.quantity} stk)<br/>
                     Status: ${statusTekst}<br/>`;
 
                 marker.bindPopup(toppInnhold + '<div class="small text-muted mt-1"><i>Henter adresse...</i></div>');
-
-                // Slå opp adresse via Nominatim API
-                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-                    .then(response => response.ok ? response.json() : null)
-                    .then(data => {
-                        var address = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        marker.setPopupContent(toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${address}</small>`);
-                    })
-                    .catch(function () {
-                        marker.setPopupContent(toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
-                    });
+                adresseKo.push({ r: r, lat: lat, lng: lng, marker: marker, toppInnhold: toppInnhold });
             });
-            
-            var kjorFilter = settOppFilter(kart, [markorerMap]);
+
+            /// Slår opp adressene én og én, siden Nominatim bare tillater ett oppslag i sekundet.
+            /// Adressen vises både i popupen og under navnet på kortet.
+            (async function hentAdresser() {
+                for (const element of adresseKo) {
+                    try {
+                        const svar = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${element.lat}&lon=${element.lng}`);
+                        const data = svar.ok ? await svar.json() : null;
+                        const adresse = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
+                        element.marker.setPopupContent(element.toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(adresse)}</small>`);
+
+                        /// Kortet viser bare gate og nummer, eller første del av adressen
+                        const a = data && data.address;
+                        const kort = a && a.road ? a.road + (a.house_number ? ' ' + a.house_number : '') : adresse.split(',')[0];
+                        const felt = document.querySelector(`[data-adresse-for="${element.r.id}"]`);
+                        if (felt && data) felt.textContent = kort;
+                    } catch {
+                        element.marker.setPopupContent(element.toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
+                    }
+                    await new Promise(ferdig => setTimeout(ferdig, 1100));
+                }
+            })();
+
+            /// Behovene fra kommunen vises med egne symboler, utenfor filteret for ressursene
+            fetch('@Url.Action("GetInformation", "Need")')
+                .then(svar => svar.ok ? svar.json() : [])
+                .then(behov => {
+                    behov.forEach(function (n) {
+                        var lat = parseFloat(n.latitude ?? n.Latitude);
+                        var lng = parseFloat(n.longitude ?? n.Longitude);
+                        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+                        L.marker([lat, lng], {
+                            icon: MapSymbols.needIcon(n.type ?? n.Type, n.importance ?? n.Importance),
+                            title: 'Behov: ' + (n.name ?? n.Name)
+                        })
+                            .bindPopup(`<b>Behov:</b> ${escapeHtml(n.name ?? n.Name)}<br/><small>${escapeHtml(n.description ?? n.Description)}</small>`)
+                            .addTo(kart);
+                    });
+                })
+                .catch(function () { /* Kartet fungerer uten behovene */ });
+
+            var kjorFilter = settOppFilter(kart, [markorerMap], [symbolMarkers]);
             settOppStedssok(kart, kjorFilter);
-            settOppRadiusSok(kart, kjorFilter);
 
             if (bounds.length > 0) {
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
             }
-
-            // --- DRAG / RESIZE LOGIKK ---
-            const resizer = document.getElementById('dragHandle');
-            const leftSide = document.getElementById('tableBox');
-            const container = document.getElementById('splitWrapper');
-
-            let x = 0;
-            let leftWidth = 0;
-
-            const mouseDownHandler = function (e) {
-                x = e.clientX;
-                leftWidth = leftSide.getBoundingClientRect().width;
-
-                resizer.classList.add('dragging');
-                document.addEventListener('mousemove', mouseMoveHandler);
-                document.addEventListener('mouseup', mouseUpHandler);
-            };
-
-            const mouseMoveHandler = function (e) {
-                const dx = e.clientX - x;
-                const newLeftWidth = ((leftWidth + dx) * 100) / container.getBoundingClientRect().width;
-
-                // Tillat justering mellom 15 % og 85 % bredde
-                if (newLeftWidth > 15 && newLeftWidth < 85) {
-                    leftSide.style.flex = `0 0 ${newLeftWidth}%`;
-                    kart.invalidateSize();
-                }
-            };
-
-            const mouseUpHandler = function () {
-                resizer.classList.remove('dragging');
-                document.removeEventListener('mousemove', mouseMoveHandler);
-                document.removeEventListener('mouseup', mouseUpHandler);
-                kart.invalidateSize();
-            };
-
-            resizer.addEventListener('mousedown', mouseDownHandler);
 
             setTimeout(function () { kart.invalidateSize(); }, 200);
         });

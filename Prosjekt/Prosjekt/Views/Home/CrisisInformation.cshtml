@@ -1,5 +1,189 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    ViewData["Title"] = "Kriseinformasjon";
 }
+
+<style>
+    .crisis-page {
+        min-height: 80vh;
+        background-color: #eff3f6;
+        padding: 2.5rem 1rem 3rem;
+    }
+
+    .crisis-layout {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .crisis-page h1 {
+        color: #0f2a4f;
+        font-size: 1.9rem;
+        font-weight: 700;
+        margin: 0 0 0.75rem;
+    }
+
+    .crisis-page .intro {
+        color: #5f6f86;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 2rem;
+    }
+
+    .crisis-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 6px;
+        padding: 1.1rem 1.25rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .crisis-card h2 {
+        color: #0f2a4f;
+        font-size: 1.05rem;
+        font-weight: 700;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #dde3ea;
+        margin: 0 0 1rem;
+    }
+
+    .crisis-card p {
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 0.9rem;
+    }
+
+    .crisis-card p:last-child {
+        margin-bottom: 0;
+    }
+
+    .crisis-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 0.9rem;
+    }
+
+    .crisis-card ul:last-child {
+        margin-bottom: 0;
+    }
+
+    .crisis-card ul li {
+        position: relative;
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        padding: 0.45rem 0 0.45rem 1.1rem;
+        border-bottom: 1px solid #eef1f5;
+    }
+
+    .crisis-card ul li:last-child {
+        border-bottom: none;
+    }
+
+    /* Liten mørkeblå firkant i stedet for vanlig punkt */
+    .crisis-card ul li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.95rem;
+        width: 6px;
+        height: 6px;
+        background-color: #04245a;
+    }
+
+    /* Nødnumrene vises som fliser */
+    .crisis-card ul.emergency-numbers {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .crisis-card ul.emergency-numbers li {
+        background-color: #eff3f6;
+        border: 1px solid #dde3ea;
+        border-left: 3px solid #c8102e;
+        border-radius: 4px;
+        color: #5f6f86;
+        font-size: 0.85rem;
+        padding: 0.75rem 0.9rem;
+    }
+
+    .crisis-card ul.emergency-numbers li::before {
+        content: none;
+    }
+
+    .crisis-card ul.emergency-numbers strong {
+        display: block;
+        color: #0f2a4f;
+        font-size: 1.4rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 0.15rem;
+    }
+
+    .crisis-page a {
+        color: #2d4f86;
+        text-decoration: underline;
+    }
+
+    .crisis-page a:hover {
+        color: #0f2a4f;
+    }
+
+    /* Siste boks i grønt, som infoboksene på kontosidene */
+    .crisis-card.help-card {
+        background-color: #e3f1ea;
+        border-color: #cfe6da;
+    }
+
+    .crisis-card.help-card h2 {
+        border-bottom-color: #cfe6da;
+    }
+</style>
+
+<div class="crisis-page">
+    <div class="crisis-layout">
+        <h1>@ViewData["Title"]</h1>
+
+        <p class="intro">Her finner du viktige nummer og råd for hva du kan gjøre før og under en krise.</p>
+
+        <section class="crisis-card" aria-labelledby="nodnummerTittel">
+            <h2 id="nodnummerTittel">Nødnummer</h2>
+            <ul class="emergency-numbers">
+                <li><strong>110</strong> Brann</li>
+                <li><strong>112</strong> Politi</li>
+                <li><strong>113</strong> Ambulanse</li>
+                <li><strong>116 117</strong> Legevakt</li>
+                <li><strong>02800</strong> Politiet, når det ikke haster</li>
+            </ul>
+            <p>Er mobilnettet nede kan du prøve å ringe nødnummer likevel, telefonen bruker da et annet nett hvis det finnes.</p>
+        </section>
+
+        <section class="crisis-card" aria-labelledby="forberedtTittel">
+            <h2 id="forberedtTittel">Vær forberedt</h2>
+            <p>DSB anbefaler at alle husstander skal klare seg selv i en uke hvis strøm, vann eller mobilnett blir borte. Det er lurt å ha:</p>
+            <ul>
+                <li>Vann, ca. 3 liter per person per dag</li>
+                <li>Mat som holder seg lenge og ikke trenger strøm</li>
+                <li>Lommelykt, batterier og en DAB-radio på batteri</li>
+                <li>Medisiner du trenger, og førstehjelpsutstyr</li>
+                <li>Noe å varme seg med, som ullklær og soveposer</li>
+                <li>Litt kontanter</li>
+            </ul>
+        </section>
+
+        <section class="crisis-card" aria-labelledby="informasjonTittel">
+            <h2 id="informasjonTittel">Få informasjon</h2>
+            <p>Under en krise kommer viktige meldinger på NRK P1 på radio. Andre steder du kan se:</p>
+            <ul>
+                <li><a href="https://www.sikkerhverdag.no" target="_blank" rel="noopener">sikkerhverdag.no</a> – råd om egenberedskap fra DSB</li>
+                <li><a href="https://www.dsb.no/egenberedskap" target="_blank" rel="noopener">dsb.no/egenberedskap</a></li>
+                <li>Kommunen din sin nettside</li>
+            </ul>
+        </section>
+
+        <section class="crisis-card help-card" aria-labelledby="hjelpeTittel">
+            <h2 id="hjelpeTittel">Har du noe som kan hjelpe?</h2>
+            <p>Har du utstyr, kjøretøy eller annet som kan være nyttig i en krise kan du lage en bruker og registrere det som en ressurs. Da kan kriseledelsen se det og ta kontakt.</p>
+        </section>
+    </div>
+</div>

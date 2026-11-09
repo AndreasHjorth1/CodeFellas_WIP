@@ -1,15 +1,21 @@
-using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
+using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Claims;
+using System.Globalization;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace Prosjekt.Controllers
 {
+    /// <summary>
+    /// Registrering, oversikt, endring, sletting og eksport av ressurser. Krever innlogging.
+    /// </summary>
     [Authorize]
     public class ResourceController : Controller
     {
@@ -22,166 +28,133 @@ namespace Prosjekt.Controllers
             _allocationRepo = allocationRepo;
         }
 
+        /// <summary>
+        /// Admin og koordinator ser og kan endre alle ressurser.
+        /// </summary>
+        private bool CanSeeAllResources()
+        {
+            return User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
+        }
+
+        /// <summary>
+        /// Admin, koordinator og eieren kan endre ressursen.
+        /// </summary>
+        private bool CanEdit(Resource resource)
+        {
+            return CanSeeAllResources()
+                || resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
+        /// <summary>
+        /// Admin kan slette alle ressurser, andre (også koordinator) bare sine egne.
+        /// </summary>
+        private bool CanDelete(Resource resource)
+        {
+            if (User.IsInRole(RoleNames.Admin)) return true;
+
+            return resource.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
         [HttpGet]
         public IActionResult Index()
         {
             return View(new ResourceCreatorViewModel());
         }
 
+        /// <summary>
+        /// Oppretter alle ressursene i listen, med samme posisjon fra kartet.
+        /// Skiltnummer lagres i beskrivelsen, fordi det ikke har egen kolonne.
+        /// Bekreftelsessiden viser bare den første ressursen.
+        /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ResourceCreatorViewModel model)
         {
-            if (model.Latitude.HasValue && model.Longitude.HasValue && model.ResourceList != null)
-            {
-                foreach (var item in model.ResourceList)
-                {
-                    item.Latitude = model.Latitude;
-                    item.Longitude = model.Longitude;
-                }
-
-                foreach (var key in ModelState.Keys.Where(k => k.EndsWith(".Latitude") || k.EndsWith(".Longitude")).ToList())
-                {
-                    ModelState.Remove(key);
-                }
-            }
-
             if (!ModelState.IsValid)
             {
                 return View("Index", model);
             }
 
-            if (model.ResourceList == null || !model.ResourceList.Any())
+            if (model.ResourceList == null || !model.ResourceList.Any(r => !string.IsNullOrWhiteSpace(r.Name)))
             {
-                ModelState.AddModelError("", "You must add at least one resource to the list.");
+                ModelState.AddModelError("", "Du må legge til minst én ressurs.");
                 return View("Index", model);
             }
 
-            var coords = new Coordinates(model.Latitude!.Value, model.Longitude!.Value);
+            if (!model.Latitude.HasValue || !model.Longitude.HasValue)
+            {
+                ModelState.AddModelError("", "Du må velge et punkt på kartet.");
+                return View("Index", model);
+            }
+
+            var coords = new Coordinates(model.Latitude.Value, model.Longitude.Value);
             if (!coords.IsValid())
             {
-                ModelState.AddModelError("", "The provided coordinates are invalid.");
+                ModelState.AddModelError("", "De oppgitte koordinatene er ugyldige.");
                 return View("Index", model);
             }
 
-            ResourceViewModel? createdResourceModel = null;
+            var createdResources = new List<ResourceViewModel>();
 
-            for (int i = 0; i < model.ResourceList.Count; i++)
+            foreach (var baseResource in model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)))
             {
-                var baseResource = model.ResourceList[i];
-
-                string extraInfo = "";
-                string? subCategoryValue = null;
-
-                switch (baseResource.Category)
-                {
-                    case ResourceViewModel.ResourceType.Vehicle:
-                        string vehicleTypeStr = !string.IsNullOrWhiteSpace(baseResource.VehicleType)
-                            ? baseResource.VehicleType
-                            : Request.Form[$"ResourceList[{i}].VehicleType"].ToString();
-
-                        string licensePlate = !string.IsNullOrWhiteSpace(baseResource.LicensePlate)
-                            ? baseResource.LicensePlate
-                            : Request.Form[$"ResourceList[{i}].LicensePlate"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(vehicleTypeStr))
-                        {
-                            subCategoryValue = vehicleTypeStr;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(licensePlate))
-                        {
-                            extraInfo = $"[Reg.nr: {licensePlate}]";
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Tool:
-                        string toolTypeStr = !string.IsNullOrWhiteSpace(baseResource.ToolType)
-                            ? baseResource.ToolType
-                            : Request.Form[$"ResourceList[{i}].ToolType"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(toolTypeStr))
-                        {
-                            subCategoryValue = toolTypeStr;
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Clothing:
-                        string sizeStr = !string.IsNullOrWhiteSpace(baseResource.Size)
-                            ? baseResource.Size
-                            : Request.Form[$"ResourceList[{i}].Size"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(sizeStr))
-                        {
-                            subCategoryValue = sizeStr;
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Provision:
-                        string provisionTypeStr = !string.IsNullOrWhiteSpace(baseResource.ProvisionType)
-                            ? baseResource.ProvisionType
-                            : Request.Form[$"ResourceList[{i}].ProvisionType"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(provisionTypeStr))
-                        {
-                            subCategoryValue = provisionTypeStr;
-                        }
-                        break;
-
-                    case ResourceViewModel.ResourceType.Materials:
-                        string materialTypeStr = !string.IsNullOrWhiteSpace(baseResource.MaterialType)
-                            ? baseResource.MaterialType
-                            : Request.Form[$"ResourceList[{i}].MaterialType"].ToString();
-
-                        if (!string.IsNullOrWhiteSpace(materialTypeStr))
-                        {
-                            subCategoryValue = materialTypeStr;
-                        }
-                        break;
-
-                    default:
-                        subCategoryValue = null;
-                        break;
-                }
-
                 var resourceEntity = new Resource
                 {
-                    Name = baseResource.Name ?? "Unknown resource",
-                    Description = string.IsNullOrWhiteSpace(extraInfo)
-                        ? baseResource.Description ?? ""
-                        : $"{baseResource.Description} {extraInfo}".Trim(),
+                    Name = baseResource.Name!,
+                    Description = GetFullDescription(baseResource),
                     Category = baseResource.Category.ToString(),
-                    SubCategory = subCategoryValue,
+                    SubCategory = GetSubCategory(baseResource),
                     IsAvailable = baseResource.Availability,
                     PhoneNumber = baseResource.PhoneNumber,
                     Quantity = baseResource.Quantity,
-                    AvailableFrom = baseResource.AvailableFrom,
-                    AvailableTo = baseResource.AvailableTo,
-                    Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                    CreatedAt = NorwegianTime.Now
+                    AvailableFrom = NorwegianTime.ToUtc(baseResource.AvailableFrom),
+                    AvailableTo = NorwegianTime.ToUtc(baseResource.AvailableTo),
+                    Coords = coords,
+                    UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(resourceEntity);
 
-                if (i == 0)
-                {
-                    createdResourceModel = baseResource;
-                    createdResourceModel.Id = resourceEntity.Id;
-                }
+                baseResource.Id = resourceEntity.Id;
+                baseResource.Latitude = model.Latitude;
+                baseResource.Longitude = model.Longitude;
+                createdResources.Add(baseResource);
             }
 
-            return View("Create", createdResourceModel);
+            return View("Create", createdResources);
         }
 
+        /// <summary>
+        /// Admin og koordinator ser alle ressurser, andre bare sine egne.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
-            var resourceEntities = await _repo.GetAllAsync();
+            var resourceViewModels = await ToOverviewViewModelsAsync(await GetVisibleResourcesAsync());
+
+            /// Admin og koordinator har en egen side med tabell og kart, andre får kortene med sine egne ressurser
+            var viewName = CanSeeAllResources() ? "AdminOverview" : "Overview";
+            return View(viewName, resourceViewModels);
+        }
+
+        /// <summary>
+        /// Koordinatorens egne ressurser, vist med kortene som vanlige brukere får.
+        /// </summary>
+        [HttpGet]
+        [Authorize(Roles = RoleNames.Coordinator)]
+        public async Task<IActionResult> MyResources()
+        {
+            var ownResources = await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            return View("Overview", await ToOverviewViewModelsAsync(ownResources));
+        }
+
+        private async Task<List<ResourceViewModel>> ToOverviewViewModelsAsync(IEnumerable<Resource> resourceEntities)
+        {
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
-            var resourceViewModels = resourceEntities.Select(r => new ResourceViewModel
+            return resourceEntities.Select(r => new ResourceViewModel
             {
                 Id = r.Id,
+                UserId = r.UserId,
                 Name = r.Name,
                 Description = r.Description,
                 PhoneNumber = r.PhoneNumber,
@@ -189,21 +162,22 @@ namespace Prosjekt.Controllers
                 Availability = r.IsAvailable,
                 Latitude = r.Coords.Latitude,
                 Longitude = r.Coords.Longitude,
-                Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat) ? cat : ResourceViewModel.ResourceType.Other,
-                AvailableFrom = r.AvailableFrom,
-                AvailableTo = r.AvailableTo,
+                Category = ParseCategory(r.Category),
+                AvailableFrom = NorwegianTime.FromUtc(r.AvailableFrom),
+                AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
                 Allocated = allocations.Where(a => a.ResourceId == r.Id).Sum(a => a.Quantity),
             }).ToList();
-
-            return View(resourceViewModels);
         }
 
-        [HttpGet]
+        /// <summary>
+        /// Viser redigeringsskjemaet. Skiltnummeret skilles ut fra beskrivelsen og vises i eget felt.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var resource = await _repo.GetByIdAsync(id);
             if (resource == null) return NotFound();
+            if (!CanEdit(resource)) return Forbid();
 
             string description = resource.Description ?? "";
             string licensePlate = "";
@@ -221,10 +195,7 @@ namespace Prosjekt.Controllers
                 }
             }
 
-            var category = Enum.TryParse<ResourceViewModel.ResourceType>(resource.Category, out var cat)
-                ? cat
-                : ResourceViewModel.ResourceType.Other;
-
+            var category = ParseCategory(resource.Category);
             var subCategory = resource.SubCategory?.Trim();
 
             var viewModel = new ResourceViewModel
@@ -238,8 +209,8 @@ namespace Prosjekt.Controllers
                 Latitude = resource.Coords.Latitude,
                 Longitude = resource.Coords.Longitude,
                 Category = category,
-                AvailableFrom = resource.AvailableFrom,
-                AvailableTo = resource.AvailableTo,
+                AvailableFrom = NorwegianTime.FromUtc(resource.AvailableFrom),
+                AvailableTo = NorwegianTime.FromUtc(resource.AvailableTo),
                 LicensePlate = licensePlate,
 
                 VehicleType = category == ResourceViewModel.ResourceType.Vehicle ? subCategory : null,
@@ -253,21 +224,18 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, ResourceViewModel model)
         {
             if (id != model.Id) return BadRequest();
 
-            ModelState.Remove(nameof(model.VehicleType));
-            ModelState.Remove(nameof(model.LicensePlate));
-            ModelState.Remove(nameof(model.ToolType));
-            ModelState.Remove(nameof(model.MaterialType));
-            ModelState.Remove(nameof(model.ProvisionType));
-            ModelState.Remove(nameof(model.Size));
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
 
             if (!model.Latitude.HasValue || !model.Longitude.HasValue)
             {
-                ModelState.AddModelError("", "Du må velge en posisjon i kartet.");
+                ModelState.AddModelError("", "Du må velge et punkt på kartet.");
                 return View(model);
             }
 
@@ -278,81 +246,49 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             var resourceEntity = await _repo.GetByIdAsync(id);
             if (resourceEntity == null) return NotFound();
-
-            string extraInfo = "";
-            string? subCategoryValue = null;
-
-            switch (model.Category)
-            {
-                case ResourceViewModel.ResourceType.Vehicle:
-                    if (!string.IsNullOrWhiteSpace(model.VehicleType))
-                        subCategoryValue = model.VehicleType;
-                    if (!string.IsNullOrWhiteSpace(model.LicensePlate))
-                        extraInfo = $"[Reg.nr: {model.LicensePlate.Trim()}]";
-                    break;
-
-                case ResourceViewModel.ResourceType.Tool:
-                    if (!string.IsNullOrWhiteSpace(model.ToolType))
-                        subCategoryValue = model.ToolType;
-                    break;
-
-                case ResourceViewModel.ResourceType.Clothing:
-                    if (!string.IsNullOrWhiteSpace(model.Size))
-                        subCategoryValue = model.Size;
-                    break;
-
-                case ResourceViewModel.ResourceType.Provision:
-                    if (!string.IsNullOrWhiteSpace(model.ProvisionType))
-                        subCategoryValue = model.ProvisionType;
-                    break;
-
-                case ResourceViewModel.ResourceType.Materials:
-                    if (!string.IsNullOrWhiteSpace(model.MaterialType))
-                        subCategoryValue = model.MaterialType;
-                    break;
-            }
-
-            string fullDescription = string.IsNullOrWhiteSpace(extraInfo)
-                ? model.Description ?? ""
-                : $"{model.Description} {extraInfo}".Trim();
+            if (!CanEdit(resourceEntity)) return Forbid();
 
             resourceEntity.Name = model.Name;
-            resourceEntity.Description = fullDescription;
+            resourceEntity.Description = GetFullDescription(model);
             resourceEntity.PhoneNumber = model.PhoneNumber;
             resourceEntity.Quantity = model.Quantity;
             resourceEntity.IsAvailable = model.Availability;
             resourceEntity.Category = model.Category.ToString();
-            resourceEntity.SubCategory = subCategoryValue?.Trim();
+            resourceEntity.SubCategory = GetSubCategory(model);
             resourceEntity.Coords = coords;
-            resourceEntity.AvailableFrom = model.AvailableFrom;
-            resourceEntity.AvailableTo = model.AvailableTo;
+            resourceEntity.AvailableFrom = NorwegianTime.ToUtc(model.AvailableFrom);
+            resourceEntity.AvailableTo = NorwegianTime.ToUtc(model.AvailableTo);
 
             await _repo.UpdateAsync(resourceEntity);
             return RedirectToAction(nameof(Overview));
         }
 
+        /// <summary>
+        /// Sletter ressursen og tildelingene, siden de ikke slettes automatisk.
+        /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
+            var resource = await _repo.GetByIdAsync(id);
+            if (resource == null) return NotFound();
+            if (!CanDelete(resource)) return Forbid();
+
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByResourceAsync(id);
             return RedirectToAction(nameof(Overview));
         }
 
+        /// <summary>
+        /// Data til kartet på Home/Index. Admin og koordinator får alle ressurser, andre bare sine egne.
+        /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetInformasjon()
+        public async Task<IActionResult> GetInformation()
         {
-            var ressurser = await _repo.GetAllAsync();
+            var resources = await GetVisibleResourcesAsync();
 
-            var result = ressurser.Select(r => new ResourceViewModel
+            var result = resources.Select(r => new ResourceViewModel
             {
                 Id = r.Id,
                 Name = r.Name,
@@ -360,14 +296,176 @@ namespace Prosjekt.Controllers
                 Description = r.Description,
                 Quantity = r.Quantity,
                 Availability = r.IsAvailable,
-                Category = Enum.TryParse<ResourceViewModel.ResourceType>(r.Category, out var cat)
-                    ? cat
-                    : ResourceViewModel.ResourceType.Other,
+                Category = ParseCategory(r.Category),
                 Latitude = r.Coords.Latitude,
                 Longitude = r.Coords.Longitude
             });
 
             return Json(result);
+        }
+
+        /// <summary>
+        /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
+        /// </summary>
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
+        [HttpGet]
+        public IActionResult Export()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
+        [HttpGet]
+        public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
+        {
+            var ressurser = await RetrieveResourcesForExport(bareTilgjengelige);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Id;Navn;Kategori;Antall;Tilgjengelig;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
+
+            foreach (var r in ressurser)
+            {
+                sb.AppendLine(string.Join(";",
+                    r.Id,
+                    Csv(r.Name),
+                    TranslateCategory(r.Category),
+                    r.Quantity,
+                    r.IsAvailable ? "Ja" : "Nei",
+                    Csv(r.PhoneNumber),
+                    Csv(r.Description),
+                    NorwegianTime.FromUtc(r.AvailableFrom)?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    NorwegianTime.FromUtc(r.AvailableTo)?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
+                    r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"{FileName(bareTilgjengelige)}.csv");
+        }
+
+        /// <summary>
+        /// Eksporter ressurser i JSON-format.
+        /// </summary>
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
+        [HttpGet]
+        public async Task<IActionResult> ExportJson(bool onlyAvailable = true)
+        {
+            var resources = await RetrieveResourcesForExport(onlyAvailable);
+
+            var data = resources.Select(r => new
+            {
+                r.Id,
+                r.Name,
+                Category = TranslateCategory(r.Category),
+                r.Quantity,
+                r.IsAvailable,
+                r.PhoneNumber,
+                r.Description,
+                AvailableFrom = NorwegianTime.FromUtc(r.AvailableFrom),
+                AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
+                r.Coords.Latitude,
+                r.Coords.Longitude
+            });
+
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
+            return File(bytes, "application/json", $"{FileName(onlyAvailable)}.json");
+        }
+
+        /// <summary>
+        /// Admin og koordinator får alle ressurser, andre bare sine egne.
+        /// </summary>
+        private Task<IEnumerable<Resource>> GetVisibleResourcesAsync()
+        {
+            return CanSeeAllResources()
+                ? _repo.GetAllAsync()
+                : _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        }
+
+        private static ResourceViewModel.ResourceType ParseCategory(string category)
+        {
+            return Enum.TryParse<ResourceViewModel.ResourceType>(category, out var parsed)
+                ? parsed
+                : ResourceViewModel.ResourceType.Other;
+        }
+
+        /// <summary>
+        /// Underkategorien ligger i ulike felt avhengig av kategorien.
+        /// </summary>
+        private static string? GetSubCategory(ResourceViewModel model)
+        {
+            var value = model.Category switch
+            {
+                ResourceViewModel.ResourceType.Vehicle => model.VehicleType,
+                ResourceViewModel.ResourceType.Tool => model.ToolType,
+                ResourceViewModel.ResourceType.Clothing => model.Size,
+                ResourceViewModel.ResourceType.Provision => model.ProvisionType,
+                ResourceViewModel.ResourceType.Materials => model.MaterialType,
+                _ => null
+            };
+
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Skiltnummer lagres i beskrivelsen, fordi det ikke har egen kolonne.
+        /// </summary>
+        private static string GetFullDescription(ResourceViewModel model)
+        {
+            return model.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(model.LicensePlate)
+                ? $"{model.Description} [Reg.nr: {model.LicensePlate.Trim()}]".Trim()
+                : model.Description ?? "";
+        }
+
+        /// <summary>
+        /// Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
+        /// </summary>
+        private async Task<List<Resource>> RetrieveResourcesForExport(bool OnlyAvailable)
+        {
+            var all = await _repo.GetAllAsync();
+            return all
+                .Where(r => !OnlyAvailable || r.IsAvailable)
+                .OrderBy(r => r.Id)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Ulike filnavn så de to eksportene ikke blandes sammen
+        /// </summary>
+        private static string FileName(bool OnlyAvailable)
+        {
+            var name = OnlyAvailable ? "ressurser_tilgjengelige" : "ressurser_alle";
+            return $"{name}_{NorwegianTime.FromUtc(DateTime.UtcNow):yyyy-MM-dd}";
+        }
+
+        /// <summary>
+        /// Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
+        /// </summary>
+        private static string TranslateCategory(string category) => category switch
+        {
+            nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
+            nameof(ResourceViewModel.ResourceType.Clothing) => "Klær",
+            nameof(ResourceViewModel.ResourceType.Tool) => "Verktøy",
+            nameof(ResourceViewModel.ResourceType.Vehicle) => "Kjøretøy",
+            nameof(ResourceViewModel.ResourceType.Materials) => "Materialer",
+            _ => "Annet"
+        };
+
+        /// <summary>
+        /// Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
+        /// Gjør tekst trygg å legge i en CSV-fil, så Excel ikke blander sammen kolonnene
+        /// </summary>
+        private static string Csv(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
         }
     }
 }

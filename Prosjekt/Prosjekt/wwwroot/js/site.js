@@ -1,4 +1,16 @@
-﻿// Formatering av areal og lengde fra kartet. Brukes av flere views.
+﻿/// Koder tekst fra brukere før den settes inn som HTML, for eksempel i kart-popuper.
+function escapeHtml(verdi) {
+    return String(verdi ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/// <summary>
+/// Formatering av areal og lengde fra kartet. Brukes av flere views.
+/// </summary>
 function formaterAreal(m2) {
     if (m2 === null || m2 === undefined) { return ''; }
     if (m2 < 10000) {
@@ -25,6 +37,9 @@ function tomOmrade() {
     document.getElementById('omradeInfo').classList.add('d-none');
 }
 
+/// <summary>
+/// Lagrer et tegnet område i de skjulte feltene, som GeoJSON med areal og omkrets.
+/// </summary>
 function lagreOmrade(layer) {
 
     var punkter = layer.getLatLngs()[0];
@@ -45,13 +60,17 @@ function lagreOmrade(layer) {
     document.getElementById('omradeInfo').classList.remove('d-none');
 }
 
-// Satt av stedssøk. null = ingen geografisk begrensning
+/// Satt av stedssøk. null = ingen geografisk begrensning
 var stedsBoks = null;
 var radiusSenter = null;
 var radiusMeter = 5000;
 var radiusSirkel = null;
 var velgerPunkt = false;
-function settOppFilter(kart, lagRegistre) {
+/// <summary>
+/// Filtrerer tabellradene og kartet samtidig, og returnerer filteret så stedssøk og radiussøk kan kjøre det.
+/// lagRegistre: oppslag fra rad-id til kartlag. lagGrupper: hvor lagene ligger (ellers selve kartet).
+/// </summary>
+function settOppFilter(kart, lagRegistre, lagGrupper = []) {
     var sokeFelt = document.getElementById('sokeFelt');
     var typeFilter = document.getElementById('typeFilter');
     if (!sokeFelt || !typeFilter) return function () { };
@@ -60,7 +79,7 @@ function settOppFilter(kart, lagRegistre) {
         var tekst = sokeFelt.value.toLowerCase().trim();
         var type = typeFilter.value;
 
-        document.querySelectorAll('tr.table-row-clickable').forEach(function (rad) {
+        document.querySelectorAll('.table-row-clickable').forEach(function (rad) {
             var lat = parseFloat(rad.dataset.lat);
             var lng = parseFloat(rad.dataset.lng);
 
@@ -74,10 +93,11 @@ function settOppFilter(kart, lagRegistre) {
 
             rad.classList.toggle('d-none', !vis);
 
-            lagRegistre.forEach(function (register) {
+            lagRegistre.forEach(function (register, index) {
                 var lag = register[rad.dataset.id];
                 if (!lag) return;
-                if (vis) { kart.addLayer(lag); } else { kart.removeLayer(lag); }
+                var eier = lagGrupper[index] || kart;
+                if (vis) { eier.addLayer(lag); } else { eier.removeLayer(lag); }
             });
         });
     }
@@ -118,7 +138,7 @@ function sokSted(sporring, kart, kjorFilter)
                 return;
             }
 
-            // boundingbox: [minLat, maxLat, minLng, maxLng] som tekst
+            /// boundingbox: [minLat, maxLat, minLng, maxLng] som tekst
             var b = treff[0].boundingbox;
             stedsBoks = {
                 minLat: parseFloat(b[0]), maxLat: parseFloat(b[1]),
@@ -134,6 +154,9 @@ function sokSted(sporring, kart, kjorFilter)
         });
 }
 
+/// <summary>
+/// Etter «Velg punkt» blir neste klikk på kartet midten av radiussøket.
+/// </summary>
 function settOppRadiusSok(kart, kjorFilter) {
     var knapp = document.getElementById('velgPunktBtn');
     var radiusFelt = document.getElementById('radiusFelt');

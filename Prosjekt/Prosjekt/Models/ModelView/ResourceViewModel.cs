@@ -4,16 +4,27 @@ namespace Prosjekt.Models.ModelView
 {
     public class ResourceViewModel
     {
+        /// <summary>
+        /// La inn Id for å kunne bruke denne modellen til å redigere eksisterende ressurser.
+        /// </summary>
         public int Id { get; set; }
+
+        public string? UserId { get; set; }
 
         public enum ResourceType
         {
-            [Display(Name = "Provisjon")] Provision,
-            [Display(Name = "Klær")] Clothing,
-            [Display(Name = "Verktøy")] Tool,
-            [Display(Name = "Kjøretøy")] Vehicle,
-            [Display(Name = "Materialer")] Materials,
-            [Display(Name = "Annet")] Other
+            [Display(Name = "Provisjon")]
+            Provision,
+            [Display(Name = "Klær")]
+            Clothing,
+            [Display(Name = "Verktøy")]
+            Tool,
+            [Display(Name = "Kjøretøy")]
+            Vehicle,
+            [Display(Name = "Materialer")]
+            Materials,
+            [Display(Name = "Annet")]
+            Other
         }
 
         [Display(Name = "Navn")]
@@ -33,7 +44,10 @@ namespace Prosjekt.Models.ModelView
         [Range(1, 10000, ErrorMessage = "Antall må være minst 1.")]
         public int Quantity { get; init; } = 1;
 
-        // Hvor mange av totalen som er tildelt behov. Regnes ut, lagres ikke.
+        /// <summary>
+        /// Hvor mange av totalen som er tildelt behov. Regnes ut, lagres ikke.
+        /// </summary>
+        [Display(Name = "Allokert")]
         public int Allocated { get; init; } = 0;
 
         public int Available => Quantity - Allocated;
@@ -42,11 +56,9 @@ namespace Prosjekt.Models.ModelView
         public bool Availability { get; init; } = true;
 
         [Display(Name = "Breddegrad")]
-        [Required(ErrorMessage = "Du må velge en posisjon i kartet (Breddegrad).")]
         public double? Latitude { get; set; }
 
         [Display(Name = "Lengdegrad")]
-        [Required(ErrorMessage = "Du må velge en posisjon i kartet (Lengdegrad).")]
         public double? Longitude { get; set; }
 
         [Display(Name = "Kategori")]
@@ -61,11 +73,24 @@ namespace Prosjekt.Models.ModelView
         [Required(ErrorMessage = "Tilgjengelig til-tidspunkt må registreres.")]
         public DateTime? AvailableTo { get; init; }
 
+
+
+        [Display(Name = "Skiltnummer")]
         public string? LicensePlate { get; init; }
-        public string? Size { get; init; }
+        
+        [Display(Name = "Kjøretøytype")]
         public string? VehicleType { get; set; }
+
+        [Display(Name = "Størrelse")]
+        public string? Size { get; init; }
+
+        [Display(Name = "Verktøytype")]
         public string? ToolType { get; set; }
+
+        [Display(Name = "Materialtype")]
         public string? MaterialType { get; set; }
+
+        [Display(Name = "Provisjonstype")]
         public string? ProvisionType { get; set; }
     }
 }

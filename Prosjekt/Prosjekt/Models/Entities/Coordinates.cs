@@ -2,17 +2,21 @@
 
 namespace Prosjekt.Models.Entities;
 
-// 1. CRS er fjernet fra parentesen her
+/// <summary>
+/// 1. CRS er fjernet fra parentesen her
+/// </summary>
 public readonly record struct Coordinates(double Latitude, double Longitude)
 {
-    // 2. CRS ligger nå som en egen egenskap på innsiden
+    /// <summary>
+    /// 2. CRS ligger nå som en egen egenskap på innsiden
+    /// </summary>
     [NotMapped]
     public string CRS { get; } = "EPSG:4326";
 
     /// <summary>
-    /// Indicates whether Latitude and Longitude are within valid geographic ranges.
+    /// Indikerer om koordinatene er gyldige. Gyldige koordinater har lat mellom -90 og 90, og lng mellom -180 og 180.
     /// </summary>
-    /// <returns>true if Latitude is between -90.0 and 90.0 and Longitude is between -180.0 and 180.0; otherwise, false.</returns>
+    /// <returns></returns>
     public bool IsValid() =>
         Latitude is >= -90.0 and <= 90.0 &&
         Longitude is >= -180.0 and <= 180.0;

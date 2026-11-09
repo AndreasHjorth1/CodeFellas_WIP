@@ -13,6 +13,9 @@ public class HomeController : Controller
         return View();
     }
 
+    /// <summary>
+    /// Forsiden er åpen for alle. Den får ingen modell, så kartet der viser ingen behov.
+    /// </summary>
     [HttpGet]
     public IActionResult FrontPage()
     {
@@ -23,10 +26,6 @@ public class HomeController : Controller
         return View();
     }
     public IActionResult AboutUs()
-    {
-        return View();
-    }
-    public IActionResult UserInstruction()
     {
         return View();
     }

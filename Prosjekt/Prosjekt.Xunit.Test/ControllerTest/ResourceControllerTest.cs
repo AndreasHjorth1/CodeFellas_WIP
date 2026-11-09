@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Controllers;
+using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Xunit.Test.Fakes;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,6 +15,132 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 {
     public class ResourceControllerTest
     {
+        private static ResourceController CreateController(FakeResourceRepository repo, string userId =
+        "user-1", bool isAdmin = false, bool isCoordinator = false)
+        {
+            var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, userId) };
+            if (isAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, RoleNames.Admin));
+            }
+            if (isCoordinator)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, RoleNames.Coordinator));
+            }
+
+            var httpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"))
+            };
+            httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
+
+            return new ResourceController(repo, new FakeAllocationRepository())
+            {
+                ControllerContext = new ControllerContext { HttpContext = httpContext }
+            };
+        }
+
+        [Fact]
+        public async Task Delete_Coordinator_OtherUsersResource_ReturnsForbidAndKeepsResource()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-2",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isCoordinator: true);
+
+            // Act
+            var result = await controller.Delete(1);
+
+            // Assert
+            Assert.IsType<ForbidResult>(result);
+            Assert.Single(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Delete_Coordinator_OwnResource_RemovesResource()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-1",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isCoordinator: true);
+
+            // Act
+            var result = await controller.Delete(1);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Empty(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Delete_RegularUser_OwnResource_RemovesResource()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-1",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo);
+
+            // Act
+            var result = await controller.Delete(1);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Empty(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Overview_Coordinator_SeesAllResources()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Aggregat",
+                UserId = "user-2",
+                Coords = new
+        Coordinates(58.1467, 7.9956)
+            });
+            repo.Resources.Add(new Resource
+            {
+                Id = 2,
+                Name = "Traktor",
+                UserId = "user-3",
+                Coords = new
+        Coordinates(59.9, 10.7)
+            });
+            var controller = CreateController(repo, isCoordinator: true);
+
+            // Act
+            var result = await controller.Overview();
+
+            // Assert
+            var view = Assert.IsType<ViewResult>(result);
+            var resources = Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(view.Model);
+            Assert.Equal(2, resources.Count());
+        }
+
         [Fact]
         public void Index_ReturnsViewWithCreatorModel()
         {
@@ -110,7 +238,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo);
 
             var model = new ResourceCreatorViewModel
             {
@@ -142,7 +270,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
             repo.Resources.Add(new Resource { Id = 2, Name = "Båt", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
 
             // Act
             var result = await controller.Overview();
@@ -175,7 +303,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
 
             // Act
             var result = await controller.Edit(1);
@@ -241,7 +369,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -272,7 +400,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Coords = new Coordinates(58.1467, 7.9956) });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
 
             // Act
             var result = await controller.Delete(1);
@@ -284,19 +412,18 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task Create_CoordinateErrorsInList_AreRemovedAndResourceIsSaved()
+        public async Task Create_TwoResources_SavesBothAndShowsFirstWithCoordinates()
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
-            controller.ModelState.AddModelError("ResourceList[0].Latitude", "Required");
-            controller.ModelState.AddModelError("ResourceList[0].Longitude", "Required");
+            var controller = CreateController(repo);
 
             var model = new ResourceCreatorViewModel
             {
                 ResourceList = new List<ResourceViewModel>
                 {
-                    new ResourceViewModel { Name = "Aggregat" }
+                    new ResourceViewModel { Name = "Aggregat" },
+                    new ResourceViewModel { Name = "Båt" }
                 },
                 Latitude = 58.1467,
                 Longitude = 7.9956
@@ -308,9 +435,18 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
             Assert.Equal("Create", viewResult.ViewName);
-            Assert.True(controller.ModelState.IsValid);
-            Assert.Equal(58.1467, model.ResourceList[0].Latitude);
-            Assert.Single(repo.Resources);
+            Assert.Equal(2, repo.Resources.Count);
+            Assert.All(repo.Resources, r => Assert.Equal(58.1467, r.Coords.Latitude));
+
+            var shown = Assert.IsType<List<ResourceViewModel>>(viewResult.Model);
+            Assert.Equal(2, shown.Count);
+            Assert.Equal("Aggregat", shown[0].Name);
+            Assert.Equal("Båt", shown[1].Name);
+            Assert.All(shown, r =>
+            {
+                Assert.Equal(58.1467, r.Latitude);
+                Assert.Equal(7.9956, r.Longitude);
+            });
         }
 
         [Fact]
@@ -318,12 +454,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
-
-            // Sett opp HttpContext med et tomt FormCollection for å unngå NullReferenceException på Request.Form
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
-            controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            var controller = CreateController(repo);
 
             var model = new ResourceCreatorViewModel
             {
@@ -355,7 +486,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo);
 
             var model = new ResourceCreatorViewModel
             {
@@ -395,7 +526,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = "Vehicle",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
 
             // Act
             var result = await controller.Edit(1);
@@ -422,7 +553,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 SubCategory = "L",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
 
             // Act
             var result = await controller.Edit(1);
@@ -506,7 +637,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Lastebil",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -537,7 +668,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Jakke",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -559,7 +690,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task GetInformasjon_ReturnsJsonWithAllResources()
+        public async Task GetInformation_ReturnsJsonWithAllResources()
         {
             // Arrange
             var repo = new FakeResourceRepository();
@@ -578,10 +709,10 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Båt",
                 Coords = new Coordinates(59.9, 10.7)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
 
             // Act
-            var result = await controller.GetInformasjon();
+            var result = await controller.GetInformation();
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
@@ -596,7 +727,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public async Task GetInformasjon_UnknownCategory_UsesOther()
+        public async Task GetInformation_UnknownCategory_UsesOther()
         {
             // Arrange
             var repo = new FakeResourceRepository();
@@ -607,15 +738,143 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = "FinnesIkke",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository());
+            var controller = CreateController(repo, isAdmin: true);
 
             // Act
-            var result = await controller.GetInformasjon();
+            var result = await controller.GetInformation();
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
             var resource = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ResourceViewModel>>(jsonResult.Value));
             Assert.Equal(ResourceViewModel.ResourceType.Other, resource.Category);
+        }
+
+        [Fact]
+        public async Task ExportCsv_OnlyIncludesAvailableResources()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", Quantity = 1, PhoneNumber = "98765432", Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
+
+            // Act
+            var result = await controller.ExportCsv();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.Equal("text/csv", file.ContentType);
+            Assert.StartsWith("ressurser_tilgjengelige_", file.FileDownloadName);
+
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("1;Traktor;Kjøretøy;1;Ja;98765432", text);
+            Assert.DoesNotContain("Aggregat", text);
+        }
+
+        [Fact]
+        public async Task ExportCsv_AllResources_IncludesUnavailable()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", Quantity = 1, Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Quantity = 2, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
+
+            // Act
+            var result = await controller.ExportCsv(bareTilgjengelige: false);
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.StartsWith("ressurser_alle_", file.FileDownloadName);
+
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("1;Traktor;Kjøretøy;1;Ja;", text);
+            Assert.Contains("2;Aggregat;Verktøy;2;Nei;", text);
+        }
+
+        [Fact]
+        public async Task ExportCsv_SortsById()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 3, Name = "Båt", IsAvailable = true, Coords = new Coordinates(59.9, 10.7) });
+            repo.Resources.Add(new Resource { Id = 1, Name = "Presenning", IsAvailable = true, Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Traktor", IsAvailable = true, Coords = new Coordinates(58.46, 8.77) });
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
+
+            // Act
+            var result = await controller.ExportCsv();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.True(text.IndexOf("Presenning") < text.IndexOf("Traktor"));
+            Assert.True(text.IndexOf("Traktor") < text.IndexOf("Båt"));
+        }
+
+        [Fact]
+        public async Task ExportCsv_TextWithSemicolon_IsQuoted()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Description = "Diesel; 5 kW", IsAvailable = true, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
+
+            // Act
+            var result = await controller.ExportCsv();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            var text = System.Text.Encoding.UTF8.GetString(file.FileContents);
+            Assert.Contains("\"Diesel; 5 kW\"", text);
+        }
+
+        [Fact]
+        public async Task ExportJson_ReturnsAvailableResourcesWithNorwegianCategory()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Category = "Vehicle", PhoneNumber = "98765432", Coords = new Coordinates(58.46, 8.77) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Category = "Tool", Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
+
+            // Act
+            var result = await controller.ExportJson();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.Equal("application/json", file.ContentType);
+            Assert.StartsWith("ressurser_tilgjengelige_", file.FileDownloadName);
+
+            using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
+            var ressurs = Assert.Single(json.RootElement.EnumerateArray());
+            Assert.Equal(1, ressurs.GetProperty("Id").GetInt32());
+            Assert.Equal("Traktor", ressurs.GetProperty("Name").GetString());
+            Assert.Equal("Kjøretøy", ressurs.GetProperty("Category").GetString());
+            Assert.True(ressurs.GetProperty("IsAvailable").GetBoolean());
+            Assert.Equal("98765432", ressurs.GetProperty("PhoneNumber").GetString());
+        }
+
+        [Fact]
+        public async Task ExportJson_AllResources_IncludesUnavailable()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, Coords = new Coordinates(58.46, 8.77) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Aggregat", IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new ResourceController(repo, new FakeAllocationRepository());
+
+            // Act
+            var result = await controller.ExportJson(onlyAvailable: false);
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            Assert.StartsWith("ressurser_alle_", file.FileDownloadName);
+
+            using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
+            var ressurser = json.RootElement.EnumerateArray().ToList();
+            Assert.Equal(2, ressurser.Count);
+            Assert.False(ressurser.Single(r => r.GetProperty("Name").GetString() == "Aggregat").GetProperty("IsAvailable").GetBoolean());
         }
     }
 }

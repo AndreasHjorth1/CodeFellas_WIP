@@ -10,10 +10,8 @@ namespace Prosjekt.DataAccess
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-        // Her er tabellen for ressurser 
         public DbSet<Resource> Resources { get; set; }
 
-        // Her er tabellen for need / behov
         public DbSet<Need> Needs { get; set; }
 
         public DbSet<Allocation> Allocations { get; set; }
@@ -24,7 +22,6 @@ namespace Prosjekt.DataAccess
         {
             base.OnModelCreating(modelBuilder);
 
-            // Konfigurasjon for Resource
             modelBuilder.Entity<Resource>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -34,6 +31,11 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
                 entity.Property(e => e.IsAvailable).HasDefaultValue(true);
 
+                entity.HasOne<IdentityUser>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.ComplexProperty(e => e.Coords, coord =>
                 {
                     coord.Property(c => c.Latitude).HasColumnName("Latitude").IsRequired();
@@ -42,7 +44,6 @@ namespace Prosjekt.DataAccess
 
             });
 
-            // Konfigurasjon for Need
             modelBuilder.Entity<Need>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -52,6 +53,10 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
                 entity.Property(e => e.Priority).HasMaxLength(50);
 
+                entity.HasOne<IdentityUser>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.ComplexProperty(e => e.Coords, coord =>
                 {

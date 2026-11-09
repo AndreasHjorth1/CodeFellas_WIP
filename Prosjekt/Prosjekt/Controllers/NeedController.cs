@@ -5,12 +5,16 @@ using Prosjekt.Models.ModelView;
 using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
-
+using Prosjekt.Utils;
+using System.Security.Claims;
 
 namespace Prosjekt.Controllers
 {
-    [Authorize(Roles = RoleNames.Admin)]
-      public class NeedController : Controller
+    /// <summary>
+    /// Registrering, oversikt, endring og tildeling av behov. Bare for admin og koordinator, unntatt GetInformation.
+    /// </summary>
+    [Authorize(Roles = RoleNames.AdminOrCoordinator)]
+    public class NeedController : Controller
     {
         private readonly INeedRepository _repo;
         private readonly IResourceRepository _resourceRepo;
@@ -34,13 +38,34 @@ namespace Prosjekt.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Oppretter alle behovene i listen. Posisjon, viktighet og frist er felles, og tomme rader hoppes over.
+        /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(NeedCreatorViewModel model)
         {
-            if (model.NeedList == null)
+            model.NeedList ??= new List<NeedViewModel> { new NeedViewModel() };
+
+            /// <summary>
+            /// Radene sender ikke egen tidsfrist, bare den felles fristen.
+            /// Derfor fjerner vi valideringen på Deadline for hver rad, ellers vil det alltid feile.
+            /// Dette må skje før ModelState.IsValid sjekkes.
+            /// </summary>
+
+            for (int i = 0; i < model.NeedList.Count; i++)
             {
-                model.NeedList = new List<NeedViewModel> { new NeedViewModel() };
+                ModelState.Remove($"NeedList[{i}].Deadline");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View("Index", model);
+            }
+
+            if (!model.NeedList.Any(n => !string.IsNullOrWhiteSpace(n.Name)))
+            {
+                ModelState.AddModelError("", "Du må fylle ut minst ett behov.");
+                return View("Index", model);
             }
 
             if (!model.Latitude.HasValue || !model.Longitude.HasValue)
@@ -56,53 +81,24 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
-            foreach (var item in model.NeedList)
+            foreach (var baseNeed in model.NeedList.Where(n => !string.IsNullOrWhiteSpace(n.Name)))
             {
-                item.Latitude = model.Latitude;
-                item.Longitude = model.Longitude;
-            }
-
-            for (int i = 0; i < model.NeedList.Count; i++)
-            {
-                ModelState.Remove($"NeedList[{i}].Deadline");
-                ModelState.Remove($"NeedList[{i}].Latitude");
-                ModelState.Remove($"NeedList[{i}].Longitude");
-            }
-
-            if (!model.NeedList.Any(n => !string.IsNullOrWhiteSpace(n.Name)))
-            {
-                ModelState.AddModelError("", "Du må fylle ut minst ett behov.");
-                return View("Index", model);
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View("Index", model);
-            }
-
-            foreach (var baseNeed in model.NeedList)
-            {
-                if (!string.IsNullOrWhiteSpace(baseNeed.Name))
+                var needEntity = new Need
                 {
-                    var needEntity = new Need
-                    {
-                        Name = baseNeed.Name,
-                        Description = baseNeed.Description ?? string.Empty,
-                        Category = baseNeed.Type.ToString(),
-                        PhoneNumber = baseNeed.Phone ?? string.Empty,
-                        Priority = model.Importance.ToString(),
-                        NeededBy = baseNeed.Deadline ?? model.Deadline,
-                        Status = EntryStatus.New,
-                        Coords = new Coordinates(model.Latitude.Value, model.Longitude.Value),
-                        AreaGeoJson = model.AreaGeoJson,
-                        AreaSquareMeters = model.AreaSquareMeters,
-                        PerimeterMeters = model.PerimeterMeters,
+                    Name = baseNeed.Name,
+                    Description = baseNeed.Description ?? string.Empty,
+                    Category = baseNeed.Type.ToString(),
+                    PhoneNumber = baseNeed.Phone ?? string.Empty,
+                    Priority = model.Importance.ToString(),
+                    NeededBy = NorwegianTime.ToUtc(baseNeed.Deadline ?? model.Deadline),
+                    Coords = coords,
+                    AreaGeoJson = model.AreaGeoJson,
+                    AreaSquareMeters = model.AreaSquareMeters,
+                    PerimeterMeters = model.PerimeterMeters,
+                    UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                };
 
-                    };
-
-                    
-                    await _repo.AddAsync(needEntity);
-                }
+                await _repo.AddAsync(needEntity);
             }
 
             return View("Create", model);
@@ -112,63 +108,26 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Overview()
         {
             var needEntities = await _repo.GetAllAsync();
-
-            var needViewModels = needEntities.Select(n => new NeedViewModel
-            {
-                Id = n.Id,
-                Name = n.Name,
-                Description = n.Description,
-                Phone = n.PhoneNumber,
-                Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
-                Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
-                Deadline = n.NeededBy,
-                Status = n.Status,
-                Latitude = n.Coords.Latitude,
-                Longitude = n.Coords.Longitude,
-                AreaGeoJson = n.AreaGeoJson,
-                AreaSquareMeters = n.AreaSquareMeters,
-                PerimeterMeters = n.PerimeterMeters
-            }).ToList();
-
-            return View(needViewModels);
+            return View(needEntities.Select(ToViewModel).ToList());
         }
 
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var need = await _repo.GetByIdAsync(id);
-            if (need == null)
-            {
-                return NotFound();
-            }
+            if (need == null) return NotFound();
 
-            var viewModel = new NeedViewModel
-            {
-                Id = need.Id,
-                Name = need.Name,
-                Description = need.Description,
-                Phone = need.PhoneNumber,
-                Type = Enum.TryParse<NeedViewModel.NeedType>(need.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
-                Importance = Enum.TryParse<ImportanceLevel>(need.Priority, out var prio) ? prio : default,
-                Deadline = need.NeededBy,
-                Status = need.Status,
-                Latitude = need.Coords.Latitude,
-                Longitude = need.Coords.Longitude,
-                AreaGeoJson = need.AreaGeoJson,
-                AreaSquareMeters = need.AreaSquareMeters,
-                PerimeterMeters = need.PerimeterMeters
-            };
-
-            return View(viewModel);
+            return View(ToViewModel(need));
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, NeedViewModel model)
         {
-            if (id != model.Id)
+            if (id != model.Id) return BadRequest();
+
+            if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return View(model);
             }
 
             if (!model.Latitude.HasValue || !model.Longitude.HasValue)
@@ -184,18 +143,9 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             var existingNeed = await _repo.GetByIdAsync(id);
-            if (existingNeed == null)
-            {
-                return NotFound();
-            }
+            if (existingNeed == null) return NotFound();
 
-            // Sjekk statusflyten FØR vi endrer noe på behovet
             if (!EntryStatusFlow.CanMove(existingNeed.Status, model.Status))
             {
                 ModelState.AddModelError(nameof(model.Status),
@@ -208,7 +158,7 @@ namespace Prosjekt.Controllers
             existingNeed.PhoneNumber = model.Phone;
             existingNeed.Category = model.Type.ToString();
             existingNeed.Priority = model.Importance.ToString();
-            existingNeed.NeededBy = model.Deadline;
+            existingNeed.NeededBy = NorwegianTime.ToUtc(model.Deadline);
             existingNeed.Status = model.Status;
             existingNeed.Coords = coords;
             existingNeed.AreaGeoJson = model.AreaGeoJson;
@@ -220,10 +170,7 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
-
-
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             await _repo.DeleteAsync(id);
@@ -231,33 +178,45 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
+        /// <summary>
+        /// Data til kartet. [AllowAnonymous] opphever rollekravet, så alle innloggede kan se behovene.
+        /// Den som ikke er logget inn, sendes til innlogging. Bare admin og koordinator får telefonnumrene.
+        /// </summary>
+        [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> GetInformasjon()
+        public async Task<IActionResult> GetInformation()
         {
-            var behov = await _repo.GetAllAsync();
+            if (User.Identity?.IsAuthenticated != true) return Challenge();
 
-            var result = behov.Select(n => new NeedViewModel
-            {
-                Id = n.Id,
-                Name = n.Name,
-                Phone = n.PhoneNumber,
-                Description = n.Description,
-                Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
-                    ? cat
-                    : NeedViewModel.NeedType.Other,
-                Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
-                    ? prio
-                    : ImportanceLevel.Planned,
-                Status = n.Status,
-                Latitude = n.Coords.Latitude,
-                Longitude = n.Coords.Longitude,
-                AreaGeoJson = n.AreaGeoJson,
-                AreaSquareMeters = n.AreaSquareMeters
-            });
+            var canSeePhone = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
+            var needs = await _repo.GetAllAsync();
+
+            var result = needs
+                .Select(n => new NeedViewModel
+                {
+                    Id = n.Id,
+                    Name = n.Name,
+                    Phone = canSeePhone ? n.PhoneNumber : string.Empty,
+                    Description = n.Description,
+                    Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
+                        ? cat
+                        : NeedViewModel.NeedType.Other,
+                    Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
+                        ? prio
+                        : ImportanceLevel.Planned,
+                    Status = n.Status,
+                    Latitude = n.Coords.Latitude,
+                    Longitude = n.Coords.Longitude,
+                    AreaGeoJson = n.AreaGeoJson,
+                    AreaSquareMeters = n.AreaSquareMeters
+                });
 
             return Json(result);
         }
 
+        /// <summary>
+        /// Finner tilgjengelige ressurser i riktig kategori, med den nærmeste først.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Match(int id)
         {
@@ -316,14 +275,21 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Allocate(int needId, int resourceId, int quantity)
         {
             var need = await _repo.GetByIdAsync(needId);
             var resource = await _resourceRepo.GetByIdAsync(resourceId);
             if (need == null || resource == null) return NotFound();
 
-            // Hvor mye av ressursen er allerede tildelt andre behov?
+            if (!resource.IsAvailable)
+            {
+                TempData["Error"] = $"{resource.Name} er ikke tilgjengelig.";
+                return RedirectToAction(nameof(Match), new { id = needId });
+            }
+
+            /// <summary>
+            /// Hvor mye av ressursen er allerede tildelt andre behov?
+            /// </summary>
             var alle = await _allocationRepo.GetAllAsync();
             var taken = alle.Where(a => a.ResourceId == resourceId).Sum(a => a.Quantity);
             var available = resource.Quantity - taken;
@@ -341,7 +307,8 @@ namespace Prosjekt.Controllers
                 Quantity = quantity
             });
 
-            // Behovet går fra Ny/Vurderes til Tildelt
+            await UpdateAvailabilityAsync(resourceId);
+
             if (need.Status == EntryStatus.New || need.Status == EntryStatus.UnderReview)
             {
                 need.Status = EntryStatus.Assigned;
@@ -352,12 +319,20 @@ namespace Prosjekt.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deallocate(int allocationId, int needId)
         {
-            await _allocationRepo.DeleteAsync(allocationId);
+            var allocations = await _allocationRepo.GetByNeedAsync(needId);
+            var allocation = allocations.FirstOrDefault(a => a.Id == allocationId);
+            if (allocation is null) return NotFound();
 
-            // Står behovet uten tildelinger, går det tilbake til Vurderes
+            var resourceId = allocation.ResourceId;
+
+            await _allocationRepo.DeleteAsync(allocationId);
+            await UpdateAvailabilityAsync(resourceId);
+
+            /// <summary>
+            /// Står behovet uten tildelinger, går det tilbake til Vurderes
+            /// </summary>
             var igjen = await _allocationRepo.GetByNeedAsync(needId);
             if (!igjen.Any())
             {
@@ -372,8 +347,10 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Match), new { id = needId });
         }
 
+        /// <summary>
+        /// Setter behovet til Løst. Bare Tildelt kan gå videre dit; fra Ny og Vurderes skjer det ingenting.
+        /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Resolve(int id)
         {
             var need = await _repo.GetByIdAsync(id);
@@ -385,11 +362,10 @@ namespace Prosjekt.Controllers
                 await _repo.UpdateAsync(need);
             }
 
-            return RedirectToAction(nameof(Overview), new { id });
+            return RedirectToAction(nameof(Overview));
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Unresolve(int id)
         {
             var need = await _repo.GetByIdAsync(id);
@@ -397,12 +373,41 @@ namespace Prosjekt.Controllers
 
             if (need.Status != EntryStatus.Resolved) return RedirectToAction(nameof(Overview));
 
-            // Tilbake til Tildelt hvis noe er tildelt, ellers Vurderes
             var allocations = await _allocationRepo.GetByNeedAsync(id);
             need.Status = allocations.Any() ? EntryStatus.Assigned : EntryStatus.UnderReview;
 
             await _repo.UpdateAsync(need);
             return RedirectToAction(nameof(Overview));
+        }
+
+        private static NeedViewModel ToViewModel(Need n) => new()
+        {
+            Id = n.Id,
+            Name = n.Name,
+            Description = n.Description,
+            Phone = n.PhoneNumber,
+            Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
+            Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
+            Deadline = NorwegianTime.FromUtc(n.NeededBy),
+            Status = n.Status,
+            Latitude = n.Coords.Latitude,
+            Longitude = n.Coords.Longitude,
+            AreaGeoJson = n.AreaGeoJson,
+            AreaSquareMeters = n.AreaSquareMeters,
+            PerimeterMeters = n.PerimeterMeters
+        };
+   
+        /// holder IsAvailable i takt med tildelingene.
+        private async Task UpdateAvailabilityAsync(int resourceId)
+        {
+            var resource = await _resourceRepo.GetByIdAsync(resourceId);
+            if (resource == null) return;
+
+            var all = await _allocationRepo.GetAllAsync();
+            var taken = all.Where(a => a.ResourceId == resourceId).Sum(a => a.Quantity);
+
+            resource.IsAvailable = resource.Quantity - taken > 0;
+            await _resourceRepo.UpdateAsync(resource);
         }
     }
 }

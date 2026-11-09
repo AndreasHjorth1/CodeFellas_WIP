@@ -4,37 +4,204 @@
     ViewData["Title"] = "Logg inn";
 }
 
-<h1>Logg inn</h1>
+<style>
+    .login-page {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #eff3f6;
+        padding: 2rem 1rem;
+    }
 
-<form asp-action="Login" method="post" class="col-md-6">
-    <input asp-for="ReturnUrl" type="hidden" />
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 6px;
+        padding: 2rem 1.75rem 1.5rem;
+    }
 
-    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    .login-card h1 {
+        color: #0f2a4f;
+        font-size: 1.9rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
 
-    <div class="mb-3">
-        <label asp-for="Email" class="form-label">E-postadresse</label>
-        <input asp-for="Email" class="form-control" autocomplete="email" placeholder="Skriv inn e-postadresse" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+    .login-card .form-label {
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+
+    .login-card .form-control {
+        border: 1px solid #8a9bb3;
+        border-radius: 0;
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        padding: 0.6rem 0.5rem;
+    }
+
+    .login-card .form-control:focus {
+        border-color: #0f2a4f;
+        box-shadow: 0 0 0 2px rgba(15, 42, 79, 0.2);
+    }
+
+    .login-card .form-check-label {
+        color: #0f2a4f;
+        font-size: 0.95rem;
+    }
+
+    .login-card .form-check-input:checked {
+        background-color: #04245a;
+        border-color: #04245a;
+    }
+
+    .login-card a {
+        color: #2d4f86;
+        text-decoration: underline;
+    }
+
+    .login-card a:hover {
+        color: #0f2a4f;
+    }
+
+    .login-card .small-link {
+        font-size: 0.85rem;
+    }
+
+    .login-card .btn-login {
+        width: 100%;
+        background-color: #04245a;
+        border: none;
+        border-radius: 0;
+        color: #ffffff;
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 0.7rem;
+    }
+
+    .login-card .btn-login:hover,
+    .login-card .btn-login:focus {
+        background-color: #0f3a80;
+        color: #ffffff;
+    }
+
+    .login-card .login-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.25rem;
+        font-size: 0.95rem;
+        color: #6b7a90;
+    }
+
+    .password-field {
+        position: relative;
+    }
+
+    .password-field .form-control {
+        padding-right: 2.75rem;
+    }
+
+    /* Skjul Edge sitt innebygde øyeikon så det ikke blir to */
+    .password-field .form-control::-ms-reveal {
+        display: none;
+    }
+
+    .password-toggle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 2.75rem;
+        border: none;
+        background: transparent;
+        color: #5f6f86;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .password-toggle:hover {
+        color: #0f2a4f;
+    }
+
+    .password-toggle .icon-hide,
+    .password-toggle.is-visible .icon-show {
+        display: none;
+    }
+
+    .password-toggle.is-visible .icon-hide {
+        display: inline;
+    }
+</style>
+
+<div class="login-page">
+    <div class="login-card">
+        <h1>Logg inn</h1>
+
+        <form asp-action="Login" method="post">
+            <input asp-for="ReturnUrl" type="hidden" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">E-post</label>
+                <input asp-for="Email" class="form-control" autocomplete="email" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <label asp-for="Password" class="form-label">Passord</label>
+                    <a asp-action="ForgotPassword" class="small-link">Glemt passord?</a>
+                </div>
+                <div class="password-field">
+                    <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" />
+                    <button type="button" class="password-toggle" data-target="Password" aria-label="Vis passord">
+                        <svg class="icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <svg class="icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label">Husk meg</label>
+            </div>
+
+            <button type="submit" class="btn btn-login">Logg inn</button>
+        </form>
+
+        <div class="login-footer">
+            <span>Ny her? <a asp-action="Register">Opprett konto</a></span>
+            <a asp-controller="Home" asp-action="FrontPage">&lsaquo; Tilbake</a>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label asp-for="Password" class="form-label">Passord</label>
-        <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" placeholder="Skriv inn passord" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
-
-    <div class="form-check mb-3">
-        <input asp-for="RememberMe" class="form-check-input" />
-        <label asp-for="RememberMe" class="form-check-label">Husk meg</label>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Logg inn</button>
-</form>
-
-<p class="mt-3">
-    <a asp-action="ForgotPassword">Glemt passordet ditt?</a>
-</p>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.password-toggle').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var input = document.getElementById(button.dataset.target);
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                button.classList.toggle('is-visible', show);
+                button.setAttribute('aria-label', show ? 'Skjul passord' : 'Vis passord');
+            });
+        });
+    </script>
 }
