@@ -138,6 +138,20 @@
     .crisis-card.help-card h2 {
         border-bottom-color: #cfe6da;
     }
+
+    /* Kart over offentlige tilfluktsrom */
+    #tilfluktsromKart {
+        width: 100%;
+        height: 450px;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        margin-bottom: 0.9rem;
+    }
+
+    .crisis-card .map-status {
+        color: #5f6f86;
+        font-size: 0.85rem;
+    }
 </style>
 
 <div class="crisis-page">
@@ -171,6 +185,14 @@
             </ul>
         </section>
 
+        <!-- Kart over offentlige tilfluktsrom. Punktene fylles inn av scriptet nederst på siden. -->
+        <section class="crisis-card" aria-labelledby="tilfluktsromTittel">
+            <h2 id="tilfluktsromTittel">Offentlige tilfluktsrom</h2>
+            <div id="tilfluktsromKart" role="region" aria-label="Kart over offentlige tilfluktsrom i Norge"></div>
+            <p class="map-status" id="tilfluktsromStatus">Henter tilfluktsrom...</p>
+            <p>Trykk på et punkt for å se adresse og antall plasser. Data fra DSB via <a href="https://kartkatalog.geonorge.no/metadata/tilfluktsrom-offentlige/dbae9aae-10e7-4b75-8d67-7f0e8828f3d8" target="_blank" rel="noopener">Geonorge</a>.</p>
+        </section>
+
         <section class="crisis-card" aria-labelledby="informasjonTittel">
             <h2 id="informasjonTittel">Få informasjon</h2>
             <p>Under en krise kommer viktige meldinger på NRK P1 på radio. Andre steder du kan se:</p>
@@ -187,3 +209,122 @@
         </section>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // DSB sin tjeneste for offentlige tilfluktsrom (publisert på Geonorge)
+            const DSB_URL = "https://ogc.dsb.no/wms.ashx";
+            const LAG = "layer_340";
+            const statusTekst = document.getElementById("tilfluktsromStatus");
+
+            // Lager kartet med hele Norge i bildet, og OpenStreetMap som bakgrunn
+            const kart = L.map("tilfluktsromKart").setView([64.5, 12], 4);
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Tilfluktsrom: DSB'
+            }).addTo(kart);
+
+            // Tjenesten gir bare koordinater i UTM sone 33 (EPSG:32633), men Leaflet trenger
+            // breddegrad/lengdegrad. Denne funksjonen regner om med standard UTM-formler.
+            // Inn: øst- og nordverdi i meter. Ut: [breddegrad, lengdegrad].
+            function utm33TilLatLng(easting, northing) {
+                const a = 6378137, f = 1 / 298.257223563, k0 = 0.9996;
+                const e2 = f * (2 - f), ep2 = e2 / (1 - e2);
+                const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+                const x = easting - 500000, lon0 = 15 * Math.PI / 180;
+                const mu = (northing / k0) / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256));
+                const phi1 = mu
+                    + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu)
+                    + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu)
+                    + (151 * Math.pow(e1, 3) / 96) * Math.sin(6 * mu)
+                    + (1097 * Math.pow(e1, 4) / 512) * Math.sin(8 * mu);
+                const sin = Math.sin(phi1), cos = Math.cos(phi1), tan = Math.tan(phi1);
+                const N1 = a / Math.sqrt(1 - e2 * sin * sin);
+                const R1 = a * (1 - e2) / Math.pow(1 - e2 * sin * sin, 1.5);
+                const T1 = tan * tan, C1 = ep2 * cos * cos, D = x / (N1 * k0);
+                const lat = phi1 - (N1 * tan / R1) * (D * D / 2
+                    - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * Math.pow(D, 4) / 24
+                    + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * Math.pow(D, 6) / 720);
+                const lon = lon0 + (D - (1 + 2 * T1 + C1) * Math.pow(D, 3) / 6
+                    + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * Math.pow(D, 5) / 120) / cos;
+                return [lat * 180 / Math.PI, lon * 180 / Math.PI];
+            }
+
+            // Bygger popup med textContent så tekst fra tjenesten ikke tolkes som HTML
+            function lagPopup(adresse, plasser, romnr) {
+                const div = document.createElement("div");
+                const tittel = document.createElement("strong");
+                tittel.textContent = adresse || "Ukjent adresse";
+                div.appendChild(tittel);
+                div.appendChild(document.createElement("br"));
+                div.appendChild(document.createTextNode("Plasser: " + (plasser || "ukjent")));
+                div.appendChild(document.createElement("br"));
+                div.appendChild(document.createTextNode("Romnr: " + (romnr || "ukjent")));
+                return div;
+            }
+
+            // Hvis punktene ikke kan hentes, vis i det minste DSB sitt kartlag som bilde
+            function visReservelag() {
+                L.tileLayer.wms(DSB_URL, {
+                    layers: LAG,
+                    format: "image/png",
+                    transparent: true,
+                    version: "1.3.0"
+                }).addTo(kart);
+                statusTekst.textContent = "Kunne ikke hente detaljer om tilfluktsrommene. Kartet viser plasseringene, men uten adresse og plasser.";
+            }
+
+            // Henter alle tilfluktsrom fra DSB (WFS). Svaret er XML med adresse, plasser, romnr og posisjon.
+            const wfsUrl = `${DSB_URL}?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=${LAG}`;
+
+            fetch(wfsUrl)
+                .then(svar => {
+                    if (!svar.ok) throw new Error("HTTP " + svar.status);
+                    return svar.text();
+                })
+                .then(tekst => {
+                    // Leser XML-svaret og finner hvert tilfluktsrom
+                    const xml = new DOMParser().parseFromString(tekst, "application/xml");
+                    const MS = "http://mapserver.gis.umn.edu/mapserver";
+                    const GML = "http://www.opengis.net/gml";
+                    const rom = xml.getElementsByTagNameNS(MS, LAG);
+                    if (rom.length === 0) throw new Error("Ingen tilfluktsrom i svaret");
+
+                    // Henter teksten i et felt (f.eks. "adresse") for ett tilfluktsrom
+                    const felt = (el, navn) => el.getElementsByTagNameNS(MS, navn)[0]?.textContent?.trim() || "";
+                    const markorer = [];
+                    let totaltPlasser = 0;
+
+                    // Lager en rød prikk med popup for hvert tilfluktsrom, og hopper over de uten gyldig posisjon
+                    for (const el of rom) {
+                        const pos = el.getElementsByTagNameNS(GML, "pos")[0]?.textContent?.trim().split(/\s+/).map(Number);
+                        if (!pos || pos.length < 2 || pos.some(isNaN)) continue;
+
+                        const plasser = felt(el, "plasser");
+                        totaltPlasser += parseInt(plasser, 10) || 0;
+
+                        markorer.push(
+                            L.circleMarker(utm33TilLatLng(pos[0], pos[1]), {
+                                radius: 6,
+                                color: "#ffffff",
+                                weight: 1.5,
+                                fillColor: "#c8102e",
+                                fillOpacity: 0.9
+                            }).bindPopup(lagPopup(felt(el, "adresse"), plasser, felt(el, "romnr")))
+                        );
+                    }
+
+                    // Legger alle prikkene på kartet, zoomer så alle synes, og viser totalen under kartet
+                    const gruppe = L.featureGroup(markorer).addTo(kart);
+                    kart.fitBounds(gruppe.getBounds(), { padding: [20, 20] });
+                    statusTekst.textContent = `${markorer.length} offentlige tilfluktsrom med til sammen ${totaltPlasser.toLocaleString("nb-NO")} plasser.`;
+                })
+                // Hvis noe går galt (nettverk, feil fra DSB, tomt svar), bruk reservelaget i stedet
+                .catch(feil => {
+                    console.error("Kunne ikke hente tilfluktsrom:", feil);
+                    visReservelag();
+                });
+        });
+    </script>
+}
