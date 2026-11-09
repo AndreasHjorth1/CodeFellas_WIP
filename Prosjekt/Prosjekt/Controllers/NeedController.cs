@@ -6,6 +6,7 @@ using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Prosjekt.Utils;
+using System.Security.Claims;
 
 namespace Prosjekt.Controllers
 {
@@ -93,7 +94,8 @@ namespace Prosjekt.Controllers
                     Coords = coords,
                     AreaGeoJson = model.AreaGeoJson,
                     AreaSquareMeters = model.AreaSquareMeters,
-                    PerimeterMeters = model.PerimeterMeters
+                    PerimeterMeters = model.PerimeterMeters,
+                    UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(needEntity);
@@ -305,6 +307,8 @@ namespace Prosjekt.Controllers
                 Quantity = quantity
             });
 
+            await UpdateAvailabilityAsync(resourceId);
+
             if (need.Status == EntryStatus.New || need.Status == EntryStatus.UnderReview)
             {
                 need.Status = EntryStatus.Assigned;
@@ -318,9 +322,13 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Deallocate(int allocationId, int needId)
         {
             var allocations = await _allocationRepo.GetByNeedAsync(needId);
-            if (!allocations.Any(a => a.Id == allocationId)) return NotFound();
+            var allocation = allocations.FirstOrDefault(a => a.Id == allocationId);
+            if (allocation is null) return NotFound();
+
+            var resourceId = allocation.ResourceId;
 
             await _allocationRepo.DeleteAsync(allocationId);
+            await UpdateAvailabilityAsync(resourceId);
 
             /// <summary>
             /// Står behovet uten tildelinger, går det tilbake til Vurderes
@@ -388,5 +396,18 @@ namespace Prosjekt.Controllers
             AreaSquareMeters = n.AreaSquareMeters,
             PerimeterMeters = n.PerimeterMeters
         };
+   
+        /// holder IsAvailable i takt med tildelingene.
+        private async Task UpdateAvailabilityAsync(int resourceId)
+        {
+            var resource = await _resourceRepo.GetByIdAsync(resourceId);
+            if (resource == null) return;
+
+            var all = await _allocationRepo.GetAllAsync();
+            var taken = all.Where(a => a.ResourceId == resourceId).Sum(a => a.Quantity);
+
+            resource.IsAvailable = resource.Quantity - taken > 0;
+            await _resourceRepo.UpdateAsync(resource);
+        }
     }
 }
