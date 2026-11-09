@@ -9,37 +9,23 @@ function escapeHtml(verdi) {
 }
 
 /// <summary>
-/// GetInformation i Resource- og NeedController sender data som GeoJSON (en FeatureCollection).
-/// Denne funksjonen pakker GeoJSON-en ut til en vanlig liste med objekter, slik at kartkoden
-/// kan bruke feltene direkte, for eksempel res.name, res.latitude og need.areaGeoJson.
+/// Gjør GeoJSON fra GetInformation om til en vanlig liste. Er geometrien et punkt, er det posisjonen.
+/// Ellers er det et tegnet område, og posisjonen ligger i latitude/longitude.
 /// </summary>
-function fraGeoJson(featureCollection) {
-    /// Får vi noe annet enn en FeatureCollection, returnerer vi en tom liste så kartet ikke krasjer
-    if (!featureCollection || !Array.isArray(featureCollection.features)) return [];
+function fraGeoJson(geoJson) {
+    if (!geoJson || !Array.isArray(geoJson.features)) return [];
 
-    return featureCollection.features.map(function (feature) {
+    return geoJson.features.map(function (feature) {
+        var element = Object.assign({}, feature.properties);
         var geometri = feature.geometry;
-        var punkt = null;
-        var omrade = null;
 
         if (geometri && geometri.type === 'Point') {
-            /// Vanlig ressurs eller behov: bare ett punkt
-            punkt = geometri;
-        } else if (geometri && geometri.type === 'GeometryCollection') {
-            /// Behov med tegnet område: serveren legger punktet først og området etterpå
-            punkt = geometri.geometries[0];
-            omrade = geometri.geometries[1] || null;
+            /// GeoJSON har lengdegrad først, motsatt av Leaflet
+            element.longitude = geometri.coordinates[0];
+            element.latitude = geometri.coordinates[1];
+        } else if (geometri) {
+            element.areaGeoJson = geometri;
         }
-
-        /// Alle feltene (navn, telefon, kategori osv.) ligger i feature.properties
-        var element = Object.assign({}, feature.properties);
-
-        /// NB: GeoJSON lagrer koordinater som [lengdegrad, breddegrad], altså motsatt av Leaflet
-        element.longitude = punkt ? punkt.coordinates[0] : null;
-        element.latitude = punkt ? punkt.coordinates[1] : null;
-
-        /// Området er et GeoJSON-objekt (ikke tekst), og kan sendes rett inn i L.geoJSON()
-        element.areaGeoJson = omrade;
 
         return element;
     });

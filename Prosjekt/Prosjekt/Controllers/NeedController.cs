@@ -7,16 +7,10 @@ using Prosjekt.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Prosjekt.Utils;
 using System.Globalization;
+using System.Security.Claims;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using NetTopologySuite;
 using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.IO.Converters;
-// NetTopologySuite har også en klasse som heter Coordinates. Her sier vi at det er vår egen som gjelder.
-using Coordinates = Prosjekt.Models.Entities.Coordinates;
-
+using Geometry = NetTopologySuite.Geometries.Geometry;
 
 namespace Prosjekt.Controllers
 {
@@ -104,7 +98,8 @@ namespace Prosjekt.Controllers
                     Coords = coords,
                     AreaGeoJson = model.AreaGeoJson,
                     AreaSquareMeters = model.AreaSquareMeters,
-                    PerimeterMeters = model.PerimeterMeters
+                    PerimeterMeters = model.PerimeterMeters,
+                    UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(needEntity);
@@ -200,15 +195,10 @@ namespace Prosjekt.Controllers
             var canSeePhone = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
             var needs = await _repo.GetAllAsync();
 
-            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
             var collection = new FeatureCollection();
-
             foreach (var n in needs)
             {
-                // Punktet, eller punktet + det tegnede området (se BuildNeedGeometry lenger ned)
-                var geometry = BuildNeedGeometry(n, factory);
-
-                var props = new AttributesTable
+                collection.Add(new Feature(NeedGeometry(n), new AttributesTable
                 {
                     { "id", n.Id },
                     { "name", n.Name },
@@ -219,19 +209,17 @@ namespace Prosjekt.Controllers
                     { "importance", Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
                         ? prio : ImportanceLevel.Planned },
                     { "status", n.Status },
+                    { "latitude", n.Coords.Latitude },
+                    { "longitude", n.Coords.Longitude },
                     { "areaSquareMeters", n.AreaSquareMeters }
-                };
-
-                collection.Add(new Feature(geometry, props));
+                }));
             }
 
             return Json(collection);
         }
 
         /// <summary>
-        /// Eksport av behov som CSV (kan åpnes i Excel). Enten bare åpne behov (ikke løste) eller alle.
-        /// Knappene ligger på eksportsiden sammen med ressursene (Resource/Export).
-        /// Klassen krever allerede admin eller koordinator, så det trengs ingen ekstra [Authorize] her.
+        /// Eksport av behov som CSV, enten bare de som ikke er løst eller alle.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> ExportCsv(bool onlyOpen = true)
@@ -245,40 +233,34 @@ namespace Prosjekt.Controllers
             {
                 sb.AppendLine(string.Join(";",
                     n.Id,
-                    Csv(n.Name),
+                    Csv.Text(n.Name),
                     TranslateNeedType(n.Category),
                     TranslatePriority(n.Priority),
                     TranslateStatus(n.Status),
-                    Csv(n.PhoneNumber),
-                    Csv(n.Description),
-                    NorwegianTime.FromUtc(n.NeededBy)?.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    NorwegianTime.FromUtc(n.CreatedAt).ToString("dd.MM.yyyy HH:mm"),
+                    Csv.Text(n.PhoneNumber),
+                    Csv.Text(n.Description),
+                    Csv.Date(n.NeededBy),
+                    Csv.Date(n.CreatedAt),
                     n.AreaSquareMeters?.ToString("0", CultureInfo.InvariantCulture) ?? "",
                     n.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
                     n.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
             }
 
-            // BOM-en først i filen gjør at Excel viser æ, ø og å riktig
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-            return File(bytes, "text/csv", $"{FileName(onlyOpen)}.csv");
+            return File(Csv.ToBytes(sb), Csv.ContentType, $"{FileName(onlyOpen)}.csv");
         }
 
         /// <summary>
-        /// Eksport av behov som GeoJSON. Filen kan åpnes direkte i kartprogrammer som QGIS, ArcGIS
-        /// eller geojson.io. Behov med tegnet område får med både punktet og området.
+        /// Eksport av behov som GeoJSON, som kan åpnes i kartprogrammer som QGIS og ArcGIS.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> ExportGeoJson(bool onlyOpen = true)
         {
             var needs = await RetrieveNeedsForExport(onlyOpen);
 
-            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
             var collection = new FeatureCollection();
-
             foreach (var n in needs)
             {
-                // Egenskapene (properties) får norske navn, slik som i CSV-eksporten
-                var props = new AttributesTable
+                collection.Add(new Feature(NeedGeometry(n), new AttributesTable
                 {
                     { "id", n.Id },
                     { "navn", n.Name },
@@ -289,68 +271,20 @@ namespace Prosjekt.Controllers
                     { "beskrivelse", n.Description },
                     { "frist", NorwegianTime.FromUtc(n.NeededBy) },
                     { "registrert", NorwegianTime.FromUtc(n.CreatedAt) },
-                    { "arealKvm", n.AreaSquareMeters }
-                };
-
-                collection.Add(new Feature(BuildNeedGeometry(n, factory), props));
+                    { "arealKvm", n.AreaSquareMeters },
+                    { "breddegrad", n.Coords.Latitude },
+                    { "lengdegrad", n.Coords.Longitude }
+                }));
             }
 
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(collection, GeoJsonOptions);
-            // application/geo+json er den offisielle filtypen for GeoJSON
-            return File(bytes, "application/geo+json", $"{FileName(onlyOpen)}.geojson");
+            return File(GeoJson.ToBytes(collection), GeoJson.ContentType, $"{FileName(onlyOpen)}.geojson");
         }
 
         /// <summary>
-        /// Lager geometrien til et behov: bare punktet, eller punktet + det tegnede området.
-        /// Brukes både av kartet (GetInformation) og av GeoJSON-eksporten, så de alltid er like.
+        /// Det tegnede området hvis behovet har et, ellers punktet. Posisjonen ligger uansett i egenskapene.
         /// </summary>
-        private static Geometry BuildNeedGeometry(Need n, GeometryFactory factory)
-        {
-            // NTS: X = lengdegrad (longitude), Y = breddegrad (latitude)
-            Geometry point = factory.CreatePoint(new Coordinate(n.Coords.Longitude, n.Coords.Latitude));
-
-            // Ingen tegnet område: bare punktet
-            if (string.IsNullOrEmpty(n.AreaGeoJson)) return point;
-
-            try
-            {
-                // AreaGeoJson er tekst. Leaflet (layer.toGeoJSON()) lagrer en hel Feature,
-                // men vi godtar også en ren geometri (f.eks. {"type":"Polygon",...}).
-                // Derfor sjekker vi "type" først, og leser teksten på riktig måte.
-                using var doc = JsonDocument.Parse(n.AreaGeoJson);
-                var type = doc.RootElement.TryGetProperty("type", out var t) ? t.GetString() : null;
-
-                // NB: Feature må leses som IFeature. Biblioteket lager sin egen Feature-type (StjFeature),
-                // og ber vi om Feature direkte, krasjer det.
-                var areaGeometry = type == "Feature"
-                    ? doc.RootElement.Deserialize<IFeature>(GeoJsonOptions)?.Geometry
-                    : doc.RootElement.Deserialize<Geometry>(GeoJsonOptions);
-
-                if (areaGeometry != null)
-                {
-                    // GeometryCollection = flere geometrier i én. Punktet først, så området.
-                    // site.js (fraGeoJson) regner med akkurat denne rekkefølgen.
-                    return factory.CreateGeometryCollection(new[] { point, areaGeometry });
-                }
-            }
-            catch (JsonException)
-            {
-                // Ugyldig område i databasen: bruk bare punktet
-            }
-
-            return point;
-        }
-
-        /// <summary>
-        /// JSON-innstillinger med GeoJSON-støtte fra NetTopologySuite. Pene linjeskift, og æ, ø og å
-        /// skrives som vanlig tekst. Brukes både til å lese AreaGeoJson og til å skrive GeoJSON-eksporten.
-        /// </summary>
-        private static readonly JsonSerializerOptions GeoJsonOptions = new()
-        {
-            WriteIndented = true,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            Converters = { new GeoJsonConverterFactory() }
-        };
+        private static Geometry NeedGeometry(Need n) =>
+            GeoJson.ParseArea(n.AreaGeoJson) ?? GeoJson.Point(n.Coords.Latitude, n.Coords.Longitude);
 
         /// <summary>
         /// Alle behov, eller bare de som ikke er løst ennå. Sortert etter Id.
@@ -365,7 +299,7 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Ulike filnavn så eksportene ikke blandes sammen med hverandre eller med ressursene
+        /// Ulike filnavn så eksportene ikke blandes sammen med hverandre eller med ressursene.
         /// </summary>
         private static string FileName(bool onlyOpen)
         {
@@ -374,7 +308,7 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Category lagres som "Food", "Medicine" osv. Eksporten viser norsk navn (samme som i skjemaet).
+        /// Category lagres som "Food", "Medicine" osv. Eksporten viser samme norske navn som skjemaet.
         /// </summary>
         private static string TranslateNeedType(string category) => category switch
         {
@@ -392,8 +326,7 @@ namespace Prosjekt.Controllers
         };
 
         /// <summary>
-        /// Priority lagres som "Acute" eller "Planned". Gamle verdier (f.eks. "Medium") vises som Planlagt,
-        /// akkurat som på kartet.
+        /// Gamle verdier som "Medium" vises som Planlagt, slik som på kartet.
         /// </summary>
         private static string TranslatePriority(string priority) =>
             priority == nameof(ImportanceLevel.Acute) ? "Akutt" : "Planlagt";
@@ -406,18 +339,6 @@ namespace Prosjekt.Controllers
             EntryStatus.Resolved => "Løst",
             _ => ""
         };
-
-        /// <summary>
-        /// Gjør tekst trygg å legge i en CSV-fil, så Excel ikke blander sammen kolonnene.
-        /// Setter teksten i anførselstegn hvis den inneholder ; " eller linjeskift.
-        /// </summary>
-        private static string Csv(string? value)
-        {
-            if (string.IsNullOrEmpty(value)) return "";
-            if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
-                return "\"" + value.Replace("\"", "\"\"") + "\"";
-            return value;
-        }
 
         /// <summary>
         /// Finner tilgjengelige ressurser i riktig kategori, med den nærmeste først.
@@ -512,6 +433,8 @@ namespace Prosjekt.Controllers
                 Quantity = quantity
             });
 
+            await UpdateAvailabilityAsync(resourceId);
+
             if (need.Status == EntryStatus.New || need.Status == EntryStatus.UnderReview)
             {
                 need.Status = EntryStatus.Assigned;
@@ -525,9 +448,13 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Deallocate(int allocationId, int needId)
         {
             var allocations = await _allocationRepo.GetByNeedAsync(needId);
-            if (!allocations.Any(a => a.Id == allocationId)) return NotFound();
+            var allocation = allocations.FirstOrDefault(a => a.Id == allocationId);
+            if (allocation is null) return NotFound();
+
+            var resourceId = allocation.ResourceId;
 
             await _allocationRepo.DeleteAsync(allocationId);
+            await UpdateAvailabilityAsync(resourceId);
 
             /// <summary>
             /// Står behovet uten tildelinger, går det tilbake til Vurderes
@@ -595,5 +522,18 @@ namespace Prosjekt.Controllers
             AreaSquareMeters = n.AreaSquareMeters,
             PerimeterMeters = n.PerimeterMeters
         };
+   
+        /// holder IsAvailable i takt med tildelingene.
+        private async Task UpdateAvailabilityAsync(int resourceId)
+        {
+            var resource = await _resourceRepo.GetByIdAsync(resourceId);
+            if (resource == null) return;
+
+            var all = await _allocationRepo.GetAllAsync();
+            var taken = all.Where(a => a.ResourceId == resourceId).Sum(a => a.Quantity);
+
+            resource.IsAvailable = resource.Quantity - taken > 0;
+            await _resourceRepo.UpdateAsync(resource);
+        }
     }
 }

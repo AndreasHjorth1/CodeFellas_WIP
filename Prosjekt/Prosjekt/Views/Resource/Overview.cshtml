@@ -449,7 +449,12 @@
                                     <h2>@res.Name</h2>
                                     <div class="card-sub">
                                         <span data-adresse-for="@res.Id">@OversettKategori(res.Category)</span>
-                                        · @res.Quantity stk · @ledigTekst
+                                        · @res.Available av @res.Quantity stk
+                                        @if (res.Allocated > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">@res.Allocated i bruk</span>
+                                        }
+                                        · @ledigTekst
                                     </div>
                                 </div>
                                 <div class="card-actions" onclick="event.stopPropagation();">
@@ -604,8 +609,7 @@
             /// Behovene fra kommunen vises med egne symboler, utenfor filteret for ressursene
             fetch('@Url.Action("GetInformation", "Need")')
                 .then(svar => svar.ok ? svar.json() : null)
-                /// Behovene kommer som GeoJSON. fraGeoJson (i site.js) gjør dem om til en vanlig liste
-                .then(geoJson => fraGeoJson(geoJson))
+                .then(fraGeoJson)
                 .then(behov => {
                     behov.forEach(function (n) {
                         var lat = parseFloat(n.latitude ?? n.Latitude);

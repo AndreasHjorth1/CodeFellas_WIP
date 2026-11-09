@@ -1,4 +1,4 @@
-    using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Authorization;
@@ -8,15 +8,7 @@ using Prosjekt.Utils;
 using System.Security.Claims;
 using System.Globalization;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using NetTopologySuite;
 using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.IO.Converters;
-// NetTopologySuite har også en klasse som heter Coordinates. Her sier vi at det er vår egen som gjelder.
-using Coordinates = Prosjekt.Models.Entities.Coordinates;
-
 
 namespace Prosjekt.Controllers
 {
@@ -290,20 +282,15 @@ namespace Prosjekt.Controllers
         /// <summary>
         /// Data til kartet på Home/Index. Admin og koordinator får alle ressurser, andre bare sine egne.
         /// </summary>
-        /// 
         [HttpGet]
         public async Task<IActionResult> GetInformation()
         {
             var resources = await GetVisibleResourcesAsync();
-            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-            var collection = new FeatureCollection();
 
+            var collection = new FeatureCollection();
             foreach (var r in resources)
             {
-                // NTS: X = lengdegrad (longitude), Y = breddegrad (latitude)
-                var point = factory.CreatePoint(new Coordinate(r.Coords.Longitude, r.Coords.Latitude));
-
-                var props = new AttributesTable
+                collection.Add(new Feature(GeoJson.Point(r.Coords.Latitude, r.Coords.Longitude), new AttributesTable
                 {
                     { "id", r.Id },
                     { "name", r.Name },
@@ -312,13 +299,11 @@ namespace Prosjekt.Controllers
                     { "quantity", r.Quantity },
                     { "availability", r.IsAvailable },
                     { "category", ParseCategory(r.Category) }
-                };
-
-                collection.Add(new Feature(point, props));
+                }));
             }
 
             return Json(collection);
-    }
+        }
 
         /// <summary>
         /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
@@ -343,25 +328,23 @@ namespace Prosjekt.Controllers
             {
                 sb.AppendLine(string.Join(";",
                     r.Id,
-                    Csv(r.Name),
+                    Csv.Text(r.Name),
                     TranslateCategory(r.Category),
                     r.Quantity,
                     r.IsAvailable ? "Ja" : "Nei",
-                    Csv(r.PhoneNumber),
-                    Csv(r.Description),
-                    NorwegianTime.FromUtc(r.AvailableFrom)?.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    NorwegianTime.FromUtc(r.AvailableTo)?.ToString("dd.MM.yyyy HH:mm") ?? "",
+                    Csv.Text(r.PhoneNumber),
+                    Csv.Text(r.Description),
+                    Csv.Date(r.AvailableFrom),
+                    Csv.Date(r.AvailableTo),
                     r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
                     r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
             }
 
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-            return File(bytes, "text/csv", $"{FileName(bareTilgjengelige)}.csv");
+            return File(Csv.ToBytes(sb), Csv.ContentType, $"{FileName(bareTilgjengelige)}.csv");
         }
 
         /// <summary>
-        /// Eksporter ressurser som GeoJSON. Filen kan åpnes direkte i kartprogrammer
-        /// som QGIS, ArcGIS eller geojson.io, og hver ressurs vises som et punkt på kartet.
+        /// Eksport av ressurser som GeoJSON, som kan åpnes i kartprogrammer som QGIS og ArcGIS.
         /// </summary>
         [Authorize(Roles = RoleNames.AdminOrCoordinator)]
         [HttpGet]
@@ -369,16 +352,10 @@ namespace Prosjekt.Controllers
         {
             var resources = await RetrieveResourcesForExport(onlyAvailable);
 
-            var factory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
             var collection = new FeatureCollection();
-
             foreach (var r in resources)
             {
-                // NTS: X = lengdegrad (longitude), Y = breddegrad (latitude)
-                var point = factory.CreatePoint(new Coordinate(r.Coords.Longitude, r.Coords.Latitude));
-
-                // Egenskapene (properties) får norske navn, slik som i CSV-eksporten
-                var props = new AttributesTable
+                collection.Add(new Feature(GeoJson.Point(r.Coords.Latitude, r.Coords.Longitude), new AttributesTable
                 {
                     { "id", r.Id },
                     { "navn", r.Name },
@@ -389,22 +366,10 @@ namespace Prosjekt.Controllers
                     { "beskrivelse", r.Description },
                     { "tilgjengeligFra", NorwegianTime.FromUtc(r.AvailableFrom) },
                     { "tilgjengeligTil", NorwegianTime.FromUtc(r.AvailableTo) }
-                };
-
-                collection.Add(new Feature(point, props));
+                }));
             }
 
-            // Pene linjeskift, æ/ø/å som vanlig tekst, og GeoJSON-støtte fra NetTopologySuite
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            };
-            options.Converters.Add(new GeoJsonConverterFactory());
-
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(collection, options);
-            // application/geo+json er den offisielle filtypen for GeoJSON
-            return File(bytes, "application/geo+json", $"{FileName(onlyAvailable)}.geojson");
+            return File(GeoJson.ToBytes(collection), GeoJson.ContentType, $"{FileName(onlyAvailable)}.geojson");
         }
 
         /// <summary>
@@ -485,17 +450,5 @@ namespace Prosjekt.Controllers
             nameof(ResourceViewModel.ResourceType.Materials) => "Materialer",
             _ => "Annet"
         };
-
-        /// <summary>
-        /// Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
-        /// Gjør tekst trygg å legge i en CSV-fil, så Excel ikke blander sammen kolonnene
-        /// </summary>
-        private static string Csv(string? value)
-        {
-            if (string.IsNullOrEmpty(value)) return "";
-            if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
-                return "\"" + value.Replace("\"", "\"\"") + "\"";
-            return value;
-        }
     }
 }

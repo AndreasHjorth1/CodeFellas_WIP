@@ -19,11 +19,11 @@ builder.WebHost.ConfigureKestrel(options =>
 /// 2. Aspire service defaults (helsesjekker, logging, telemetri)
 builder.AddServiceDefaults();
 
-/// 3. MVC med anti-forgery på alle POST-forespørsler
+/// 3. MVC med anti-forgery på alle POST-forespørsler, og GeoJSON-støtte til kartdataene
 builder.Services.AddControllersWithViews(options =>
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
-    .AddJsonOptions(o =>
-        o.JsonSerializerOptions.Converters.Add(new GeoJsonConverterFactory()));
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new GeoJsonConverterFactory()));
 
 /// 4. Tilkoblingsstreng: Aspire sender den inn som ConnectionStrings:Mapdb
 var connectionString = builder.Configuration.GetConnectionString("Mapdb")
@@ -137,7 +137,5 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.Run();
-
-
 
 
