@@ -22,40 +22,43 @@ namespace Prosjekt.Models.ModelView
         [Required(ErrorMessage = "Beskrivelse må fylles ut.")]
         public string Description { get; init; } = string.Empty;
 
+        /// <summary>
+        /// Rekkefølgen må stemme med needTypes i wwwroot/js/map-symbols.js.
+        /// </summary>
         public enum NeedType
         {
+            [Display(Name = "Annet")]
+            Other = 0,
+
             [Display(Name = "Mat/Vann")]
-            Food,
+            Food = 1,
 
             [Display(Name = "Medisiner")]
-            Medicine,
+            Medicine = 2,
 
             [Display(Name = "Transport")]
-            Transport,
+            Transport = 3,
 
             [Display(Name = "Strøm/aggregat")]
-            PowerGenerator,
+            PowerGenerator = 4,
 
             [Display(Name = "Snørydding")]
-            SnowRemoval,
+            SnowRemoval = 5,
 
             [Display(Name = "Sand/grus")]
-            SandGravel,
+            SandGravel = 6,
 
             [Display(Name = "Maskiner")]
-            Machinery,
+            Machinery = 7,
 
             [Display(Name = "Evakuering")]
-            Evacuation,
+            Evacuation = 8,
 
             [Display(Name = "Samband")]
-            Communication,
+            Communication = 9,
 
             [Display(Name = "Mannskap")]
-            Personnel,
-
-            [Display(Name = "Annet")]
-            Other
+            Personnel = 10
         }
 
         [Display(Name = "Behovstype")]

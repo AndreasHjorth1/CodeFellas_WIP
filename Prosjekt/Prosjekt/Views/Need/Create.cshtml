@@ -348,7 +348,7 @@
             function popupInnhold(b, adresse) {
                 var rader = [
                     ['Kategori', b.kategori],
-                    ['Viktighet', importanceNumber === 0 ? 'Akutt' : 'Planlagt'],
+                    ['Viktighet', MapSymbols.isAcute(importanceNumber) ? 'Akutt' : 'Planlagt'],
                     ['Frist', frist],
                     ['Telefon', b.telefon],
                     ['Beskrivelse', b.beskrivelse],
@@ -377,7 +377,7 @@
             if (omradeJson) {
                 try {
                     var omrade = L.geoJSON(JSON.parse(omradeJson), {
-                        style: { color: importanceNumber === 0 ? '#c8102e' : '#e0a800', weight: 2, dashArray: '6 4', fillOpacity: 0.15 }
+                        style: { color: MapSymbols.isAcute(importanceNumber) ? '#c8102e' : '#e0a800', weight: 2, dashArray: '6 4', fillOpacity: 0.15 }
                     }).addTo(kart);
                     kart.fitBounds(omrade.getBounds(), { padding: [20, 20] });
                 } catch (err) {

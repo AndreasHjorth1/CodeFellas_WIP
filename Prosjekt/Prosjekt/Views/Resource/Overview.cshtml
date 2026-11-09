@@ -455,7 +455,7 @@
                                     <label class="form-label" for="typeFilter">Kategori</label>
                                     <select id="typeFilter" class="form-select">
                                         <option value="">Alle kategorier</option>
-                                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+                                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>().OrderBy(k => k == ResourceViewModel.ResourceType.Other))
                                         {
                                             <option value="@k">@OversettKategori(k)</option>
                                         }

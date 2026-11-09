@@ -25,10 +25,10 @@ namespace Prosjekt.Models.Entities
         public string PhoneNumber { get; set; } = string.Empty;
 
         /// <summary>
-        /// Navnet på en ImportanceLevel, altså Acute eller Planned.
+        /// Navnet på en ImportanceLevel, altså Acute eller Planned. Undefined til noen har valgt.
         /// </summary>
         [StringLength(50)]
-        public string Priority { get; set; } = "Medium";
+        public string Priority { get; set; } = "Undefined";
 
         public DateTime NeededBy { get; set; }
 

@@ -6,23 +6,24 @@ namespace Prosjekt.Models.ModelView.ResourceType
     {
         public enum VehicleType
         {
-            [Display(Name = "Bil")]
-            Car,
-            [Display(Name = "Buss")]
-            Bus,
-            [Display(Name = "Sykkel")]
-            Bicycle,
-            [Display(Name = "Motorsykkel")]
-            Motorcycle,
-            [Display(Name = "Traktor")]
-            Tractor,
-            [Display(Name = "Lastebil")]
-            Truck, [Display(Name = "Doser")]
-            Dozer,
-            [Display(Name = "Gravemaskin")]
-            Excavator,
             [Display(Name = "Annet")]
-            Other
+            Other = 0,
+            [Display(Name = "Bil")]
+            Car = 1,
+            [Display(Name = "Buss")]
+            Bus = 2,
+            [Display(Name = "Sykkel")]
+            Bicycle = 3,
+            [Display(Name = "Motorsykkel")]
+            Motorcycle = 4,
+            [Display(Name = "Traktor")]
+            Tractor = 5,
+            [Display(Name = "Lastebil")]
+            Truck = 6,
+            [Display(Name = "Doser")]
+            Dozer = 7,
+            [Display(Name = "Gravemaskin")]
+            Excavator = 8
         }
 
         [Display(Name = "Kjøretøytype")]

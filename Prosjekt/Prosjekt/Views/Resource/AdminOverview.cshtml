@@ -477,7 +477,7 @@
 
         <div class="chip-row" role="group" aria-label="Kategori">
             <button type="button" class="chip active" data-kategori="">Alle @ressurser.Count</button>
-            @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+            @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>().OrderBy(k => k == ResourceViewModel.ResourceType.Other))
             {
                 <button type="button" class="chip" data-kategori="@k">@OversettKategori(k) @(antallPerKategori.GetValueOrDefault(k))</button>
             }

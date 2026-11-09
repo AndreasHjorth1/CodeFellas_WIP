@@ -2,12 +2,17 @@
 
 namespace Prosjekt.Models.ModelView
 {
+    /// <summary>
+    /// Undefined er default, så et behov blir aldri akutt eller planlagt uten at noen har valgt det.
+    /// </summary>
     public enum ImportanceLevel
     {
+        [Display(Name = "Ikke valgt")]
+        Undefined = 0,
         [Display(Name = "Akutt behov")]
-        Acute,
+        Acute = 1,
         [Display(Name = "Planlagt behov")]
-        Planned,
+        Planned = 2,
     }
     public class NeedCreatorViewModel
     {

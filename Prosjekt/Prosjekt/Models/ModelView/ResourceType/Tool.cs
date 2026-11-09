@@ -6,16 +6,16 @@ namespace Prosjekt.Models.ModelView.ResourceType
     {
         public enum ToolType
         {
-            [Display(Name = "Håndverktøy")]
-            HandTool,
-            [Display(Name = "Elektroverktøy")]
-            PowerTool,
-            [Display(Name = "Hageverktøy")]
-            GardenTool,
-            [Display(Name = "Måleverktøy")]
-            MeasuringTool,
             [Display(Name = "Annet")]
-            Other
+            Other = 0,
+            [Display(Name = "Håndverktøy")]
+            HandTool = 1,
+            [Display(Name = "Elektroverktøy")]
+            PowerTool = 2,
+            [Display(Name = "Hageverktøy")]
+            GardenTool = 3,
+            [Display(Name = "Måleverktøy")]
+            MeasuringTool = 4
         }
 
         [Display(Name = "Verktøystype")]

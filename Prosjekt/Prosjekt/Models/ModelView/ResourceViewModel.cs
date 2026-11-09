@@ -11,20 +11,23 @@ namespace Prosjekt.Models.ModelView
 
         public string? UserId { get; init; }
 
+        /// <summary>
+        /// Rekkefølgen må stemme med resourceTypes i wwwroot/js/map-symbols.js.
+        /// </summary>
         public enum ResourceType
         {
-            [Display(Name = "Provisjon")]
-            Provision,
-            [Display(Name = "Klær")]
-            Clothing,
-            [Display(Name = "Verktøy")]
-            Tool,
-            [Display(Name = "Kjøretøy")]
-            Vehicle,
-            [Display(Name = "Materialer")]
-            Materials,
             [Display(Name = "Annet")]
-            Other
+            Other = 0,
+            [Display(Name = "Provisjon")]
+            Provision = 1,
+            [Display(Name = "Klær")]
+            Clothing = 2,
+            [Display(Name = "Verktøy")]
+            Tool = 3,
+            [Display(Name = "Kjøretøy")]
+            Vehicle = 4,
+            [Display(Name = "Materialer")]
+            Materials = 5
         }
 
         [Display(Name = "Navn")]

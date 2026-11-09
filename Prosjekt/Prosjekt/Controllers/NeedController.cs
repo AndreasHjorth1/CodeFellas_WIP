@@ -88,6 +88,12 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            if (model.Importance == ImportanceLevel.Undefined)
+            {
+                ModelState.AddModelError(nameof(model.Importance), "Du må velge om behovet er akutt eller planlagt.");
+                return View("Index", model);
+            }
+
             foreach (var baseNeed in model.NeedList.Where(n => !string.IsNullOrWhiteSpace(n.Name)))
             {
                 var needEntity = new Need
@@ -156,6 +162,12 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
+            if (model.Importance == ImportanceLevel.Undefined)
+            {
+                ModelState.AddModelError(nameof(model.Importance), "Du må velge om behovet er akutt eller planlagt.");
+                return View(model);
+            }
+
             var existingNeed = await _repo.GetByIdAsync(id);
             if (existingNeed == null) return NotFound();
 
@@ -216,8 +228,7 @@ namespace Prosjekt.Controllers
                     { "description", n.Description },
                     { "type", Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
                         ? cat : NeedViewModel.NeedType.Other },
-                    { "importance", Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
-                        ? prio : ImportanceLevel.Planned },
+                    { "importance", ParseImportance(n.Priority) },
                     { "status", n.Status },
                     { "latitude", n.Coords.Latitude },
                     { "longitude", n.Coords.Longitude },
@@ -400,7 +411,7 @@ namespace Prosjekt.Controllers
             Description = n.Description,
             Phone = n.PhoneNumber,
             Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
-            Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
+            Importance = ParseImportance(n.Priority),
             Deadline = NorwegianTime.FromUtc(n.NeededBy),
             Status = n.Status,
             Latitude = n.Coords.Latitude,
@@ -409,7 +420,15 @@ namespace Prosjekt.Controllers
             AreaSquareMeters = n.AreaSquareMeters,
             PerimeterMeters = n.PerimeterMeters
         };
-   
+
+        /// <summary>
+        /// Gamle eller ukjente verdier i databasen vises som planlagt, ikke som akutt.
+        /// </summary>
+        private static ImportanceLevel ParseImportance(string priority) =>
+            Enum.TryParse<ImportanceLevel>(priority, out var prio) && Enum.IsDefined(prio) && prio != ImportanceLevel.Undefined
+                ? prio
+                : ImportanceLevel.Planned;
+
         private async Task UpdateAvailabilityAsync(int resourceId)
         {
             var resource = await _resourceRepo.GetByIdAsync(resourceId);
