@@ -484,6 +484,7 @@
                     <div class="col-6">
                         <label class="form-label" for="inputQuantity">Antall</label>
                         <input id="inputQuantity" type="number" min="1" value="1" class="form-control" />
+                        <div class="form-text d-none" id="antallLast">Kjøretøy med skilt registreres ett om gangen.</div>
                     </div>
                     <div class="col-6">
                         <label class="form-label" for="inputPhoneNumber">Telefonnummer</label>
@@ -740,6 +741,37 @@
             else if (valgtTekst === "Clothing") document.getElementById('seksjonKlær').style.display = 'block';
             else if (valgtTekst === "Provision") document.getElementById('seksjonProvisjon').style.display = 'block';
         }
+
+        function oppdaterAntallsfelt() {
+            var antall = document.getElementById('inputQuantity');
+            var hjelp = document.getElementById('antallLast');
+            var kategori = document.getElementById('kategoriVelger').value;
+            var type = document.getElementById('inputVehicleType')?.value ?? '';
+
+            var laast = kategori === 'Vehicle' && ['Car', 'Bus', 'Motorcycle', 'Truck'].includes(type);
+
+            antall.dataset.laast = laast ? '1' : '';
+            if (laast && Number(antall.value) > 1) { antall.value = '1'; }
+            hjelp.classList.add('d-none');
+        }
+
+        function sjekkAntall() 
+        {
+            var antall = document.getElementById('inputQuantity');
+            if (antall.dataset.laast !== '1') return;
+            if (Number(antall.value) <= 1) return;
+
+            antall.value = '1';
+
+            var hjelp = document.getElementById('antallLast');
+            hjelp.classList.remove('d-none');
+            hjelp.classList.add('text-danger');
+        }
+
+        document.getElementById('inputVehicleType')?.addEventListener('change', oppdaterAntallsfelt);
+        document.getElementById('kategoriVelger')?.addEventListener('change', oppdaterAntallsfelt);
+        document.getElementById('inputQuantity').addEventListener('input', sjekkAntall);
+        oppdaterAntallsfelt();
 
         function oppdaterRessursSymbol() {
             const select = document.getElementById('kategoriVelger');
