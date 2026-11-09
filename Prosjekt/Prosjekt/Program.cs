@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Services; // IdentitySeeder og ConsoleEmailSender
+using NetTopologySuite.IO.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,9 +19,11 @@ builder.WebHost.ConfigureKestrel(options =>
 /// 2. Aspire service defaults (helsesjekker, logging, telemetri)
 builder.AddServiceDefaults();
 
-/// 3. MVC med anti-forgery på alle POST-forespørsler
+/// 3. MVC med anti-forgery på alle POST-forespørsler, og GeoJSON-støtte til kartdataene
 builder.Services.AddControllersWithViews(options =>
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+        options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new GeoJsonConverterFactory()));
 
 /// 4. Tilkoblingsstreng: Aspire sender den inn som ConnectionStrings:Mapdb
 var connectionString = builder.Configuration.GetConnectionString("Mapdb")
@@ -45,7 +48,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 /// 6. E-postsender for Identity (skriver e-post til loggen, sender ikke ekte e-post)
 builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
-/// 7. Identity: innlogging, brukere og roller
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AuditLogService>();
+// 7. Identity: innlogging, brukere og roller
 var identityBuilder = builder.Services
     .AddIdentity<IdentityUser, IdentityRole>(options =>
     {

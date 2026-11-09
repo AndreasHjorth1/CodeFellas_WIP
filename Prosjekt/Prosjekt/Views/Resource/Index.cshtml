@@ -669,6 +669,8 @@
                 .then(function (treff) {
                     if (!treff.length) { alert('Fant ikke stedet "' + sporring + '".'); return; }
                     map.setView([parseFloat(treff[0].lat), parseFloat(treff[0].lon)], 16);
+                    // Setter pin på søketreffet, på samme måte som et klikk i kartet
+                    map.fire('click', { latlng: L.latLng(parseFloat(treff[0].lat), parseFloat(treff[0].lon)) });
                 })
                 .catch(function () { alert('Søket feilet. Prøv igjen.'); });
         });

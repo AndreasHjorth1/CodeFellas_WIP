@@ -7,6 +7,7 @@ using Prosjekt.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Prosjekt.Utils;
 using System.Security.Claims;
+using NetTopologySuite.Features;
 
 namespace Prosjekt.Controllers
 {
@@ -191,27 +192,28 @@ namespace Prosjekt.Controllers
             var canSeePhone = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
             var needs = await _repo.GetAllAsync();
 
-            var result = needs
-                .Select(n => new NeedViewModel
+            var collection = new FeatureCollection();
+            foreach (var n in needs)
+            {
+                var geometry = GeoJson.AreaOrPoint(n.AreaGeoJson, n.Coords.Latitude, n.Coords.Longitude);
+                collection.Add(new Feature(geometry, new AttributesTable
                 {
-                    Id = n.Id,
-                    Name = n.Name,
-                    Phone = canSeePhone ? n.PhoneNumber : string.Empty,
-                    Description = n.Description,
-                    Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
-                        ? cat
-                        : NeedViewModel.NeedType.Other,
-                    Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
-                        ? prio
-                        : ImportanceLevel.Planned,
-                    Status = n.Status,
-                    Latitude = n.Coords.Latitude,
-                    Longitude = n.Coords.Longitude,
-                    AreaGeoJson = n.AreaGeoJson,
-                    AreaSquareMeters = n.AreaSquareMeters
-                });
+                    { "id", n.Id },
+                    { "name", n.Name },
+                    { "phone", canSeePhone ? n.PhoneNumber : string.Empty },
+                    { "description", n.Description },
+                    { "type", Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
+                        ? cat : NeedViewModel.NeedType.Other },
+                    { "importance", Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
+                        ? prio : ImportanceLevel.Planned },
+                    { "status", n.Status },
+                    { "latitude", n.Coords.Latitude },
+                    { "longitude", n.Coords.Longitude },
+                    { "areaSquareMeters", n.AreaSquareMeters }
+                }));
+            }
 
-            return Json(result);
+            return Json(collection);
         }
 
         /// <summary>

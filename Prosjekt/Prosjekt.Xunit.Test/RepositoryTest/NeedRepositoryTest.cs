@@ -5,6 +5,8 @@ using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Entities;
 using Prosjekt.Models.Enums;
 using Xunit;
+using Microsoft.AspNetCore.Http;
+using Prosjekt.Services;
 
 namespace Prosjekt.Xunit
 {
@@ -16,7 +18,11 @@ namespace Prosjekt.Xunit
             using var context = CreateContext();
             AddNeed(context, "Vann");
             AddNeed(context, "Mat");
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetAllAsync();
 
@@ -29,7 +35,11 @@ namespace Prosjekt.Xunit
         public async Task GetAllAsync_WhenEmpty_ReturnsEmptyList()
         {
             using var context = CreateContext();
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetAllAsync();
 
@@ -41,7 +51,11 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             var need = AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetByIdAsync(need.Id);
 
@@ -54,7 +68,11 @@ namespace Prosjekt.Xunit
         public async Task GetByIdAsync_WhenNeedDoesNotExist_ReturnsNull()
         {
             using var context = CreateContext();
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             var result = await repository.GetByIdAsync(404);
 
@@ -65,7 +83,11 @@ namespace Prosjekt.Xunit
         public async Task AddAsync_SavesNeed()
         {
             using var context = CreateContext();
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService); 
             var need = CreateNeed("Strøm");
 
             await repository.AddAsync(need);
@@ -75,6 +97,10 @@ namespace Prosjekt.Xunit
             Assert.Equal("Strøm", saved.Name);
             Assert.Equal(58.1467, saved.Coords.Latitude);
             Assert.Equal(7.9956, saved.Coords.Longitude);
+            var log = Assert.Single(context.AuditLogs);
+            Assert.Equal("Create", log.Action);
+            Assert.Equal("Need", log.EntityType);
+            Assert.Equal(saved.Id, log.EntityId);
         }
 
         [Fact]
@@ -82,7 +108,11 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             var need = AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             need.Name = "Oppdatert navn";
             need.Status = EntryStatus.Assigned;
@@ -92,6 +122,13 @@ namespace Prosjekt.Xunit
             Assert.NotNull(updated);
             Assert.Equal("Oppdatert navn", updated.Name);
             Assert.Equal(EntryStatus.Assigned, updated.Status);
+            var log = Assert.Single(context.AuditLogs);
+            Assert.Equal("Update", log.Action);
+            Assert.Equal("Need", log.EntityType);
+            Assert.Equal(need.Id, log.EntityId);
+            Assert.Equal("Status", log.FieldName);
+            Assert.Equal(EntryStatus.New.ToString(), log.OldValue);
+            Assert.Equal(EntryStatus.Assigned.ToString(), log.NewValue);
         }
 
         [Fact]
@@ -99,11 +136,19 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             var need = AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService); ;
 
             await repository.DeleteAsync(need.Id);
 
             Assert.Empty(context.Needs);
+            var log = Assert.Single(context.AuditLogs);
+            Assert.Equal("Delete", log.Action);
+            Assert.Equal("Need", log.EntityType);
+            Assert.Equal(need.Id, log.EntityId);
         }
 
         [Fact]
@@ -111,7 +156,11 @@ namespace Prosjekt.Xunit
         {
             using var context = CreateContext();
             AddNeed(context);
-            var repository = new NeedRepository(context);
+            var auditLogService = new AuditLogService(
+    context,
+    new HttpContextAccessor());
+
+            var repository = new NeedRepository(context, auditLogService);
 
             await repository.DeleteAsync(404);
 
