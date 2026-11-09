@@ -47,6 +47,6 @@ namespace Prosjekt.Models.Entities
         /// <summary>
         /// Eieren av ressursen. Blir null hvis brukeren slettes.
         /// </summary>
-        public string? UserId { get; set; }
+        public string? UserId { get; init; }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Prosjekt.Models.ModelView.ResourceType
 {
-    public class MaterialsViewModel : ResourceViewModel
+    public record MaterialsViewModel : ResourceViewModel
     {
         public enum MaterialType
         {
@@ -27,7 +27,7 @@ namespace Prosjekt.Models.ModelView.ResourceType
         }
 
         [Display(Name = "Materialtype")]
-        public MaterialType Type { get; set; } = MaterialType.Other;
+        public MaterialType Type { get; init; } = MaterialType.Other;
 
         public MaterialsViewModel()
         {

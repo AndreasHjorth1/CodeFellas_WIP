@@ -111,10 +111,12 @@ namespace Prosjekt.Controllers
 
                 await _repo.AddAsync(resourceEntity);
 
-                baseResource.Id = resourceEntity.Id;
-                baseResource.Latitude = model.Latitude;
-                baseResource.Longitude = model.Longitude;
-                createdResources.Add(baseResource);
+                createdResources.Add(baseResource with
+                {
+                    Id = resourceEntity.Id,
+                    Latitude = model.Latitude,
+                    Longitude = model.Longitude
+                });
             }
 
             return View("Create", createdResources);

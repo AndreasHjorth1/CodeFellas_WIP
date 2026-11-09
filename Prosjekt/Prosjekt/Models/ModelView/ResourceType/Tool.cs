@@ -2,7 +2,7 @@
 
 namespace Prosjekt.Models.ModelView.ResourceType
 {
-    public class ToolViewModel : ResourceViewModel
+    public record ToolViewModel : ResourceViewModel
     {
         public enum ToolType
         {
@@ -19,7 +19,7 @@ namespace Prosjekt.Models.ModelView.ResourceType
         }
 
         [Display(Name = "Verktøystype")]
-        public ToolType Type { get; set; } = ToolType.HandTool;
+        public ToolType Type { get; init; } = ToolType.HandTool;
 
         public ToolViewModel()
         {

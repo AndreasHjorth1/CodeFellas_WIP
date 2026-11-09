@@ -4,37 +4,37 @@ namespace Prosjekt.Models.ModelView
 {
     public class ResourceMatchViewModel
     {
-        public int Id { get; set; }
+        public int Id { get; init; }
 
         [Display(Name = "Navn")]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
 
         [Display(Name = "Beskrivelse")]
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
 
         [Display(Name = "Kategori")]
-        public string Category { get; set; } = string.Empty;
+        public string Category { get; init; } = string.Empty;
 
         [Display(Name = "Antall")]
-        public int Quantity { get; set; }
+        public int Quantity { get; init; }
 
         [Display(Name = "Telefonnummer")]
-        public string PhoneNumber { get; set; } = string.Empty;
+        public string PhoneNumber { get; init; } = string.Empty;
 
         [Display(Name = "Breddegrad")]
-        public double Latitude { get; set; }
+        public double Latitude { get; init; }
 
         [Display(Name = "Lengdegrad")]
-        public double Longitude { get; set; }
+        public double Longitude { get; init; }
 
         [Display(Name = "Avstand i meter")]
-        public double DistanceMeters { get; set; }
+        public double DistanceMeters { get; init; }
 
         [Display(Name = "Allokert")]
-        public int Allocated { get; set; }
+        public int Allocated { get; init; }
 
         [Display(Name = "Allokert til dette behovet")]
-        public int AllocatedToThisNeed { get; set; }
+        public int AllocatedToThisNeed { get; init; }
 
         public int Available => Quantity - Allocated;
 

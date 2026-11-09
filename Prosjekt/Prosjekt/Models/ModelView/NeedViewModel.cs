@@ -8,7 +8,7 @@ namespace Prosjekt.Models.ModelView
         /// <summary>
         /// La inn Id for å kunne bruke denne modellen til å redigere eksisterende behov.
         /// </summary>
-        public int Id { get; set; }
+        public int Id { get; init; }
 
         [Display(Name = "Navn")]
         [Required(ErrorMessage = "Navn må fylles ut.")]
@@ -72,10 +72,10 @@ namespace Prosjekt.Models.ModelView
         public EntryStatus Status {get; init;} = EntryStatus.New;
 
         [Display(Name = "Breddegrad")]
-        public double? Latitude { get; set; }
+        public double? Latitude { get; init; }
 
         [Display(Name = "Lengdegrad")]
-        public double? Longitude { get; set; }
+        public double? Longitude { get; init; }
 
         /// <summary>
         /// La inn område for behovet.

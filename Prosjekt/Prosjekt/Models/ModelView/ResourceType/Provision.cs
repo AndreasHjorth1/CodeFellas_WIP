@@ -2,7 +2,7 @@
 
 namespace Prosjekt.Models.ModelView.ResourceType
 {
-    public class ProvisionViewModel : ResourceViewModel
+    public record ProvisionViewModel : ResourceViewModel
     {
         public enum ProvisionType
         {
@@ -13,7 +13,7 @@ namespace Prosjekt.Models.ModelView.ResourceType
         }
 
         [Display(Name = "Provisjonstype")]
-        public ProvisionType Type { get; set; } = ProvisionType.FoodOnePortion;
+        public ProvisionType Type { get; init; } = ProvisionType.FoodOnePortion;
 
         public ProvisionViewModel()
         {

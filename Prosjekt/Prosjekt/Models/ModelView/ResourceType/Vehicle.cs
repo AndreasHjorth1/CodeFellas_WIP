@@ -2,7 +2,7 @@
 
 namespace Prosjekt.Models.ModelView.ResourceType
 {
-    public class VehicleViewModel : ResourceViewModel
+    public record VehicleViewModel : ResourceViewModel
     {
         public enum VehicleType
         {
@@ -26,10 +26,10 @@ namespace Prosjekt.Models.ModelView.ResourceType
         }
 
         [Display(Name = "Kjøretøytype")]
-        public VehicleType Type { get; set; } = VehicleType.Other;
+        public VehicleType Type { get; init; } = VehicleType.Other;
 
         [Display(Name = "Skiltnummer")]
-        public string LicensePlate { get; set; } = string.Empty;
+        public string LicensePlate { get; init; } = string.Empty;
 
         public VehicleViewModel()
         {

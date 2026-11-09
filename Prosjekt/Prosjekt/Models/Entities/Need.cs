@@ -47,6 +47,6 @@ namespace Prosjekt.Models.Entities
         public string? AreaGeoJson { get; set; }
         public double? AreaSquareMeters { get; set; }
         public double? PerimeterMeters { get; set; }
-        public string? UserId { get; set; }
+        public string? UserId { get; init; }
     }
 }

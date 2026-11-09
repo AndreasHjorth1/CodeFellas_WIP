@@ -6,15 +6,15 @@ namespace Prosjekt.Models.ModelView.Account
     {
         [Required]
         [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public string Email { get; init; } = string.Empty;
 
         [Required]
         [DataType(DataType.Password)]
-        public string Password { get; set; } = string.Empty;
+        public string Password { get; init; } = string.Empty;
 
         [Display(Name = "Remember me")]
-        public bool RememberMe { get; set; }
+        public bool RememberMe { get; init; }
 
-        public string? ReturnUrl { get; set; }
+        public string? ReturnUrl { get; init; }
     }
 }
