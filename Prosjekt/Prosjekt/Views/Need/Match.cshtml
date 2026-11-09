@@ -272,16 +272,16 @@
         var markorer = {};
 
         matches.forEach(function (m) {
-            markorer[m.Id] = L.circleMarker([m.Latitude, m.Longitude], vanligStil).addTo(kart).bindPopup(
+            markorer[m.Id] = L.circleMarker([m.Coords.Latitude, m.Coords.Longitude], vanligStil).addTo(kart).bindPopup(
                 `<b>${escapeHtml(m.Name)}</b><br/>Antall: ${m.Quantity}<br/>📞 ${escapeHtml(m.PhoneNumber)}`
             );
 
             /// Strek fra behovet til ressursen
-            L.polyline([[needLat, needLng], [m.Latitude, m.Longitude]], {
+            L.polyline([[needLat, needLng], [m.Coords.Latitude, m.Coords.Longitude]], {
                 color: '#198754', weight: 1, opacity: 0.4, dashArray: '4 4'
             }).addTo(kart);
 
-            punkter.push([m.Latitude, m.Longitude]);
+            punkter.push([m.Coords.Latitude, m.Coords.Longitude]);
         });
 
         if (punkter.length > 1) {

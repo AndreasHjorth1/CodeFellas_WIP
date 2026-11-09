@@ -257,8 +257,7 @@ namespace Prosjekt.Controllers
                     Category = r.Category,
                     Quantity = r.Quantity,
                     PhoneNumber = r.PhoneNumber,
-                    Latitude = r.Coords.Latitude,
-                    Longitude = r.Coords.Longitude,
+                    Coords = r.Coords,
                     DistanceMeters = Distance.InMeters(
                         need.Coords.Latitude, need.Coords.Longitude,
                         r.Coords.Latitude, r.Coords.Longitude),

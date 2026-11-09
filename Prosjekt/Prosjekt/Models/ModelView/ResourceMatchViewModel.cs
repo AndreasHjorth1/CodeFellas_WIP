@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Prosjekt.Models.Entities;
 
 namespace Prosjekt.Models.ModelView
 {
@@ -21,11 +22,8 @@ namespace Prosjekt.Models.ModelView
         [Display(Name = "Telefonnummer")]
         public string PhoneNumber { get; init; } = string.Empty;
 
-        [Display(Name = "Breddegrad")]
-        public double Latitude { get; init; }
-
-        [Display(Name = "Lengdegrad")]
-        public double Longitude { get; init; }
+        [Display(Name = "Posisjon")]
+        public Coordinates Coords { get; init; }
 
         [Display(Name = "Avstand i meter")]
         public double DistanceMeters { get; init; }
