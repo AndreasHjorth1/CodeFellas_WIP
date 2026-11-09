@@ -126,6 +126,25 @@
         color: #ffffff;
     }
 
+    .btn-eksport {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        background-color: #ffffff;
+        border: 1px solid #c3ccd8;
+        border-radius: 3px;
+        color: #0b1f3a;
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.5rem 0.9rem;
+        text-decoration: none;
+    }
+
+    .btn-eksport:hover {
+        background-color: #f4f6f9;
+        color: #0b1f3a;
+    }
+
     .needs-split {
         display: flex;
         flex: 1;
@@ -513,6 +532,9 @@
                 <button type="button" data-visning="delt" class="active"><i class="fa-regular fa-map" aria-hidden="true"></i> Delt</button>
                 <button type="button" data-visning="kart"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Kart</button>
             </div>
+            <a class="btn-eksport" asp-controller="Export" asp-action="Index">
+                <i class="fa-solid fa-file-export" aria-hidden="true"></i> Eksporter
+            </a>
             <a class="btn-meld" asp-controller="Need" asp-action="Index">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i> Meld behov
             </a>

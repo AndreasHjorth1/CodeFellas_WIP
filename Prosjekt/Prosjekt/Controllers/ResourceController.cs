@@ -1,4 +1,4 @@
-    using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Authorization;
@@ -6,10 +6,7 @@ using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
 using System.Security.Claims;
-using System.Globalization;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
+using NetTopologySuite.Features;
 
 namespace Prosjekt.Controllers
 {
@@ -288,93 +285,22 @@ namespace Prosjekt.Controllers
         {
             var resources = await GetVisibleResourcesAsync();
 
-            var result = resources.Select(r => new ResourceViewModel
+            var collection = new FeatureCollection();
+            foreach (var r in resources)
             {
-                Id = r.Id,
-                Name = r.Name,
-                PhoneNumber = r.PhoneNumber,
-                Description = r.Description,
-                Quantity = r.Quantity,
-                Availability = r.IsAvailable,
-                Category = ParseCategory(r.Category),
-                Latitude = r.Coords.Latitude,
-                Longitude = r.Coords.Longitude
-            });
-
-            return Json(result);
-        }
-
-        /// <summary>
-        /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
-        /// </summary>
-        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
-        [HttpGet]
-        public IActionResult Export()
-        {
-            return View();
-        }
-
-        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
-        [HttpGet]
-        public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
-        {
-            var ressurser = await RetrieveResourcesForExport(bareTilgjengelige);
-
-            var sb = new StringBuilder();
-            sb.AppendLine("Id;Navn;Kategori;Antall;Tilgjengelig;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
-
-            foreach (var r in ressurser)
-            {
-                sb.AppendLine(string.Join(";",
-                    r.Id,
-                    Csv(r.Name),
-                    TranslateCategory(r.Category),
-                    r.Quantity,
-                    r.IsAvailable ? "Ja" : "Nei",
-                    Csv(r.PhoneNumber),
-                    Csv(r.Description),
-                    NorwegianTime.FromUtc(r.AvailableFrom)?.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    NorwegianTime.FromUtc(r.AvailableTo)?.ToString("dd.MM.yyyy HH:mm") ?? "",
-                    r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
-                    r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
+                collection.Add(new Feature(GeoJson.Point(r.Coords.Latitude, r.Coords.Longitude), new AttributesTable
+                {
+                    { "id", r.Id },
+                    { "name", r.Name },
+                    { "phoneNumber", r.PhoneNumber },
+                    { "description", r.Description },
+                    { "quantity", r.Quantity },
+                    { "availability", r.IsAvailable },
+                    { "category", ParseCategory(r.Category) }
+                }));
             }
 
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-            return File(bytes, "text/csv", $"{FileName(bareTilgjengelige)}.csv");
-        }
-
-        /// <summary>
-        /// Eksporter ressurser i JSON-format.
-        /// </summary>
-        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
-        [HttpGet]
-        public async Task<IActionResult> ExportJson(bool onlyAvailable = true)
-        {
-            var resources = await RetrieveResourcesForExport(onlyAvailable);
-
-            var data = resources.Select(r => new
-            {
-                r.Id,
-                r.Name,
-                Category = TranslateCategory(r.Category),
-                r.Quantity,
-                r.IsAvailable,
-                r.PhoneNumber,
-                r.Description,
-                AvailableFrom = NorwegianTime.FromUtc(r.AvailableFrom),
-                AvailableTo = NorwegianTime.FromUtc(r.AvailableTo),
-                r.Coords.Latitude,
-                r.Coords.Longitude
-            });
-
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            };
-
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(data, options);
-            return File(bytes, "application/json", $"{FileName(onlyAvailable)}.json");
+            return Json(collection);
         }
 
         /// <summary>
@@ -420,52 +346,6 @@ namespace Prosjekt.Controllers
             return model.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(model.LicensePlate)
                 ? $"{model.Description} [Reg.nr: {model.LicensePlate.Trim()}]".Trim()
                 : model.Description ?? "";
-        }
-
-        /// <summary>
-        /// Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
-        /// </summary>
-        private async Task<List<Resource>> RetrieveResourcesForExport(bool OnlyAvailable)
-        {
-            var all = await _repo.GetAllAsync();
-            return all
-                .Where(r => !OnlyAvailable || r.IsAvailable)
-                .OrderBy(r => r.Id)
-                .ToList();
-        }
-
-        /// <summary>
-        /// Ulike filnavn så de to eksportene ikke blandes sammen
-        /// </summary>
-        private static string FileName(bool OnlyAvailable)
-        {
-            var name = OnlyAvailable ? "ressurser_tilgjengelige" : "ressurser_alle";
-            return $"{name}_{NorwegianTime.FromUtc(DateTime.UtcNow):yyyy-MM-dd}";
-        }
-
-        /// <summary>
-        /// Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
-        /// </summary>
-        private static string TranslateCategory(string category) => category switch
-        {
-            nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
-            nameof(ResourceViewModel.ResourceType.Clothing) => "Klær",
-            nameof(ResourceViewModel.ResourceType.Tool) => "Verktøy",
-            nameof(ResourceViewModel.ResourceType.Vehicle) => "Kjøretøy",
-            nameof(ResourceViewModel.ResourceType.Materials) => "Materialer",
-            _ => "Annet"
-        };
-
-        /// <summary>
-        /// Setter tekst i anførselstegn hvis den inneholder ; " eller linjeskift
-        /// Gjør tekst trygg å legge i en CSV-fil, så Excel ikke blander sammen kolonnene
-        /// </summary>
-        private static string Csv(string? value)
-        {
-            if (string.IsNullOrEmpty(value)) return "";
-            if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
-                return "\"" + value.Replace("\"", "\"\"") + "\"";
-            return value;
         }
     }
 }

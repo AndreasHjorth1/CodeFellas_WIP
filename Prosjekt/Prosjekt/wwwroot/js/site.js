@@ -9,6 +9,29 @@ function escapeHtml(verdi) {
 }
 
 /// <summary>
+/// Gjør GeoJSON fra GetInformation om til en vanlig liste. Er geometrien et punkt, er det posisjonen.
+/// Ellers er det et tegnet område, og posisjonen ligger i latitude/longitude.
+/// </summary>
+function fraGeoJson(geoJson) {
+    if (!geoJson || !Array.isArray(geoJson.features)) return [];
+
+    return geoJson.features.map(function (feature) {
+        var element = Object.assign({}, feature.properties);
+        var geometri = feature.geometry;
+
+        if (geometri && geometri.type === 'Point') {
+            /// GeoJSON har lengdegrad først, motsatt av Leaflet
+            element.longitude = geometri.coordinates[0];
+            element.latitude = geometri.coordinates[1];
+        } else if (geometri) {
+            element.areaGeoJson = geometri;
+        }
+
+        return element;
+    });
+}
+
+/// <summary>
 /// Formatering av areal og lengde fra kartet. Brukes av flere views.
 /// </summary>
 function formaterAreal(m2) {

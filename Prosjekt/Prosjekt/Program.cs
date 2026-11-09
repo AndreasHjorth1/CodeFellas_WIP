@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Services; // IdentitySeeder og ConsoleEmailSender
+using NetTopologySuite.IO.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,9 +19,11 @@ builder.WebHost.ConfigureKestrel(options =>
 /// 2. Aspire service defaults (helsesjekker, logging, telemetri)
 builder.AddServiceDefaults();
 
-/// 3. MVC med anti-forgery på alle POST-forespørsler
+/// 3. MVC med anti-forgery på alle POST-forespørsler, og GeoJSON-støtte til kartdataene
 builder.Services.AddControllersWithViews(options =>
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+        options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new GeoJsonConverterFactory()));
 
 /// 4. Tilkoblingsstreng: Aspire sender den inn som ConnectionStrings:Mapdb
 var connectionString = builder.Configuration.GetConnectionString("Mapdb")
