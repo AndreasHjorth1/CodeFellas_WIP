@@ -304,7 +304,7 @@
 
                 <div class="mb-3">
                     <label class="form-label" for="kategoriVelger">Kategori</label>
-                    <select asp-for="Category" id="kategoriVelger" class="form-select" data-endring="oppdaterSkjemavisning">
+                    <select asp-for="Category" id="kategoriVelger" class="form-select" data-on-change="oppdaterSkjemavisning">
                         <option value="Vehicle">Transport og kjøretøy</option>
                         <option value="Provision">Provisjon</option>
                         <option value="Materials">Materialer</option>
@@ -410,7 +410,7 @@
 
                 <div class="save-buttons">
                     <a asp-action="Overview" class="btn-cancel">Avbryt</a>
-                    <button type="submit" class="btn-save" data-klikk="validerInnsending">Lagre endringer</button>
+                    <button type="submit" class="btn-save" data-on-click="validerInnsending">Lagre endringer</button>
                 </div>
             </form>
         </div>

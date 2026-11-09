@@ -277,7 +277,7 @@
             @for (var i = 0; i < antall; i++)
             {
                 var need = Model.NeedList[i];
-                <div class="need-list-item" data-need-type="@need.Type" data-klikk="fokuserPaKart" data-arg="@i">
+                <div class="need-list-item" data-need-type="@need.Type" data-on-click="fokuserPaKart" data-arg="@i">
                     <div class="item-text">
                         <div class="item-name">@need.Name</div>
                         <div class="item-meta">@OversettNeedType(need.Type)@(string.IsNullOrWhiteSpace(need.Description) ? "" : $" · {need.Description}")</div>

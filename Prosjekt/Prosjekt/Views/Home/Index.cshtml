@@ -913,9 +913,9 @@ else
                 kartElementer.forEach(function(e) {
                     var synlig = true;
 
-                    /// radiusSenter og radiusMeter settes av settOppRadiusSok i site.js
-                    if (radiusSenter && !isNaN(e.lat) && !isNaN(e.lng)) {
-                        if (radiusSenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeter) synlig = false;
+                    /// radiusCenter og radiusMeters settes av setupRadiusSearch i site.js
+                    if (radiusCenter && !isNaN(e.lat) && !isNaN(e.lng)) {
+                        if (radiusCenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeters) synlig = false;
                     }
 
                     if (vis !== '' && e.type !== vis) synlig = false;
@@ -1005,8 +1005,8 @@ else
                         fetch('@Url.Action("GetInformation", "Need")')
                     ]);
 
-                    var ressurser = resResponse.ok ? fraGeoJson(await resResponse.json()) : [];
-                    var behov = needResponse.ok ? fraGeoJson(await needResponse.json()) : [];
+                    var ressurser = resResponse.ok ? fromGeoJson(await resResponse.json()) : [];
+                    var behov = needResponse.ok ? fromGeoJson(await needResponse.json()) : [];
 
                     ressurser.forEach(function (res) {
                         var lat = parseFloat(res.latitude);
@@ -1257,7 +1257,7 @@ else
                 ['visFilter', 'kategoriFilter', 'tilgjengelighetFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
                     document.getElementById(id).value = '';
                 });
-                if (radiusSenter) nullstillRadius(map, filtrerKart);
+                if (radiusCenter) resetRadius(map, filtrerKart);
                 filtrerKart();
             });
 
@@ -1278,7 +1278,7 @@ else
               const resResponse = await fetch('@Url.Action("GetInformation", "Resource")');
               
                 if (resResponse.ok) {
-                    const resourcesData = fraGeoJson(await resResponse.json());
+                    const resourcesData = fromGeoJson(await resResponse.json());
 
                     resourcesData.forEach(function (res) {
                         var lat = parseFloat(res.latitude ?? res.Latitude);
@@ -1311,7 +1311,7 @@ else
               const needResponse = await fetch('@Url.Action("GetInformation", "Need")');
               
                 if (needResponse.ok) {
-                    const needsData = fraGeoJson(await needResponse.json());
+                    const needsData = fromGeoJson(await needResponse.json());
 
                     needsData.forEach(function (need) {
                         var lat = parseFloat(need.latitude ?? need.Latitude);
@@ -1383,7 +1383,7 @@ else
                     ['visFilter', 'kategoriFilter', 'tilgjengelighetFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
                         document.getElementById(id)?.addEventListener('change', filtrerKart);
                     });
-                    settOppRadiusSok(map, filtrerKart);
+                    setupRadiusSearch(map, filtrerKart);
                     filtrerKart();
 
                 /// 6. Tilpass kartzoomen dersom det finnes markører eller områder

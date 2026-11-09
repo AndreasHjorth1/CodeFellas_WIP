@@ -456,7 +456,7 @@
 
                 <div class="save-buttons">
                     <a asp-action="Overview" class="btn-cancel">Avbryt</a>
-                    <button type="submit" class="btn-save" data-klikk="validerInnsending">Lagre endringer</button>
+                    <button type="submit" class="btn-save" data-on-click="validerInnsending">Lagre endringer</button>
                 </div>
             </form>
         </div>
@@ -625,7 +625,7 @@
             const center = areaSymbol.update(polygon, HentValgtIkon());
             if (lagre) {
                 const position = center || (layer instanceof L.Marker ? layer.getLatLng() : null);
-                if (polygon) lagreOmrade(polygon); else tomOmrade();
+                if (polygon) saveArea(polygon); else clearArea();
                 document.getElementById('Latitude').value = position ? position.lat.toFixed(6) : '';
                 document.getElementById('Longitude').value = position ? position.lng.toFixed(6) : '';
             }

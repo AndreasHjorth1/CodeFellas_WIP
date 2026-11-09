@@ -466,7 +466,7 @@
                 <a class="res-btn" asp-controller="Export" asp-action="Index">
                     <i class="fa-solid fa-file-export" aria-hidden="true"></i> Eksporter
                 </a>
-                <button type="button" class="res-btn" data-klikk="print">
+                <button type="button" class="res-btn" data-on-click="print">
                     <i class="fa-solid fa-print" aria-hidden="true"></i> Skriv ut liste
                 </button>
             </div>
@@ -483,7 +483,7 @@
             }
         </div>
 
-        @* settOppFilter i site.js leser kategorien herfra. Chipsene over setter verdien. *@
+        @* setupFilter i site.js leser kategorien herfra. Chipsene over setter verdien. *@
         <select id="typeFilter" class="d-none" aria-hidden="true">
             <option value=""></option>
             @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
@@ -549,12 +549,12 @@
                                                 Se mer <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                                             </button>
                                             @* Endre og Slett skal ikke åpne «Se mer» *@
-                                            <span class="row-edit-actions" data-stopp-klikk>
+                                            <span class="row-edit-actions" data-stop-click>
                                                 <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
                                                 @if (erAdmin || res.UserId == minId)
                                                 {
-                                                    @* data-bekreft leses av site.js. Razor koder navnet, så det kan ikke kjøres som JavaScript (XSS). *@
-                                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-bekreft="Er du sikker på at du vil slette @res.Name?">
+                                                    @* data-confirm leses av site.js. Razor koder navnet, så det kan ikke kjøres som JavaScript (XSS). *@
+                                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-confirm="Er du sikker på at du vil slette @res.Name?">
                                                         @Html.AntiForgeryToken()
                                                         <button type="submit" class="delete-link">Slett</button>
                                                     </form>
@@ -697,10 +697,10 @@
                         : '<span style="color: red; font-weight: bold;">Ikke tilgjengelig</span>'}`);
             });
 
-            var kjorFilter = settOppFilter(kart, [markorerMap], [symbolMarkers]);
-            settOppStedssok(kart, kjorFilter);
+            var kjorFilter = setupFilter(kart, [markorerMap], [symbolMarkers]);
+            setupPlaceSearch(kart, kjorFilter);
 
-            /// Kategorichipsene styrer den skjulte typeFilter-listen som settOppFilter bruker
+            /// Kategorichipsene styrer den skjulte typeFilter-listen som setupFilter bruker
             var typeFilter = document.getElementById('typeFilter');
             document.querySelectorAll('.chip').forEach(function (chip) {
                 chip.addEventListener('click', function () {

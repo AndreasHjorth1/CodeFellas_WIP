@@ -546,7 +546,7 @@
 
                 <div class="add-row">
                     <span class="add-hint">Legg til flere behov før du sender.</span>
-                    <button type="button" class="btn-add-to-list" data-klikk="leggTilIListe">+ Legg til</button>
+                    <button type="button" class="btn-add-to-list" data-on-click="leggTilIListe">+ Legg til</button>
                 </div>
 
                 <div class="side-divider"></div>
@@ -582,7 +582,7 @@
                     <label class="form-check-label" for="kontrollertSjekk">Jeg har kontrollert opplysningene i listen.</label>
                 </div>
 
-                <button type="submit" class="btn btn-register-all" id="sendKnapp" data-klikk="validerInnsending">Send inn behov</button>
+                <button type="submit" class="btn btn-register-all" id="sendKnapp" data-on-click="validerInnsending">Send inn behov</button>
             </form>
         </div>
     </div>
@@ -773,7 +773,7 @@
             const center = areaSymbol.update(polygon, HentValgtIkon());
             if (!lagre) return;
             const position = center || (layer instanceof L.Marker ? layer.getLatLng() : null);
-            if (polygon) lagreOmrade(polygon); else tomOmrade();
+            if (polygon) saveArea(polygon); else clearArea();
             document.getElementById('Latitude').value = position ? position.lat.toFixed(6) : '';
             document.getElementById('Longitude').value = position ? position.lng.toFixed(6) : '';
         }
@@ -793,7 +793,7 @@
 
             drawnItems.clearLayers();
             areaSymbol.update(null);
-            tomOmrade();
+            clearArea();
             drawnItems.addLayer(L.marker([lat, lng], { icon: HentValgtIkon() }));
 
             settPosisjonOgVisMeny(lat, lng);
@@ -819,7 +819,7 @@
             infoKort.classList.remove('d-none');
             drawnItems.clearLayers();
             areaSymbol.update(null);
-            tomOmrade();
+            clearArea();
             document.getElementById('Latitude').value = '';
             document.getElementById('Longitude').value = '';
             document.getElementById('plasseringStatus').textContent = 'Ingen plassering valgt';
@@ -906,7 +906,7 @@
                             <div class="item-name">${escapeHtml(item.name)}</div>
                             <div class="item-meta">${escapeHtml(item.description)} · ${escapeHtml(item.typeText)}</div>
                         </div>
-                        <button type="button" class="item-remove" data-klikk="fjernFraListe" data-arg="${index}" aria-label="Fjern ${escapeHtml(item.name)}">
+                        <button type="button" class="item-remove" data-on-click="fjernFraListe" data-arg="${index}" aria-label="Fjern ${escapeHtml(item.name)}">
                             <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
                         </button>
                     </div>`;
