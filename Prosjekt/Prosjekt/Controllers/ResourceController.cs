@@ -6,8 +6,6 @@ using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
 using System.Security.Claims;
-using System.Globalization;
-using System.Text;
 using NetTopologySuite.Features;
 
 namespace Prosjekt.Controllers
@@ -315,63 +313,6 @@ namespace Prosjekt.Controllers
             return View();
         }
 
-        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
-        [HttpGet]
-        public async Task<IActionResult> ExportCsv(bool bareTilgjengelige = true)
-        {
-            var ressurser = await RetrieveResourcesForExport(bareTilgjengelige);
-
-            var sb = new StringBuilder();
-            sb.AppendLine("Id;Navn;Kategori;Antall;Tilgjengelig;Telefon;Beskrivelse;Tilgjengelig fra;Tilgjengelig til;Breddegrad;Lengdegrad");
-
-            foreach (var r in ressurser)
-            {
-                sb.AppendLine(string.Join(";",
-                    r.Id,
-                    Csv.Text(r.Name),
-                    TranslateCategory(r.Category),
-                    r.Quantity,
-                    r.IsAvailable ? "Ja" : "Nei",
-                    Csv.Text(r.PhoneNumber),
-                    Csv.Text(r.Description),
-                    Csv.Date(r.AvailableFrom),
-                    Csv.Date(r.AvailableTo),
-                    r.Coords.Latitude.ToString(CultureInfo.InvariantCulture),
-                    r.Coords.Longitude.ToString(CultureInfo.InvariantCulture)));
-            }
-
-            return File(Csv.ToBytes(sb), Csv.ContentType, $"{FileName(bareTilgjengelige)}.csv");
-        }
-
-        /// <summary>
-        /// Eksport av ressurser som GeoJSON, som kan åpnes i kartprogrammer som QGIS og ArcGIS.
-        /// </summary>
-        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
-        [HttpGet]
-        public async Task<IActionResult> ExportGeoJson(bool onlyAvailable = true)
-        {
-            var resources = await RetrieveResourcesForExport(onlyAvailable);
-
-            var collection = new FeatureCollection();
-            foreach (var r in resources)
-            {
-                collection.Add(new Feature(GeoJson.Point(r.Coords.Latitude, r.Coords.Longitude), new AttributesTable
-                {
-                    { "id", r.Id },
-                    { "navn", r.Name },
-                    { "kategori", TranslateCategory(r.Category) },
-                    { "antall", r.Quantity },
-                    { "tilgjengelig", r.IsAvailable },
-                    { "telefon", r.PhoneNumber },
-                    { "beskrivelse", r.Description },
-                    { "tilgjengeligFra", NorwegianTime.FromUtc(r.AvailableFrom) },
-                    { "tilgjengeligTil", NorwegianTime.FromUtc(r.AvailableTo) }
-                }));
-            }
-
-            return File(GeoJson.ToBytes(collection), GeoJson.ContentType, $"{FileName(onlyAvailable)}.geojson");
-        }
-
         /// <summary>
         /// Admin og koordinator får alle ressurser, andre bare sine egne.
         /// </summary>
@@ -416,39 +357,5 @@ namespace Prosjekt.Controllers
                 ? $"{model.Description} [Reg.nr: {model.LicensePlate.Trim()}]".Trim()
                 : model.Description ?? "";
         }
-
-        /// <summary>
-        /// Alle registrerte ressurser, eller bare de som er tilgjengelige. Sortert etter Id.
-        /// </summary>
-        private async Task<List<Resource>> RetrieveResourcesForExport(bool OnlyAvailable)
-        {
-            var all = await _repo.GetAllAsync();
-            return all
-                .Where(r => !OnlyAvailable || r.IsAvailable)
-                .OrderBy(r => r.Id)
-                .ToList();
-        }
-
-        /// <summary>
-        /// Ulike filnavn så de to eksportene ikke blandes sammen
-        /// </summary>
-        private static string FileName(bool OnlyAvailable)
-        {
-            var name = OnlyAvailable ? "ressurser_tilgjengelige" : "ressurser_alle";
-            return $"{name}_{NorwegianTime.FromUtc(DateTime.UtcNow):yyyy-MM-dd}";
-        }
-
-        /// <summary>
-        /// Category lagres som "Vehicle", "Tool" osv. Eksporten viser norsk navn.
-        /// </summary>
-        private static string TranslateCategory(string category) => category switch
-        {
-            nameof(ResourceViewModel.ResourceType.Provision) => "Provisjon",
-            nameof(ResourceViewModel.ResourceType.Clothing) => "Klær",
-            nameof(ResourceViewModel.ResourceType.Tool) => "Verktøy",
-            nameof(ResourceViewModel.ResourceType.Vehicle) => "Kjøretøy",
-            nameof(ResourceViewModel.ResourceType.Materials) => "Materialer",
-            _ => "Annet"
-        };
     }
 }

@@ -53,6 +53,12 @@ namespace Prosjekt.Utils
             }
         }
 
+        /// <summary>
+        /// Det tegnede området hvis det finnes og er gyldig, ellers punktet.
+        /// </summary>
+        public static Geometry AreaOrPoint(string? areaGeoJson, double latitude, double longitude) =>
+            ParseArea(areaGeoJson) ?? Point(latitude, longitude);
+
         public static byte[] ToBytes(FeatureCollection collection) =>
             JsonSerializer.SerializeToUtf8Bytes(collection, Options);
     }
