@@ -101,6 +101,12 @@ using (var scope = app.Services.CreateScope())
         await IdentitySeeder.SeedDevelopmentAdminAsync(userManager);
         await IdentitySeeder.SeedDevelopmentUserAsync(userManager);
         await IdentitySeeder.SeedDevelopmentCoordinatorAsync(userManager);
+
+        // Testdata for ressurser og behov, eid av testbrukerne over
+        var admin = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentAdminEmail);
+        var coordinator = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentCoordinatorEmail);
+        var user = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentUserEmail);
+        await DataSeeder.SeedAsync(dbContext, user!.Id, coordinator!.Id, admin!.Id);
     }
     catch (Exception ex)
     {
