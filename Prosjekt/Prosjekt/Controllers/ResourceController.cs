@@ -304,16 +304,6 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Eksport av ressurser, enten bare tilgjengelige eller alle registrerte. Ment for offentlige aktører.
-        /// </summary>
-        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
-        [HttpGet]
-        public IActionResult Export()
-        {
-            return View();
-        }
-
-        /// <summary>
         /// Admin og koordinator får alle ressurser, andre bare sine egne.
         /// </summary>
         private Task<IEnumerable<Resource>> GetVisibleResourcesAsync()

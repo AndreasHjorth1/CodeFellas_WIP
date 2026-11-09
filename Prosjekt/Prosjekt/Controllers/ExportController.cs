@@ -28,6 +28,12 @@ namespace Prosjekt.Controllers
         }
 
         [HttpGet]
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        [HttpGet]
         public async Task<IActionResult> ResourcesCsv(bool onlyAvailable = true)
         {
             var resources = await RetrieveResources(onlyAvailable);
