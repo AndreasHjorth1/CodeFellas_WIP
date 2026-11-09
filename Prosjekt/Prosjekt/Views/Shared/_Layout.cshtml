@@ -382,6 +382,14 @@
                            asp-controller="AuditLog" asp-action="Index">
                             Logg
                         </a>
+                        @* Bare admin kan opprette brukere (CreateUser krever Admin-rollen) *@
+                        @if (!erKoordinator)
+                        {
+                            <a class="public-nav-link d-none d-md-inline @(IsCurrent("Account", "CreateUser") ? "active" : "")"
+                               asp-controller="Account" asp-action="CreateUser">
+                                Opprett bruker
+                            </a>
+                        }
                     </div>
 
                     <div class="dropdown">
@@ -403,6 +411,10 @@
                                 <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
                             }
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="AuditLog" asp-action="Index">Logg</a></li>
+                            @if (!erKoordinator)
+                            {
+                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Account" asp-action="CreateUser">Opprett bruker</a></li>
+                            }
                             <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">Min profil</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
