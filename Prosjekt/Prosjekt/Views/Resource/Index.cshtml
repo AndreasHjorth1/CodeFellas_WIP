@@ -775,7 +775,12 @@
             if (!availableFrom) { alert("Vennligst velg 'Tilgjengelig fra'."); document.getElementById('inputAvailableFrom').focus(); return; }
             if (!availableTo) { alert("Vennligst velg 'Tilgjengelig til'."); document.getElementById('inputAvailableTo').focus(); return; }
             if (!quantity || quantity <= 0) { alert("Vennligst fyll ut et gyldig 'Antall'."); document.getElementById('inputQuantity').focus(); return; }
-            if (category === "Vehicle" && !licensePlate) { alert("Vennligst fyll ut 'Skiltnummer'."); document.getElementById('inputLicensePlate').focus(); return; }
+            let trengerSkilt = ['Car', 'Bus', 'Motorcycle', 'Truck'].includes(vehicleType);
+            if (category === "Vehicle" && trengerSkilt && !licensePlate) {
+                alert("vennligst fyll ut 'Skiltnummer'.");
+                document.getElementById('inputLicensePlate').focus();
+                return;
+            }
 
             mekortListe.push({
                 name, description, phoneNumber, availability, availableFrom, availableTo,
