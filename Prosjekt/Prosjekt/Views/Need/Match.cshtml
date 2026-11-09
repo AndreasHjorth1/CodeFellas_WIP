@@ -171,7 +171,7 @@
                                 <td class="small">@m.Available av @m.Quantity</td>
                                 <td><span class="badge bg-primary">@FormatDistance(m.DistanceMeters)</span></td>
                                 @* Tildel-skjemaet skal ikke åpne «Se mer» *@
-                                <td class="text-nowrap" onclick="event.stopPropagation();">
+                                <td class="text-nowrap" data-stopp-klikk>
                                     @if (m.Available > 0)
                                     {
                                         <form asp-action="Allocate" method="post" class="d-flex gap-1">
@@ -248,7 +248,7 @@
 </div>
 
 @section Scripts {
-    <script>
+    <script nonce="@Context.CspNonce()">
         var needLat = @ViewBag.NeedLat;
         var needLng = @ViewBag.NeedLng;
         var matches = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));

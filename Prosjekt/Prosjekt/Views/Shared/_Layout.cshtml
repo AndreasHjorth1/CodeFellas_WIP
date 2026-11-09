@@ -602,7 +602,7 @@
             crossorigin="anonymous"></script>
     <script src="~/js/leaflet-draw-no.js" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         // Spør om brukeren vil logge ut før skjemaet sendes
         (function () {
             const modalElement = document.getElementById("logoutConfirmModal");

@@ -277,7 +277,7 @@
             @for (var i = 0; i < antall; i++)
             {
                 var need = Model.NeedList[i];
-                <div class="need-list-item" data-need-type="@need.Type" onclick="fokuserPaKart(@i)">
+                <div class="need-list-item" data-need-type="@need.Type" data-klikk="fokuserPaKart" data-arg="@i">
                     <div class="item-text">
                         <div class="item-name">@need.Name</div>
                         <div class="item-meta">@OversettNeedType(need.Type)@(string.IsNullOrWhiteSpace(need.Description) ? "" : $" · {need.Description}")</div>
@@ -303,7 +303,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         var needMarkers;
         var receiptMarkers = [];
 

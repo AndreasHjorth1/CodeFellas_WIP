@@ -465,7 +465,7 @@
 <!-- KART-SKRIPT OG DYNAMISK LASTING            -->
 <!-- ========================================== -->
 @section Scripts {
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.addEventListener("DOMContentLoaded", function () {
 
             /// FAQ-ikon veksling

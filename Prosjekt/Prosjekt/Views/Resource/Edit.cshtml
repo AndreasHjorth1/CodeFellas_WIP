@@ -304,7 +304,7 @@
 
                 <div class="mb-3">
                     <label class="form-label" for="kategoriVelger">Kategori</label>
-                    <select asp-for="Category" id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
+                    <select asp-for="Category" id="kategoriVelger" class="form-select" data-endring="oppdaterSkjemavisning">
                         <option value="Vehicle">Transport og kjøretøy</option>
                         <option value="Provision">Provisjon</option>
                         <option value="Materials">Materialer</option>
@@ -410,7 +410,7 @@
 
                 <div class="save-buttons">
                     <a asp-action="Overview" class="btn-cancel">Avbryt</a>
-                    <button type="submit" class="btn-save" onclick="return validerInnsending()">Lagre endringer</button>
+                    <button type="submit" class="btn-save" data-klikk="validerInnsending">Lagre endringer</button>
                 </div>
             </form>
         </div>
@@ -419,7 +419,7 @@
 
 @section Scripts {
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
-    <script>
+    <script nonce="@Context.CspNonce()">
         /// Lagrede underkategorier fra serveren (JSON-kodet)
         var lagredeVerdier = {
             inputVehicleType: @Json.Serialize(Model.VehicleType),

@@ -232,3 +232,42 @@ function nullstillRadius(kart, kjorFilter) {
     kart.getContainer().style.cursor = '';
     kjorFilter();
 }
+
+/// <summary>
+/// Erstatter onclick, onchange og onsubmit i HTML, som CSP-en blokkerer.
+/// data-klikk="funksjon" og data-endring="funksjon" kaller en global funksjon i siden, med data-arg som argument.
+/// Returnerer funksjonen false, avbrytes klikket, slik som med return i onclick.
+/// data-bekreft="tekst" på et skjema spør før innsending. data-stopp-klikk stopper klikket fra å nå raden rundt.
+/// </summary>
+(function () {
+    function kall(element, navn, hendelse) {
+        var funksjon = window[element.dataset[navn]];
+        if (typeof funksjon !== 'function') return;
+
+        var arg = element.dataset.arg;
+        var resultat = arg === undefined ? funksjon() : funksjon(isNaN(arg) ? arg : Number(arg));
+        if (resultat === false) hendelse.preventDefault();
+    }
+
+    document.addEventListener('click', function (e) {
+        var element = e.target.closest('[data-klikk]');
+        if (element) kall(element, 'klikk', e);
+    });
+
+    document.addEventListener('change', function (e) {
+        var element = e.target.closest('[data-endring]');
+        if (element) kall(element, 'endring', e);
+    });
+
+    document.addEventListener('submit', function (e) {
+        var skjema = e.target.closest('form[data-bekreft]');
+        if (skjema && !confirm(skjema.dataset.bekreft)) e.preventDefault();
+    });
+
+    /// Må ligge på selve elementet, ellers har klikket alt nådd raden
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-stopp-klikk]').forEach(function (element) {
+            element.addEventListener('click', function (e) { e.stopPropagation(); });
+        });
+    });
+})();
