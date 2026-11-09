@@ -9,6 +9,9 @@ using Prosjekt.Models.ModelView.Account;
 using Prosjekt.Xunit.Test.Fakes;
 using System.Text;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Authorization;
+using Prosjekt.Models.Authorization;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
 {
@@ -29,7 +32,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             _controller = new AccountController(_userManager, _signInManager, _emailSender)
             {
                 ControllerContext = new ControllerContext { HttpContext = httpContext },
-                Url = new FakeUrlHelper(actionContext)
+                Url = new FakeUrlHelper(actionContext),
+                TempData = new TempDataDictionary(httpContext, new FakeTempDataProvider())
             };
         }
 
@@ -240,6 +244,111 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.IsType<ViewResult>(result);
             Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
                 e => e.ErrorMessage == "For kort passord");
+        }
+
+        // ---------- Opprett bruker (admin) ----------
+
+        [Fact]
+        public void CreateUser_Get_ReturnsViewWithEmptyModel()
+        {
+            var view = Assert.IsType<ViewResult>(_controller.CreateUser());
+            Assert.IsType<CreateUserViewModel>(view.Model);
+        }
+
+        /// Sikkerhet: begge CreateUser-metodene skal bare kunne brukes av admin
+        [Fact]
+        public void CreateUser_OnlyAdminHasAccess()
+        {
+            var methods = typeof(AccountController).GetMethods().Where(m => m.Name == nameof(AccountController.CreateUser));
+
+            Assert.Equal(2, methods.Count());
+            foreach (var method in methods)
+            {
+                var authorize = method.GetCustomAttributes(typeof(AuthorizeAttribute), false).Cast<AuthorizeAttribute>().Single();
+                Assert.Equal(RoleNames.Admin, authorize.Roles);
+            }
+        }
+
+        [Theory]
+        [InlineData(RoleNames.Admin)]
+        [InlineData(RoleNames.Coordinator)]
+        public async Task CreateUser_Post_Success_CreatesUserWithRoleAndRedirects(string role)
+        {
+            var model = new CreateUserViewModel
+            {
+                Email = "ny@test.no",
+                Password = "Passord1!",
+                ConfirmPassword = "Passord1!",
+                Role = role
+            };
+
+            var result = await _controller.CreateUser(model);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("CreateUser", redirect.ActionName);
+            Assert.Equal("ny@test.no", _userManager.CreatedUser!.Email);
+            Assert.True(_userManager.CreatedUser.EmailConfirmed);
+            Assert.Equal(role, _userManager.AddedRole);
+            Assert.NotNull(_controller.TempData["CreateUserSuccess"]);
+        }
+
+        /// Sikkerhet: man skal ikke kunne sende inn en annen rolle enn admin eller koordinator
+        [Theory]
+        [InlineData("")]
+        [InlineData("User")]
+        [InlineData("admin")]
+        public async Task CreateUser_Post_InvalidRole_DoesNotCreateUser(string role)
+        {
+            var model = new CreateUserViewModel
+            {
+                Email = "ny@test.no",
+                Password = "Passord1!",
+                ConfirmPassword = "Passord1!",
+                Role = role
+            };
+
+            var result = await _controller.CreateUser(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Null(_userManager.CreatedUser);
+            Assert.Null(_userManager.AddedRole);
+            Assert.True(_controller.ModelState.ContainsKey(nameof(CreateUserViewModel.Role)));
+        }
+
+        [Fact]
+        public async Task CreateUser_Post_InvalidModel_DoesNotCreateUser()
+        {
+            _controller.ModelState.AddModelError("Email", "Required");
+            var model = new CreateUserViewModel { Role = RoleNames.Coordinator };
+
+            var result = await _controller.CreateUser(model);
+
+            var view = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, view.Model);
+            Assert.Null(_userManager.CreatedUser);
+        }
+
+        [Fact]
+        public async Task CreateUser_Post_Failure_ShowsErrorsAndGivesNoRole()
+        {
+            _userManager.CreateResult = IdentityResult.Failed(new IdentityError
+            {
+                Description = "E-posten er allerede i bruk"
+            });
+            var model = new CreateUserViewModel
+            {
+                Email = "ny@test.no",
+                Password = "Passord1!",
+                ConfirmPassword = "Passord1!",
+                Role = RoleNames.Admin
+            };
+
+            var result = await _controller.CreateUser(model);
+
+            Assert.IsType<ViewResult>(result);
+            Assert.Null(_userManager.AddedRole);
+            Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
+                e => e.ErrorMessage == "E-posten er allerede i bruk");
         }
 
         // ---------- Glemt passord ----------
