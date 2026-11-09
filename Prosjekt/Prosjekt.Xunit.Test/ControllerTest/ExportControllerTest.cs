@@ -148,5 +148,23 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var aggregat = ressurser.Single(r => r.GetProperty("properties").GetProperty("navn").GetString() == "Aggregat");
             Assert.False(aggregat.GetProperty("properties").GetProperty("tilgjengelig").GetBoolean());
         }
+
+        [Fact]
+        public async Task ResourcesGeoJson_WritesTimesAsUtc()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Traktor", IsAvailable = true, AvailableFrom = new DateTime(2026, 11, 17, 12, 33, 0), Coords = new Coordinates(58.46, 8.77) });
+            var controller = new ExportController(repo, new FakeNeedRepository());
+
+            // Act
+            var result = await controller.ResourcesGeoJson();
+
+            // Assert
+            var file = Assert.IsType<FileContentResult>(result);
+            using var json = System.Text.Json.JsonDocument.Parse(file.FileContents);
+            var egenskaper = Assert.Single(json.RootElement.GetProperty("features").EnumerateArray()).GetProperty("properties");
+            Assert.Equal("2026-11-17T12:33:00Z", egenskaper.GetProperty("tilgjengeligFra").GetString());
+        }
     }
 }

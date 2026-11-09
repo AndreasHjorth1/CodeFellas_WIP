@@ -59,6 +59,12 @@ namespace Prosjekt.Utils
         public static Geometry AreaOrPoint(string? areaGeoJson, double latitude, double longitude) =>
             ParseArea(areaGeoJson) ?? Point(latitude, longitude);
 
+        /// <summary>
+        /// Databasen lagrer tidene i UTC uten å merke dem. Merket som UTC skrives de med "Z", f.eks. 2026-11-17T12:33:00Z.
+        /// </summary>
+        public static DateTime? Utc(DateTime? value) =>
+            value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null;
+
         public static byte[] ToBytes(FeatureCollection collection) =>
             JsonSerializer.SerializeToUtf8Bytes(collection, Options);
     }

@@ -77,8 +77,8 @@ namespace Prosjekt.Controllers
                     { "tilgjengelig", r.IsAvailable },
                     { "telefon", r.PhoneNumber },
                     { "beskrivelse", r.Description },
-                    { "tilgjengeligFra", NorwegianTime.FromUtc(r.AvailableFrom) },
-                    { "tilgjengeligTil", NorwegianTime.FromUtc(r.AvailableTo) }
+                    { "tilgjengeligFra", GeoJson.Utc(r.AvailableFrom) },
+                    { "tilgjengeligTil", GeoJson.Utc(r.AvailableTo) }
                 }));
             }
 
@@ -134,8 +134,8 @@ namespace Prosjekt.Controllers
                     { "status", TranslateStatus(n.Status) },
                     { "telefon", n.PhoneNumber },
                     { "beskrivelse", n.Description },
-                    { "frist", NorwegianTime.FromUtc(n.NeededBy) },
-                    { "registrert", NorwegianTime.FromUtc(n.CreatedAt) },
+                    { "frist", GeoJson.Utc(n.NeededBy) },
+                    { "registrert", GeoJson.Utc(n.CreatedAt) },
                     { "arealKvm", n.AreaSquareMeters },
                     { "breddegrad", n.Coords.Latitude },
                     { "lengdegrad", n.Coords.Longitude }
