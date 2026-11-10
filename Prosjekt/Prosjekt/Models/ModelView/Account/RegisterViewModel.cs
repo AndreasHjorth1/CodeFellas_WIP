@@ -8,6 +8,11 @@ namespace Prosjekt.Models.ModelView.Account
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
+        [Phone(ErrorMessage = "Ugyldig telefonnummer.")]
+        [Display(Name = "Telefonnummer")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
         [Required]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;

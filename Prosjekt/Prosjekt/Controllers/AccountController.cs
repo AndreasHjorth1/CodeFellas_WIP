@@ -107,6 +107,7 @@ namespace Prosjekt.Controllers
             {
                 UserName = model.Email,
                 Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
                 EmailConfirmed = true
             };
             var result = await userManager.CreateAsync(user, model.Password);
