@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
-using Prosjekt.Services; // IdentitySeeder og ConsoleEmailSender
+using Prosjekt.Services;
 using NetTopologySuite.IO.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
-/// 1. Kestrel: skjul serverheader og begrens størrelsen på forespørsler (maks 30 MB)
+/// <summary>
+/// Kestrel: skjul serverheader og begrens størrelsen på forespørsler (maks 30 MB)
+/// </summary>
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.AddServerHeader = false;
@@ -138,6 +140,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
+/// Bare /Need, /Resource osv. går til Index. Uten denne prøver standardruten FrontPage og gir 404.
+app.MapControllerRoute(
+    name: "controllerIndex",
+    pattern: "{controller}",
+    defaults: new { action = "Index" })
+    .WithStaticAssets();
 
 app.MapControllerRoute(
     name: "default",

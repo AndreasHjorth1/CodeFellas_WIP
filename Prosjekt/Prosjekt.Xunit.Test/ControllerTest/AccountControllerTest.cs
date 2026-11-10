@@ -112,7 +112,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.IsType<ViewResult>(result);
             Assert.False(_signInManager.SignInCalled);
             Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
-                e => e.ErrorMessage == "Invalid email or password.");
+                e => e.ErrorMessage == "Ugyldig e-post eller passord.");
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 
             Assert.IsType<ViewResult>(result);
             Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
-                e => e.ErrorMessage == "Invalid email or password.");
+                e => e.ErrorMessage == "Ugyldig e-post eller passord.");
         }
 
         [Fact]
@@ -459,7 +459,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.IsType<ViewResult>(result);
             Assert.Null(_userManager.UsedResetCode);
             Assert.Contains(_controller.ModelState[string.Empty]!.Errors,
-                e => e.ErrorMessage == "The password reset code is invalid.");
+                e => e.ErrorMessage == "Koden for tilbakestilling av passord er ugyldig.");
         }
 
         [Fact]
