@@ -578,6 +578,7 @@
             Materials: 'Oppgi materialtype og mengde.',
             Clothing: 'Oppgi størrelse og antall.',
             Tool: 'Oppgi verktøytype og antall.',
+            Competence: 'Velg yrke og beskriv erfaringen i beskrivelsesfeltet.',
             Other: 'Beskriv ressursen i beskrivelsesfeltet.'
         };
 
@@ -759,6 +760,7 @@
             else if (valgtTekst === "Materials") document.getElementById('seksjonMaterialer').style.display = 'block';
             else if (valgtTekst === "Clothing") document.getElementById('seksjonKlær').style.display = 'block';
             else if (valgtTekst === "Provision") document.getElementById('seksjonProvisjon').style.display = 'block';
+            else if (valgtTekst === "Competence") document.getElementById('seksjonKompetanse').style.display = 'block';
         }
 
         function oppdaterRessursSymbol() {
@@ -787,7 +789,8 @@
             let toolType = document.getElementById('inputToolType') ? document.getElementById('inputToolType').value : '';
             let materialType = document.getElementById('inputMaterialType') ? document.getElementById('inputMaterialType').value : '';
             let size = document.getElementById('inputSize') ? document.getElementById('inputSize').value : '';
-            let provisionType = document.getElementById('inputProvisionType') ? document.getElementById('inputProvisionType').value : '';
+            let provisionType = document.getElementById('inputProvisionType') ? document.getElementById('inputProvisionType').value : '';               
+            let competenceType = document.getElementById('inputCompetenceType') ? document.getElementById('inputCompetenceType').value : '';
 
             /// Sjekk at alle felt for ressursen er fylt ut før den legges til
             if (!name) { alert("Vennligst fyll ut 'Tittel'."); document.getElementById('inputName').focus(); return; }
@@ -801,7 +804,7 @@
             mekortListe.push({
                 name, description, phoneNumber, availability, availableFrom, availableTo,
                 quantity, category, categoryNameNO, vehicleType, licensePlate, toolType,
-                materialType, size, provisionType
+                materialType, size, provisionType, competenceType
             });
 
             /// Tøm feltene
