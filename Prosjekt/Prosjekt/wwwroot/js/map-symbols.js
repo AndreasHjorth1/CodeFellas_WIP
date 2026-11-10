@@ -3,7 +3,7 @@
     const config = document.currentScript.dataset;
     const resourceTypes = ['Provision','Clothing','Tool','Vehicle','Materials','Other'];
     const needTypes = ['Food','Medicine','Transport','PowerGenerator','SnowRemoval','SandGravel','Machinery','Evacuation','Communication','Personnel','Other'];
-    const resourceFiles = {Provision:'provision',Clothing:'clothing',Tool:'tool',Vehicle:'vehicle',Materials:'materials',Other:'other'};
+    const resourceFiles = {Provision:'provision',Clothing:'clothing',Tool:'tool',Vehicle:'vehicle',Materials:'materials', Competence: 'other', Other:'other'};
     const needFiles = {Food:'food',Medicine:'medicine',Transport:'transport',PowerGenerator:'power',SnowRemoval:'snow',SandGravel:'gravel',Machinery:'machinery',Evacuation:'evacuation',Communication:'communication',Personnel:'personnel',Other:'other'};
     /// <summary>
     /// Typen kan komme som tall (enum-verdi) eller som navn, avhengig av hvor dataene kommer fra.
