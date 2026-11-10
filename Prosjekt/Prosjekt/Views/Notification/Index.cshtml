@@ -1,0 +1,36 @@
+﻿@using Prosjekt.Utils
+@model Prosjekt.Models.ModelView.NotificationListViewModel
+@{
+    ViewData["Title"] = "Varsler";
+}
+<div class="container py-4">
+    <h1>@ViewData["Title"]</h1>
+
+    @if (!Model.Notifications.Any())
+    {
+        <p class="text-muted">Du har ingen varsler.</p>
+    }
+    else
+    {
+        <ul class="list-group">
+            @foreach (var notification in Model.Notifications)
+            {
+                var isNew = Model.IsNew(notification);
+
+                <li class="list-group-item d-flex justify-content-between align-items-start @(isNew
+                    ? "fw-semibold" : "")">
+                    <div>
+                        @if (isNew)
+                        {
+                            <span class="badge bg-danger me-2">Ny</span>
+                        }
+                        @notification.Message
+                    </div>
+                    <small class="text-muted text-nowrap ms-3">
+                        @NorwegianTime.FromUtc(notification.CreatedAt).ToString("dd.MM.yyyy HH:mm")
+                    </small>
+                </li>
+            }
+        </ul>
+    }
+</div>

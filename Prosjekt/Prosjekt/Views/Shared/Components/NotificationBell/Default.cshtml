@@ -1,0 +1,10 @@
+﻿@model int
+
+<a class="notification-bell" asp-controller="Notification" asp-action="Index"
+   aria-label="@(Model > 0 ? $"Varsler, {Model} uleste" : "Varsler")">
+    <i class="fa-solid fa-bell" aria-hidden="true"></i>
+    @if (Model > 0)
+    {
+        <span class="notification-badge">@(Model > 9 ? "9+" : Model.ToString())</span>
+    }
+</a>
