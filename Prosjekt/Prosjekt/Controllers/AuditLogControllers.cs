@@ -25,8 +25,10 @@ namespace Prosjekt.Controllers
                 .Take(100)
                 .ToListAsync();
 
+            /// <summary>
             /// Loggen lagrer bare ID-er. Her slås e-posten til brukerne og navnet på behovene opp,
             /// så siden kan vise hvem og hva. Slettede behov og brukere finnes ikke lenger og får ikke navn.
+            /// </summary>
             var brukerIder = logs
                 .Where(log => log.UserId != null)
                 .Select(log => log.UserId!)
