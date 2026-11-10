@@ -94,5 +94,9 @@ namespace Prosjekt.Models.ModelView
 
         [Display(Name = "Provisjonstype")]
         public string? ProvisionType { get; set; }
+
+        [Display(Name = "Yrke eller erfaringsområde")]
+        public string? CompetenceType { get; set; }
+
     }
 }

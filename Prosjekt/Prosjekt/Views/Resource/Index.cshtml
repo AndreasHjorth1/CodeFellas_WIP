@@ -873,6 +873,8 @@
                     inputs += `<input type="hidden" name="ResourceList[${index}].Size" value="${item.size}" />`;
                 } else if (item.category === "Provision") {
                     inputs += `<input type="hidden" name="ResourceList[${index}].ProvisionType" value="${item.provisionType}" />`;
+                } else if (item.category === "Competence") {
+                    inputs += `<input type="hidden" name="ResourceList[${index}].CompetenceType" value="${item.competenceType}" />`;
                 }
                 skjulteInputs.innerHTML += inputs;
             });
