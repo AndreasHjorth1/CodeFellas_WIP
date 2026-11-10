@@ -456,7 +456,7 @@
 
                 <div class="save-buttons">
                     <a asp-action="Overview" class="btn-cancel">Avbryt</a>
-                    <button type="submit" class="btn-save" onclick="return validerInnsending()">Lagre endringer</button>
+                    <button type="submit" class="btn-save" data-on-click="validerInnsending">Lagre endringer</button>
                 </div>
             </form>
         </div>
@@ -466,7 +466,7 @@
 @section Scripts {
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
     <script src="~/js/need-area-symbol.js" asp-append-version="true"></script>
-    <script>
+    <script nonce="@Context.CspNonce()">
         var lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
         var lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(CultureInfo.InvariantCulture) : "null");
 
@@ -625,7 +625,7 @@
             const center = areaSymbol.update(polygon, HentValgtIkon());
             if (lagre) {
                 const position = center || (layer instanceof L.Marker ? layer.getLatLng() : null);
-                if (polygon) lagreOmrade(polygon); else tomOmrade();
+                if (polygon) saveArea(polygon); else clearArea();
                 document.getElementById('Latitude').value = position ? position.lat.toFixed(6) : '';
                 document.getElementById('Longitude').value = position ? position.lng.toFixed(6) : '';
             }

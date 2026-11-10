@@ -252,7 +252,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             {
                 ResourceList = new List<ResourceViewModel>
                 {
-                    new ResourceViewModel { Name = "Aggregat", Quantity = 2 }
+                    new ResourceViewModel { Name = "Aggregat", Quantity = 2, AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0), AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0) }
                 },
                 Latitude = 58.1467,
                 Longitude = 7.9956
@@ -269,6 +269,34 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.Equal("Aggregat", savedResource.Name);
             Assert.Equal(2, savedResource.Quantity);
             Assert.Equal(58.1467, savedResource.Coords.Latitude);
+        }
+
+        [Fact]
+        public async Task Create_RowMissingDates_ReturnsViewWithErrorAndSavesNothing()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            var controller = CreateController(repo);
+
+            var model = new ResourceCreatorViewModel
+            {
+                ResourceList = new List<ResourceViewModel>
+                {
+                    new ResourceViewModel { Name = "Aggregat", AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0), AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0) },
+                    new ResourceViewModel { Name = "Båt" }
+                },
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Create(model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Index", viewResult.ViewName);
+            Assert.False(controller.ModelState.IsValid);
+            Assert.Empty(repo.Resources);
         }
 
         [Fact]
@@ -362,7 +390,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeResourceRepository();
             var controller = new ResourceController(repo, new FakeAllocationRepository());
-            var model = new ResourceViewModel { Id = 99, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956 };
+            var model = new ResourceViewModel { Id = 99, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956, AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0), AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0) };
 
             // Act
             var result = await controller.Edit(99, model);
@@ -385,7 +413,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Quantity = 3,
                 Availability = false,
                 Latitude = 59.9,
-                Longitude = 10.7
+                Longitude = 10.7,
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
             };
 
             // Act
@@ -430,8 +460,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             {
                 ResourceList = new List<ResourceViewModel>
                 {
-                    new ResourceViewModel { Name = "Aggregat" },
-                    new ResourceViewModel { Name = "Båt" }
+                    new ResourceViewModel { Name = "Aggregat", AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0), AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0) },
+                    new ResourceViewModel { Name = "Båt", AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0), AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0) }
                 },
                 Latitude = 58.1467,
                 Longitude = 7.9956
@@ -473,7 +503,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                         Name = "Lastebil",
                         Description = "Med henger",
                         Category = ResourceViewModel.ResourceType.Vehicle,
-                        LicensePlate = "AB12345"
+                        LicensePlate = "AB12345",
+                        AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                        AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
                     }
                 },
                 Latitude = 58.1467,
@@ -505,7 +537,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                         Name = "Jakke",
                         Description = "Vinterjakke",
                         Category = ResourceViewModel.ResourceType.Clothing,
-                        Size = "L"
+                        Size = "L",
+                        AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                        AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
                     }
                 },
                 Latitude = 58.1467,
@@ -654,7 +688,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = ResourceViewModel.ResourceType.Vehicle,
                 LicensePlate = "AB12345",
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
             };
 
             // Act
@@ -685,7 +721,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Category = ResourceViewModel.ResourceType.Clothing,
                 Size = "L",
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
             };
 
             // Act

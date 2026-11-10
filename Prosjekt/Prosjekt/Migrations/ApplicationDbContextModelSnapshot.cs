@@ -319,7 +319,7 @@ namespace Prosjekt.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
-                    b.Property<DateTime?>("NeededBy")
+                    b.Property<DateTime>("NeededBy")
                         .HasColumnType("datetime(6)");
 
                     b.Property<double?>("PerimeterMeters")
@@ -367,10 +367,10 @@ namespace Prosjekt.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("AvailableFrom")
+                    b.Property<DateTime>("AvailableFrom")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime?>("AvailableTo")
+                    b.Property<DateTime>("AvailableTo")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Category")
