@@ -23,6 +23,8 @@ namespace Prosjekt.Models.ModelView
             Vehicle,
             [Display(Name = "Materialer")]
             Materials,
+            [Display(Name = "Kompetanse")]
+            Competence,
             [Display(Name = "Annet")]
             Other
         }
