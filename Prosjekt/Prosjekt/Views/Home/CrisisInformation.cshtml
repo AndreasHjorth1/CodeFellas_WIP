@@ -541,7 +541,7 @@
 </div>
 
 @section Scripts {
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.addEventListener("DOMContentLoaded", function () {
             // DSB sin tjeneste for offentlige tilfluktsrom (publisert på Geonorge)
             const DSB_URL = "https://ogc.dsb.no/wms.ashx";
