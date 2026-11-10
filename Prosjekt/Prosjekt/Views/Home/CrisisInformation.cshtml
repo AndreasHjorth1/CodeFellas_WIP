@@ -3,121 +3,23 @@
 }
 
 <style>
+    /* Fjerner layoutens marger så det blå båndet går helt ut */
+    main {
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
     .crisis-page {
-        min-height: 80vh;
         background-color: #eff3f6;
-        padding: 2.5rem 1rem 3rem;
+        color: #0f2a4f;
+        padding-bottom: 4rem;
     }
 
-    .crisis-layout {
-        max-width: 800px;
+    .crisis-inner {
+        max-width: 1100px;
         margin: 0 auto;
-    }
-
-    .crisis-page h1 {
-        color: #0f2a4f;
-        font-size: 1.9rem;
-        font-weight: 700;
-        margin: 0 0 0.75rem;
-    }
-
-    .crisis-page .intro {
-        color: #5f6f86;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        margin-bottom: 2rem;
-    }
-
-    .crisis-card {
-        background-color: #ffffff;
-        border: 1px solid #dde3ea;
-        border-radius: 6px;
-        padding: 1.1rem 1.25rem 1.25rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .crisis-card h2 {
-        color: #0f2a4f;
-        font-size: 1.05rem;
-        font-weight: 700;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid #dde3ea;
-        margin: 0 0 1rem;
-    }
-
-    .crisis-card p {
-        color: #0f2a4f;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        margin-bottom: 0.9rem;
-    }
-
-    .crisis-card p:last-child {
-        margin-bottom: 0;
-    }
-
-    .crisis-card ul {
-        list-style: none;
-        padding: 0;
-        margin: 0 0 0.9rem;
-    }
-
-    .crisis-card ul:last-child {
-        margin-bottom: 0;
-    }
-
-    .crisis-card ul li {
-        position: relative;
-        color: #0f2a4f;
-        font-size: 0.9rem;
-        line-height: 1.5;
-        padding: 0.45rem 0 0.45rem 1.1rem;
-        border-bottom: 1px solid #eef1f5;
-    }
-
-    .crisis-card ul li:last-child {
-        border-bottom: none;
-    }
-
-    /* Liten mørkeblå firkant i stedet for vanlig punkt */
-    .crisis-card ul li::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0.95rem;
-        width: 6px;
-        height: 6px;
-        background-color: #04245a;
-    }
-
-    /* Nødnumrene vises som fliser */
-    .crisis-card ul.emergency-numbers {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        gap: 0.75rem;
-    }
-
-    .crisis-card ul.emergency-numbers li {
-        background-color: #eff3f6;
-        border: 1px solid #dde3ea;
-        border-left: 3px solid #c8102e;
-        border-radius: 4px;
-        color: #5f6f86;
-        font-size: 0.85rem;
-        padding: 0.75rem 0.9rem;
-    }
-
-    .crisis-card ul.emergency-numbers li::before {
-        content: none;
-    }
-
-    .crisis-card ul.emergency-numbers strong {
-        display: block;
-        color: #0f2a4f;
-        font-size: 1.4rem;
-        font-weight: 700;
-        line-height: 1.2;
-        margin-bottom: 0.15rem;
+        padding: 0 1.5rem;
     }
 
     .crisis-page a {
@@ -129,83 +31,511 @@
         color: #0f2a4f;
     }
 
-    /* Siste boks i grønt, som infoboksene på kontosidene */
-    .crisis-card.help-card {
+    /* 1. Blått bånd med tittel og nødnummer */
+    .crisis-hero {
+        background-color: #04245a;
+        color: #ffffff;
+        padding: 2.75rem 0 2.25rem;
+    }
+
+    .crisis-hero h1 {
+        color: #ffffff;
+        font-size: 2.4rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.5rem;
+    }
+
+    .crisis-hero .intro {
+        color: #d6deeb;
+        font-size: 1.05rem;
+        line-height: 1.5;
+        max-width: 40rem;
+        margin: 0 0 1.75rem;
+    }
+
+    .crisis-hero h2 {
+        color: #ffffff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin: 0 0 0.75rem;
+    }
+
+    .emergency-numbers {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .emergency-numbers a {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        height: 100%;
+        background-color: #ffffff;
+        border-radius: 4px;
+        border-top: 4px solid #8a9bb3;
+        padding: 0.85rem 1rem 0.95rem;
+        color: #0f2a4f !important;
+        text-decoration: none !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .emergency-numbers a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 10, 30, 0.35);
+    }
+
+    .emergency-numbers a:focus-visible {
+        outline: 3px solid #ffffff;
+        outline-offset: 2px;
+    }
+
+    .emergency-numbers strong {
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .emergency-numbers span {
+        color: #5f6f86;
+        font-size: 0.9rem;
+        line-height: 1.35;
+    }
+
+    /* De tre akutte numrene får rødt tall */
+    .emergency-numbers li:nth-child(-n+3) a {
+        border-top-color: #c8102e;
+    }
+
+    .emergency-numbers li:nth-child(-n+3) strong {
+        color: #c8102e;
+    }
+
+    .emergency-numbers .call {
+        margin-top: auto;
+        padding-top: 0.5rem;
+        color: #04245a;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .crisis-hero .net-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        background-color: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 4px;
+        padding: 0.75rem 1rem;
+        color: #ffffff;
+        font-size: 0.92rem;
+        line-height: 1.5;
+        margin: 1.1rem 0 0;
+    }
+
+    .crisis-hero .net-note i {
+        margin-top: 0.2rem;
+        color: #ffffff;
+    }
+
+    /* 2. Kort under båndet */
+    .crisis-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 6px;
+        padding: 1.5rem 1.6rem 1.6rem;
+    }
+
+    .crisis-card h2 {
+        color: #0f2a4f;
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 0 0 0.4rem;
+    }
+
+    .crisis-card .card-lead {
+        color: #5f6f86;
+        font-size: 0.95rem;
+        line-height: 1.55;
+        margin: 0 0 1.1rem;
+    }
+
+    .crisis-card p {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .crisis-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+        gap: 1.5rem;
+        margin-top: 2rem;
+        align-items: stretch;
+    }
+
+    /* Sjekkliste: vanlige avkrysningsbokser, telleren er bare CSS */
+    .prep-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        counter-reset: klar;
+    }
+
+    .prep-list li {
+        border-top: 1px solid #eef1f5;
+    }
+
+    .prep-list li:last-child {
+        border-bottom: 1px solid #eef1f5;
+    }
+
+    .prep-list label {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 3.1rem;
+        padding: 0.45rem 0.25rem;
+        cursor: pointer;
+        font-size: 0.98rem;
+    }
+
+    .prep-list label:hover {
+        background-color: #f6f8fb;
+    }
+
+    .prep-list input {
+        flex: 0 0 auto;
+        width: 1.25rem;
+        height: 1.25rem;
+        accent-color: #04245a;
+        cursor: pointer;
+    }
+
+    .prep-list input:checked {
+        counter-increment: klar;
+    }
+
+    .prep-list label:has(input:checked) {
+        background-color: #eef7f2;
+    }
+
+    .prep-count {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        color: #5f6f86;
+        font-size: 0.85rem;
+    }
+
+    .prep-count .count::before {
+        content: counter(klar) " av 6 på plass";
+        color: #0f2a4f;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .info-card .radio {
+        display: flex;
+        gap: 0.85rem;
+        align-items: center;
+        background-color: #eff3f6;
+        border-radius: 4px;
+        padding: 0.9rem 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-card .radio i {
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 50%;
+        background-color: #04245a;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .info-card .radio strong {
+        display: block;
+        font-size: 1.05rem;
+    }
+
+    .info-card .radio span {
+        color: #5f6f86;
+        font-size: 0.88rem;
+    }
+
+    .link-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .link-list li {
+        display: flex;
+        flex-direction: column;
+        padding: 0.7rem 0;
+        border-top: 1px solid #eef1f5;
+        font-size: 0.95rem;
+    }
+
+    .link-list li span {
+        color: #5f6f86;
+        font-size: 0.85rem;
+    }
+
+    .link-list a {
+        font-weight: 600;
+    }
+
+    /* 3. Tilfluktsrom */
+    .shelter-card {
+        margin-top: 1.5rem;
+    }
+
+    .shelter-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .shelter-head .card-lead {
+        margin: 0;
+        max-width: 36rem;
+    }
+
+    .shelter-legend {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #5f6f86;
+        font-size: 0.88rem;
+    }
+
+    .shelter-legend i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #c8102e;
+        box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #dde3ea;
+    }
+
+    #tilfluktsromKart {
+        width: 100%;
+        height: 480px;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        background-color: #e7ecf2;
+        position: relative;
+    }
+
+    /* Vises bare så lenge kartet er tomt */
+    #tilfluktsromKart:empty::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #5f6f86;
+        font-size: 0.95rem;
+    }
+
+    .shelter-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 0.85rem;
+    }
+
+    .shelter-foot p {
+        margin: 0;
+        font-size: 0.88rem;
+        color: #5f6f86;
+    }
+
+    .shelter-foot .map-status {
+        color: #0f2a4f;
+        font-weight: 600;
+    }
+
+    /* 4. Grønn boks nederst */
+    .help-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin-top: 1.5rem;
         background-color: #e3f1ea;
         border-color: #cfe6da;
     }
 
-    .crisis-card.help-card h2 {
-        border-bottom-color: #cfe6da;
+    .help-card p {
+        margin: 0;
+        max-width: 40rem;
     }
 
-    /* Kart over offentlige tilfluktsrom */
-    #tilfluktsromKart {
-        width: 100%;
-        height: 450px;
-        border: 1px solid #dde3ea;
-        border-radius: 4px;
-        margin-bottom: 0.9rem;
+    .crisis-page a.btn-help {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: #04245a;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 0.7rem 1.2rem;
+        text-decoration: none;
+        white-space: nowrap;
     }
 
-    .crisis-card .map-status {
-        color: #5f6f86;
-        font-size: 0.85rem;
+    .crisis-page a.btn-help:hover {
+        background-color: #0f3a80;
+        color: #ffffff;
+    }
+
+    @@media (max-width: 900px) {
+        .emergency-numbers {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .crisis-grid {
+            grid-template-columns: 1fr;
+        }
+
+        #tilfluktsromKart {
+            height: 360px;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .emergency-numbers a {
+            transition: none;
+        }
+
+        .emergency-numbers a:hover {
+            transform: none;
+        }
+    }
+
+    @@media print {
+        .crisis-hero {
+            background: none;
+            color: #000;
+        }
+
+        .crisis-hero h1,
+        .crisis-hero h2,
+        .crisis-hero .intro,
+        .crisis-hero .net-note {
+            color: #000;
+        }
+
+        #tilfluktsromKart,
+        .help-card {
+            display: none;
+        }
     }
 </style>
 
 <div class="crisis-page">
-    <div class="crisis-layout">
-        <h1>@ViewData["Title"]</h1>
 
-        <p class="intro">Her finner du viktige nummer og råd for hva du kan gjøre før og under en krise.</p>
+    <!-- 1. Tittel og nødnummer -->
+    <section class="crisis-hero" aria-labelledby="nodnummerTittel">
+        <div class="crisis-inner">
+            <h1>@ViewData["Title"]</h1>
+            <p class="intro">Her finner du viktige nummer og råd for hva du kan gjøre før og under en krise.</p>
 
-        <section class="crisis-card" aria-labelledby="nodnummerTittel">
             <h2 id="nodnummerTittel">Nødnummer</h2>
             <ul class="emergency-numbers">
-                <li><strong>110</strong> Brann</li>
-                <li><strong>112</strong> Politi</li>
-                <li><strong>113</strong> Ambulanse</li>
-                <li><strong>116 117</strong> Legevakt</li>
-                <li><strong>02800</strong> Politiet, når det ikke haster</li>
+                <li><a href="tel:110"><strong>110</strong><span>Brann</span><span class="call"><i class="fa-solid fa-phone" aria-hidden="true"></i> Ring</span></a></li>
+                <li><a href="tel:112"><strong>112</strong><span>Politi</span><span class="call"><i class="fa-solid fa-phone" aria-hidden="true"></i> Ring</span></a></li>
+                <li><a href="tel:113"><strong>113</strong><span>Ambulanse</span><span class="call"><i class="fa-solid fa-phone" aria-hidden="true"></i> Ring</span></a></li>
+                <li><a href="tel:116117"><strong>116 117</strong><span>Legevakt</span><span class="call"><i class="fa-solid fa-phone" aria-hidden="true"></i> Ring</span></a></li>
+                <li><a href="tel:02800"><strong>02800</strong><span>Politiet, når det ikke haster</span><span class="call"><i class="fa-solid fa-phone" aria-hidden="true"></i> Ring</span></a></li>
             </ul>
-            <p>Er mobilnettet nede kan du prøve å ringe nødnummer likevel, telefonen bruker da et annet nett hvis det finnes.</p>
-        </section>
+            <p class="net-note"><i class="fa-solid fa-signal" aria-hidden="true"></i> Er mobilnettet nede kan du prøve å ringe nødnummer likevel, telefonen bruker da et annet nett hvis det finnes.</p>
+        </div>
+    </section>
 
-        <section class="crisis-card" aria-labelledby="forberedtTittel">
-            <h2 id="forberedtTittel">Vær forberedt</h2>
-            <p>DSB anbefaler at alle husstander skal klare seg selv i en uke hvis strøm, vann eller mobilnett blir borte. Det er lurt å ha:</p>
-            <ul>
-                <li>Vann, ca. 3 liter per person per dag</li>
-                <li>Mat som holder seg lenge og ikke trenger strøm</li>
-                <li>Lommelykt, batterier og en DAB-radio på batteri</li>
-                <li>Medisiner du trenger, og førstehjelpsutstyr</li>
-                <li>Noe å varme seg med, som ullklær og soveposer</li>
-                <li>Litt kontanter</li>
-            </ul>
-        </section>
+    <div class="crisis-inner">
 
-        <!-- Kart over offentlige tilfluktsrom. Punktene fylles inn av scriptet nederst på siden. -->
-        <section class="crisis-card" aria-labelledby="tilfluktsromTittel">
-            <h2 id="tilfluktsromTittel">Offentlige tilfluktsrom</h2>
+        <div class="crisis-grid">
+            <!-- 2. Vær forberedt, som en sjekkliste -->
+            <section class="crisis-card" aria-labelledby="forberedtTittel">
+                <h2 id="forberedtTittel">Vær forberedt</h2>
+                <p class="card-lead">DSB anbefaler at alle husstander skal klare seg selv i en uke hvis strøm, vann eller mobilnett blir borte. Det er lurt å ha:</p>
+                <ul class="prep-list">
+                    <li><label><input type="checkbox" /><span>Vann, ca. 3 liter per person per dag</span></label></li>
+                    <li><label><input type="checkbox" /><span>Mat som holder seg lenge og ikke trenger strøm</span></label></li>
+                    <li><label><input type="checkbox" /><span>Lommelykt, batterier og en DAB-radio på batteri</span></label></li>
+                    <li><label><input type="checkbox" /><span>Medisiner du trenger, og førstehjelpsutstyr</span></label></li>
+                    <li><label><input type="checkbox" /><span>Noe å varme seg med, som ullklær og soveposer</span></label></li>
+                    <li><label><input type="checkbox" /><span>Litt kontanter</span></label></li>
+                </ul>
+                <div class="prep-count">
+                    <span class="count" aria-hidden="true"></span>
+                    <span>Kryss av det du har. Ingenting lagres.</span>
+                </div>
+            </section>
+
+            <!-- Få informasjon -->
+            <section class="crisis-card info-card" aria-labelledby="informasjonTittel">
+                <h2 id="informasjonTittel">Få informasjon</h2>
+                <div class="radio">
+                    <i class="fa-solid fa-radio" aria-hidden="true"></i>
+                    <div>
+                        <strong>NRK P1 på radio</strong>
+                        <span>Under en krise kommer viktige meldinger her.</span>
+                    </div>
+                </div>
+                <p class="card-lead" style="margin-bottom: 0.4rem;">Andre steder du kan se:</p>
+                <ul class="link-list">
+                    <li><a href="https://www.sikkerhverdag.no" target="_blank" rel="noopener">sikkerhverdag.no</a><span>Råd om egenberedskap fra DSB</span></li>
+                    <li><a href="https://www.dsb.no/egenberedskap" target="_blank" rel="noopener">dsb.no/egenberedskap</a><span>DSB sine sider om egenberedskap</span></li>
+                    <li><strong style="font-weight: 600;">Kommunen din sin nettside</strong><span>Lokale beskjeder og hvor du får hjelp</span></li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- 3. Kart over offentlige tilfluktsrom. Punktene fylles inn av scriptet nederst på siden. -->
+        <section class="crisis-card shelter-card" aria-labelledby="tilfluktsromTittel">
+            <div class="shelter-head">
+                <div>
+                    <h2 id="tilfluktsromTittel">Offentlige tilfluktsrom</h2>
+                    <p class="card-lead">Trykk på et punkt for å se adresse og antall plasser.</p>
+                </div>
+                <span class="shelter-legend"><i aria-hidden="true"></i> Offentlig tilfluktsrom</span>
+            </div>
             <div id="tilfluktsromKart" role="region" aria-label="Kart over offentlige tilfluktsrom i Norge"></div>
-            <p class="map-status" id="tilfluktsromStatus">Henter tilfluktsrom...</p>
-            <p>Trykk på et punkt for å se adresse og antall plasser. Data fra DSB via <a href="https://kartkatalog.geonorge.no/metadata/tilfluktsrom-offentlige/dbae9aae-10e7-4b75-8d67-7f0e8828f3d8" target="_blank" rel="noopener">Geonorge</a>.</p>
+            <div class="shelter-foot">
+                <p class="map-status" id="tilfluktsromStatus">Henter tilfluktsrom...</p>
+                <p>Data fra DSB via <a href="https://kartkatalog.geonorge.no/metadata/tilfluktsrom-offentlige/dbae9aae-10e7-4b75-8d67-7f0e8828f3d8" target="_blank" rel="noopener">Geonorge</a>.</p>
+            </div>
         </section>
 
-        <section class="crisis-card" aria-labelledby="informasjonTittel">
-            <h2 id="informasjonTittel">Få informasjon</h2>
-            <p>Under en krise kommer viktige meldinger på NRK P1 på radio. Andre steder du kan se:</p>
-            <ul>
-                <li><a href="https://www.sikkerhverdag.no" target="_blank" rel="noopener">sikkerhverdag.no</a> – råd om egenberedskap fra DSB</li>
-                <li><a href="https://www.dsb.no/egenberedskap" target="_blank" rel="noopener">dsb.no/egenberedskap</a></li>
-                <li>Kommunen din sin nettside</li>
-            </ul>
-        </section>
-
+        <!-- 4. Har du noe som kan hjelpe? -->
         <section class="crisis-card help-card" aria-labelledby="hjelpeTittel">
-            <h2 id="hjelpeTittel">Har du noe som kan hjelpe?</h2>
-            <p>Har du utstyr, kjøretøy eller annet som kan være nyttig i en krise kan du lage en bruker og registrere det som en ressurs. Da kan kriseledelsen se det og ta kontakt.</p>
+            <div>
+                <h2 id="hjelpeTittel">Har du noe som kan hjelpe?</h2>
+                <p>Har du utstyr, kjøretøy eller annet som kan være nyttig i en krise kan du lage en bruker og registrere det som en ressurs. Da kan kriseledelsen se det og ta kontakt.</p>
+            </div>
+            <a class="btn-help" asp-controller="Account" asp-action="Register">Lag bruker <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
         </section>
     </div>
 </div>
