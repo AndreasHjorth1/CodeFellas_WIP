@@ -64,14 +64,21 @@
 }
 
 <style>
+    /* _Layout setter body til høyden på skjermen. Da slipper menyen øverst taket etter én skjermhøyde,
+       og kartet som står fast får et hull over seg. Med auto følger body innholdet. */
+    body {
+        height: auto !important;
+    }
+
     .overview-page {
         background-color: #eff3f6;
         min-height: 100%;
-        padding: 2rem 1rem 3rem;
+        padding: 2rem 1.5rem 3rem;
     }
 
+    /* Bredere side på store skjermer, så kartet får plassen som før var tom */
     .overview-inner {
-        max-width: 1100px;
+        max-width: 1600px;
         margin: 0 auto;
     }
 
@@ -415,10 +422,17 @@
         margin-bottom: 0.3rem;
     }
 
+    /* På desktop står kartet fast ved siden av listen og fyller nesten hele høyden.
+       Det som trekkes fra er menyen øverst, overskriften, tegnforklaringen og teksten under kartet. */
     @@media (min-width: 992px) {
         .overview-side {
             position: sticky;
-            top: 80px;
+            top: calc(62px + 1rem);
+        }
+
+        #oversiktRessursKart {
+            height: calc(100vh - 62px - 250px);
+            min-height: 360px;
         }
     }
 
@@ -437,7 +451,8 @@
 
         <div class="row g-4">
             <!-- Venstre kolonne: ressursene -->
-            <div class="col-lg-8">
+            @* Listen til venstre og kartet til høyre. På store skjermer får kartet litt mer plass enn listen. *@
+            <div class="col-lg-6 col-xl-5">
                 <div class="overview-head">
                     <h1>@ViewData["Title"]</h1>
                     <div class="d-flex flex-wrap gap-2 head-buttons">
@@ -621,7 +636,7 @@
             </div>
 
             <!-- Høyre kolonne: kart og filter -->
-            <div class="col-lg-4">
+            <div class="col-lg-6 col-xl-7">
                 <div class="overview-side">
                     <div class="side-card">
                         <div class="side-card-head">
