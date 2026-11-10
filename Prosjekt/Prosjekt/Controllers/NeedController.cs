@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Prosjekt.Utils;
 using System.Security.Claims;
 using NetTopologySuite.Features;
+using System.Globalization;
 
 namespace Prosjekt.Controllers
 {
@@ -216,6 +217,11 @@ namespace Prosjekt.Controllers
             var canSeePhone = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
             var needs = await _repo.GetAllAsync();
 
+            /// Hvor mange ulike ressurser hvert behov har fått tildelt, til «Trenger handling» på oversikten
+            var tildelteRessurser = (await _allocationRepo.GetAllAsync())
+                .GroupBy(a => a.NeedId)
+                .ToDictionary(g => g.Key, g => g.Select(a => a.ResourceId).Distinct().Count());
+
             var collection = new FeatureCollection();
             foreach (var n in needs)
             {
@@ -232,7 +238,12 @@ namespace Prosjekt.Controllers
                     { "status", n.Status },
                     { "latitude", n.Coords.Latitude },
                     { "longitude", n.Coords.Longitude },
-                    { "areaSquareMeters", n.AreaSquareMeters }
+                    { "areaSquareMeters", n.AreaSquareMeters },
+                    /// Fristen i norsk tid, f.eks. «2026-11-18T16:00». Tom hvis fristen ikke er satt.
+                    { "deadline", n.NeededBy == default
+                        ? string.Empty
+                        : NorwegianTime.FromUtc(n.NeededBy).ToString("yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture) },
+                    { "allocatedResources", tildelteRessurser.GetValueOrDefault(n.Id) }
                 }));
             }
 

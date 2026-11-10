@@ -678,6 +678,63 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
+        public async Task GetInformation_IncludesDeadlineInNorwegianTimeAndAllocatedResources()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                NeededBy = new DateTime(2026, 11, 18, 15, 0, 0, DateTimeKind.Utc),
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            repo.Needs.Add(new Need
+            {
+                Id = 2,
+                Name = "Traktor",
+                Coords = new Coordinates(59.9, 10.7)
+            });
+
+            // To tildelinger av samme ressurs teller som én ressurs
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 10 });
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 10 });
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 11 });
+
+            var controller = new NeedController(repo, new FakeResourceRepository(), allocations)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, "user-1"),
+                            new Claim(ClaimTypes.Role, RoleNames.Admin)
+                        }, "Test"))
+                    }
+                }
+            };
+
+            // Act
+            var result = await controller.GetInformation();
+
+            // Assert
+            var features = GetFeatures(result);
+            var vann = features.Single(f => (string)f.Attributes["name"] == "Vann");
+            var traktor = features.Single(f => (string)f.Attributes["name"] == "Traktor");
+
+            // 15:00 UTC er 16:00 norsk vintertid
+            Assert.Equal("2026-11-18T16:00", vann.Attributes["deadline"]);
+            Assert.Equal(2, vann.Attributes["allocatedResources"]);
+
+            // Uten frist blir feltet tomt, og uten tildelinger er antallet 0
+            Assert.Equal(string.Empty, traktor.Attributes["deadline"]);
+            Assert.Equal(0, traktor.Attributes["allocatedResources"]);
+        }
+
+        [Fact]
         public async Task GetInformation_UnknownCategoryAndPriority_UsesOtherAndPlanned()
         {
             // Arrange
