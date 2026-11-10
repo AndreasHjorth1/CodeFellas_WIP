@@ -302,7 +302,7 @@
 </div>
 
 @section Scripts {
-    <script>
+    <script nonce="@Context.CspNonce()">
         // Filtrerer radene som allerede er på siden. Henter ingenting nytt fra serveren.
         (function () {
             var sok = document.getElementById('loggSok');

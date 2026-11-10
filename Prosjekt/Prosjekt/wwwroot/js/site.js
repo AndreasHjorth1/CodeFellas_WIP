@@ -1,6 +1,8 @@
-﻿/// Koder tekst fra brukere før den settes inn som HTML, for eksempel i kart-popuper.
-function escapeHtml(verdi) {
-    return String(verdi ?? '')
+﻿/// <summary>
+/// Koder tekst fra brukere før den settes inn som HTML, for eksempel i kart-popuper.
+/// </summary>
+function escapeHtml(value) {
+    return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -12,48 +14,56 @@ function escapeHtml(verdi) {
 /// Gjør GeoJSON fra GetInformation om til en vanlig liste. Er geometrien et punkt, er det posisjonen.
 /// Ellers er det et tegnet område, og posisjonen ligger i latitude/longitude.
 /// </summary>
-function fraGeoJson(geoJson) {
+function fromGeoJson(geoJson) {
     if (!geoJson || !Array.isArray(geoJson.features)) return [];
 
     return geoJson.features.map(function (feature) {
-        var element = Object.assign({}, feature.properties);
-        var geometri = feature.geometry;
+        var item = Object.assign({}, feature.properties);
+        var geometry = feature.geometry;
 
-        if (geometri && geometri.type === 'Point') {
-            /// GeoJSON har lengdegrad først, motsatt av Leaflet
-            element.longitude = geometri.coordinates[0];
-            element.latitude = geometri.coordinates[1];
-        } else if (geometri) {
-            element.areaGeoJson = geometri;
+        if (geometry && geometry.type === 'Point') {
+            /// <summary>
+            /// GeoJSON har lengdegrad først, motsatt av Leaflet.
+            /// </summary>
+            item.longitude = geometry.coordinates[0];
+            item.latitude = geometry.coordinates[1];
+        } else if (geometry) {
+            item.areaGeoJson = geometry;
         }
 
-        return element;
+        return item;
     });
 }
 
 /// <summary>
 /// Formatering av areal og lengde fra kartet. Brukes av flere views.
 /// </summary>
-function formaterAreal(m2) {
-    if (m2 === null || m2 === undefined) { return ''; }
-    if (m2 < 10000) {
-        return Math.round(m2).toLocaleString('nb-NO') + ' m²';
+function formatArea(squareMeters) {
+    if (squareMeters === null || squareMeters === undefined) { return ''; }
+    if (squareMeters < 10000) {
+        return Math.round(squareMeters).toLocaleString('nb-NO') + ' m²';
     }
-    if (m2 < 1000000) {
-        return (m2 / 10000).toFixed(1).replace('.', ',') + ' ha';
+    if (squareMeters < 1000000) {
+        return (squareMeters / 10000).toFixed(1).replace('.', ',') + ' ha';
     }
-    return (m2 / 1000000).toFixed(2).replace('.', ',') + ' km²';
+    return (squareMeters / 1000000).toFixed(2).replace('.', ',') + ' km²';
 }
 
-function formaterLengde(m) {
-    if (m === null || m === undefined) { return ''; }
-    if (m < 1000) {
-        return Math.round(m).toLocaleString('nb-NO') + ' m';
+/// <summary>
+/// Viser en lengde i meter som m eller km.
+/// </summary>
+function formatLength(meters) {
+    if (meters === null || meters === undefined) { return ''; }
+    if (meters < 1000) {
+        return Math.round(meters).toLocaleString('nb-NO') + ' m';
     }
-    return (m / 1000).toFixed(1).replace('.', ',') + ' km';
+    return (meters / 1000).toFixed(1).replace('.', ',') + ' km';
 }
 
-function tomOmrade() {
+/// <summary>
+/// Tømmer de skjulte feltene for tegnet område og skjuler arealinfoen.
+/// </summary>
+function clearArea() {
     document.getElementById('AreaGeoJson').value = '';
     document.getElementById('AreaSquareMeters').value = '';
     document.getElementById('PerimeterMeters').value = '';
@@ -63,172 +73,230 @@ function tomOmrade() {
 /// <summary>
 /// Lagrer et tegnet område i de skjulte feltene, som GeoJSON med areal og omkrets.
 /// </summary>
-function lagreOmrade(layer) {
+function saveArea(layer) {
 
-    var punkter = layer.getLatLngs()[0];
+    var points = layer.getLatLngs()[0];
 
-    var areal = L.GeometryUtil.geodesicArea(punkter);
+    var area = L.GeometryUtil.geodesicArea(points);
 
-    var omkrets = 0;
-    for (var i = 0; i < punkter.length; i++) {
-        var neste = punkter[(i + 1) % punkter.length];
-        omkrets += punkter[i].distanceTo(neste);
+    var perimeter = 0;
+    for (var i = 0; i < points.length; i++) {
+        var next = points[(i + 1) % points.length];
+        perimeter += points[i].distanceTo(next);
     }
     document.getElementById('AreaGeoJson').value = JSON.stringify(layer.toGeoJSON());
-    document.getElementById('AreaSquareMeters').value = areal.toFixed(2);
-    document.getElementById('PerimeterMeters').value = omkrets.toFixed(2);
+    document.getElementById('AreaSquareMeters').value = area.toFixed(2);
+    document.getElementById('PerimeterMeters').value = perimeter.toFixed(2);
 
-    document.getElementById('omradeAreal').textContent = formaterAreal(areal);
-    document.getElementById('omradeOmkrets').textContent = formaterLengde(omkrets);
+    document.getElementById('omradeAreal').textContent = formatArea(area);
+    document.getElementById('omradeOmkrets').textContent = formatLength(perimeter);
     document.getElementById('omradeInfo').classList.remove('d-none');
 }
 
-/// Satt av stedssøk. null = ingen geografisk begrensning
-var stedsBoks = null;
-var radiusSenter = null;
-var radiusMeter = 5000;
-var radiusSirkel = null;
-var velgerPunkt = false;
+/// <summary>
+/// Satt av stedssøk. null = ingen geografisk begrensning.
+/// </summary>
+var placeBounds = null;
+var radiusCenter = null;
+var radiusMeters = 5000;
+var radiusCircle = null;
+var isPickingPoint = false;
+
 /// <summary>
 /// Filtrerer tabellradene og kartet samtidig, og returnerer filteret så stedssøk og radiussøk kan kjøre det.
-/// lagRegistre: oppslag fra rad-id til kartlag. lagGrupper: hvor lagene ligger (ellers selve kartet).
+/// layerRegistries: oppslag fra rad-id til kartlag. layerGroups: hvor lagene ligger (ellers selve kartet).
 /// </summary>
-function settOppFilter(kart, lagRegistre, lagGrupper = []) {
-    var sokeFelt = document.getElementById('sokeFelt');
+function setupFilter(map, layerRegistries, layerGroups = []) {
+    var searchField = document.getElementById('sokeFelt');
     var typeFilter = document.getElementById('typeFilter');
-    if (!sokeFelt || !typeFilter) return function () { };
+    if (!searchField || !typeFilter) return function () { };
 
-    function filtrer() {
-        var tekst = sokeFelt.value.toLowerCase().trim();
+    function applyFilter() {
+        var text = searchField.value.toLowerCase().trim();
         var type = typeFilter.value;
 
-        document.querySelectorAll('.table-row-clickable').forEach(function (rad) {
-            var lat = parseFloat(rad.dataset.lat);
-            var lng = parseFloat(rad.dataset.lng);
+        document.querySelectorAll('.table-row-clickable').forEach(function (row) {
+            var lat = parseFloat(row.dataset.lat);
+            var lng = parseFloat(row.dataset.lng);
 
-            var passerTekst = tekst === '' || rad.dataset.sok.includes(tekst);
-            var passerType = type === '' || rad.dataset.type === type;
-            var passerSted = !stedsBoks ||
-                (lat >= stedsBoks.minLat && lat <= stedsBoks.maxLat &&
-                    lng >= stedsBoks.minLng && lng <= stedsBoks.maxLng);
-            var passerRadius = !radiusSenter || radiusSenter.distanceTo(L.latLng(lat, lng)) <= radiusMeter;
-            var vis = passerTekst && passerType && passerSted &&passerRadius;
+            var matchesText = text === '' || row.dataset.sok.includes(text);
+            var matchesType = type === '' || row.dataset.type === type;
+            var matchesPlace = !placeBounds ||
+                (lat >= placeBounds.minLat && lat <= placeBounds.maxLat &&
+                    lng >= placeBounds.minLng && lng <= placeBounds.maxLng);
+            var matchesRadius = !radiusCenter || radiusCenter.distanceTo(L.latLng(lat, lng)) <= radiusMeters;
+            var visible = matchesText && matchesType && matchesPlace && matchesRadius;
 
-            rad.classList.toggle('d-none', !vis);
+            row.classList.toggle('d-none', !visible);
 
-            lagRegistre.forEach(function (register, index) {
-                var lag = register[rad.dataset.id];
-                if (!lag) return;
-                var eier = lagGrupper[index] || kart;
-                if (vis) { eier.addLayer(lag); } else { eier.removeLayer(lag); }
+            layerRegistries.forEach(function (registry, index) {
+                var layer = registry[row.dataset.id];
+                if (!layer) return;
+                var owner = layerGroups[index] || map;
+                if (visible) { owner.addLayer(layer); } else { owner.removeLayer(layer); }
             });
         });
     }
 
-    sokeFelt.addEventListener('input', filtrer);
-    typeFilter.addEventListener('change', filtrer);
+    searchField.addEventListener('input', applyFilter);
+    typeFilter.addEventListener('change', applyFilter);
 
-    return filtrer;
+    return applyFilter;
 }
 
-function settOppStedssok(kart, kjorFilter) {
-    var feltet = document.getElementById('stedsFelt');
-    if (!feltet) return;
+/// <summary>
+/// Søker etter stedet i stedsfeltet når brukeren trykker Enter.
+/// </summary>
+function setupPlaceSearch(map, runFilter) {
+    var field = document.getElementById('stedsFelt');
+    if (!field) return;
 
-    feltet.addEventListener('keydown', function (e) {
+    field.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        sokSted(feltet.value.trim(), kart, kjorFilter);
+        searchPlace(field.value.trim(), map, runFilter);
     });
 }
 
-function sokSted(sporring, kart, kjorFilter)
+/// <summary>
+/// Slår opp stedet hos Nominatim, zoomer kartet dit og filtrerer på området. Tomt søk fjerner begrensningen.
+/// </summary>
+function searchPlace(query, map, runFilter)
 {
-    if (!sporring)
+    if (!query)
     {
-        stedsBoks = null;
-        kjorFilter();
+        placeBounds = null;
+        runFilter();
         return;
     }
     var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=no&q='
-        + encodeURIComponent(sporring);
+        + encodeURIComponent(query);
 
     fetch(url, { headers: { 'Accept-Language': 'nb' } })
-        .then(function (svar) { return svar.json(); })
-        .then(function (treff) {
-            if (!treff.length) {
-                alert('Fant ikke stedet "' + sporring + '".');
+        .then(function (response) { return response.json(); })
+        .then(function (results) {
+            if (!results.length) {
+                alert('Fant ikke stedet "' + query + '".');
                 return;
             }
 
-            /// boundingbox: [minLat, maxLat, minLng, maxLng] som tekst
-            var b = treff[0].boundingbox;
-            stedsBoks = {
+            /// <summary>
+            /// boundingbox: [minLat, maxLat, minLng, maxLng] som tekst.
+            /// </summary>
+            var b = results[0].boundingbox;
+            placeBounds = {
                 minLat: parseFloat(b[0]), maxLat: parseFloat(b[1]),
                 minLng: parseFloat(b[2]), maxLng: parseFloat(b[3])
             };
 
-            kart.fitBounds([
-                [stedsBoks.minLat, stedsBoks.minLng],
-                [stedsBoks.maxLat, stedsBoks.maxLng]
+            map.fitBounds([
+                [placeBounds.minLat, placeBounds.minLng],
+                [placeBounds.maxLat, placeBounds.maxLng]
             ]);
 
-            kjorFilter();
+            runFilter();
         });
 }
 
 /// <summary>
 /// Etter «Velg punkt» blir neste klikk på kartet midten av radiussøket.
 /// </summary>
-function settOppRadiusSok(kart, kjorFilter) {
-    var knapp = document.getElementById('velgPunktBtn');
-    var radiusFelt = document.getElementById('radiusFelt');
-    if (!knapp || !radiusFelt) return;
+function setupRadiusSearch(map, runFilter) {
+    var button = document.getElementById('velgPunktBtn');
+    var radiusField = document.getElementById('radiusFelt');
+    if (!button || !radiusField) return;
 
-    knapp.addEventListener('click', function () {
-        if (radiusSenter) { nullstillRadius(kart, kjorFilter); return; }
+    button.addEventListener('click', function () {
+        if (radiusCenter) { resetRadius(map, runFilter); return; }
 
-        velgerPunkt = !velgerPunkt;
-        knapp.textContent = velgerPunkt ? 'Avbryt' : 'Velg punkt';
-        kart.getContainer().style.cursor = velgerPunkt ? 'crosshair' : '';
+        isPickingPoint = !isPickingPoint;
+        button.textContent = isPickingPoint ? 'Avbryt' : 'Velg punkt';
+        map.getContainer().style.cursor = isPickingPoint ? 'crosshair' : '';
     });
 
-    kart.on('click', function (e) {
-        if (!velgerPunkt) return;
+    map.on('click', function (e) {
+        if (!isPickingPoint) return;
 
-        radiusSenter = e.latlng;
-        radiusMeter = (parseFloat(radiusFelt.value) || 5) * 1000;
-        velgerPunkt = false;
-        knapp.textContent = 'fjern punkt';
-        kart.getContainer().style.cursor = '';
+        radiusCenter = e.latlng;
+        radiusMeters = (parseFloat(radiusField.value) || 5) * 1000;
+        isPickingPoint = false;
+        button.textContent = 'fjern punkt';
+        map.getContainer().style.cursor = '';
 
-        tegnRadius(kart);
-        kjorFilter();
+        drawRadius(map);
+        runFilter();
     });
 
-    radiusFelt.addEventListener('input', function () {
-        if (!radiusSenter) return;
-        radiusMeter = (parseFloat(radiusFelt.value) || 5) * 1000;
-        tegnRadius(kart);
-        kjorFilter();
+    radiusField.addEventListener('input', function () {
+        if (!radiusCenter) return;
+        radiusMeters = (parseFloat(radiusField.value) || 5) * 1000;
+        drawRadius(map);
+        runFilter();
     });
 }
 
-function tegnRadius(kart) {
-    if (radiusSirkel) { kart.removeLayer(radiusSirkel); }
-    radiusSirkel = L.circle(radiusSenter, {
-        radius: radiusMeter,
+/// <summary>
+/// Tegner sirkelen for radiussøket på nytt.
+/// </summary>
+function drawRadius(map) {
+    if (radiusCircle) { map.removeLayer(radiusCircle); }
+    radiusCircle = L.circle(radiusCenter, {
+        radius: radiusMeters,
         color: '#0d6efd',
         weight: 2,
         fillOpacity: 0.08
-    }).addTo(kart);
+    }).addTo(map);
 }
 
-function nullstillRadius(kart, kjorFilter) {
-    radiusSenter = null;
-    velgerPunkt = false;
-    if (radiusSirkel) { kart.removeLayer(radiusSirkel); radiusSirkel = null; }
+/// <summary>
+/// Fjerner radiussøket og filtrerer på nytt.
+/// </summary>
+function resetRadius(map, runFilter) {
+    radiusCenter = null;
+    isPickingPoint = false;
+    if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
     document.getElementById('velgPunktBtn').textContent = 'velg punkt';
-    kart.getContainer().style.cursor = '';
-    kjorFilter();
+    map.getContainer().style.cursor = '';
+    runFilter();
 }
+
+/// <summary>
+/// Erstatter onclick, onchange og onsubmit i HTML, som CSP-en blokkerer.
+/// data-on-click="funksjon" og data-on-change="funksjon" kaller en global funksjon i siden, med data-arg som argument.
+/// Returnerer funksjonen false, avbrytes klikket, slik som med return i onclick.
+/// data-confirm="tekst" på et skjema spør før innsending. data-stop-click stopper klikket fra å nå raden rundt.
+/// </summary>
+(function () {
+    function invoke(element, key, event) {
+        var fn = window[element.dataset[key]];
+        if (typeof fn !== 'function') return;
+
+        var arg = element.dataset.arg;
+        var result = arg === undefined ? fn() : fn(isNaN(arg) ? arg : Number(arg));
+        if (result === false) event.preventDefault();
+    }
+
+    document.addEventListener('click', function (e) {
+        var element = e.target.closest('[data-on-click]');
+        if (element) invoke(element, 'onClick', e);
+    });
+
+    document.addEventListener('change', function (e) {
+        var element = e.target.closest('[data-on-change]');
+        if (element) invoke(element, 'onChange', e);
+    });
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target.closest('form[data-confirm]');
+        if (form && !confirm(form.dataset.confirm)) e.preventDefault();
+    });
+
+    /// <summary>
+    /// Må ligge på selve elementet, ellers har klikket alt nådd raden.
+    /// </summary>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-stop-click]').forEach(function (element) {
+            element.addEventListener('click', function (e) { e.stopPropagation(); });
+        });
+    });
+})();

@@ -586,7 +586,7 @@
                                 <label class="filter-label" for="kategoriFilter">Kategori</label>
                                 <select id="kategoriFilter" class="form-select form-select-sm">
                                     <option value="">Alle kategorier</option>
-                                    @foreach (var t in Enum.GetValues<NeedViewModel.NeedType>())
+                                    @foreach (var t in Enum.GetValues<NeedViewModel.NeedType>().OrderBy(t => t == NeedViewModel.NeedType.Other))
                                     {
                                         <option value="@((int)t)">@OversettNeedType(t)</option>
                                     }
@@ -628,7 +628,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.addEventListener("DOMContentLoaded", function () {
             var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(behov.Select(b => new
             {
@@ -763,8 +763,8 @@
                 });
 
                 var iFanen = behov.filter(passerStatus);
-                document.querySelector('[data-antall="akutt"]').textContent = iFanen.filter(function (b) { return b.importance === 0; }).length;
-                document.querySelector('[data-antall="planlagt"]').textContent = iFanen.filter(function (b) { return b.importance === 1; }).length;
+                document.querySelector('[data-antall="akutt"]').textContent = iFanen.filter(function (b) { return MapSymbols.isAcute(b.importance); }).length;
+                document.querySelector('[data-antall="planlagt"]').textContent = iFanen.filter(function (b) { return !MapSymbols.isAcute(b.importance); }).length;
 
                 var filtrert = etterResten.filter(passerStatus);
                 var iKart = filtrert.filter(erIKartutsnitt);

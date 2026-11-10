@@ -411,7 +411,7 @@
 
                 <div class="mb-3">
                     <label class="form-label" for="kategoriVelger">Kategori</label>
-                    <select id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
+                    <select id="kategoriVelger" class="form-select" data-on-change="oppdaterSkjemavisning">
                         <option value="Vehicle">Transport og kjøretøy</option>
                         <option value="Provision">Provisjon</option>
                         <option value="Materials">Materialer</option>
@@ -512,7 +512,7 @@
                     <textarea id="inputDescription" class="form-control" rows="2"></textarea>
                 </div>
 
-                <button type="button" class="btn-add-to-list" onclick="leggTilIListe()">+ Legg til i listen</button>
+                <button type="button" class="btn-add-to-list" data-on-click="leggTilIListe">+ Legg til i listen</button>
 
                 <div class="side-divider"></div>
 
@@ -538,7 +538,7 @@
                     <label class="form-check-label" for="kontrollertSjekk">Jeg har kontrollert opplysningene i listen.</label>
                 </div>
 
-                <button type="submit" class="btn btn-register-all" id="registrerKnapp" onclick="return validerInnsending()">Registrer ressurser</button>
+                <button type="submit" class="btn btn-register-all" id="registrerKnapp" data-on-click="validerInnsending">Registrer ressurser</button>
             </form>
         </div>
     </div>
@@ -548,7 +548,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         let mekortListe = [];
         var sideMeny = document.getElementById('sideMeny');
         var infoKort = document.getElementById('infoKort');
@@ -863,7 +863,7 @@
                             <div class="item-name">${escapeHtml(item.name)}</div>
                             <div class="item-meta">${escapeHtml(item.quantity)} stk. · ${escapeHtml(item.categoryNameNO)} · Fra ${formaterDato(item.availableFrom)}</div>
                         </div>
-                        <button type="button" class="item-remove" onclick="fjernFraListe(${index})" aria-label="Fjern ${escapeHtml(item.name)}">
+                        <button type="button" class="item-remove" data-on-click="fjernFraListe" data-arg="${index}" aria-label="Fjern ${escapeHtml(item.name)}">
                             <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
                         </button>
                     </div>`;
