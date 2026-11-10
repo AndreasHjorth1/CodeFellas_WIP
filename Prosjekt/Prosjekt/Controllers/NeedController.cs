@@ -208,8 +208,25 @@ namespace Prosjekt.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
+            // Må hentes før sletting, ellers vet vi ikke hvilke ressurser som var tildelt
+            var need = await _repo.GetByIdAsync(id);
+            var allocations = await _allocationRepo.GetByNeedAsync(id);
+
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByNeedAsync(id);
+
+            // Ressursene blir ledige igjen, og eierne får beskjed
+            foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
+            {
+                await UpdateAvailabilityAsync(resourceId);
+
+                var resource = await _resourceRepo.GetByIdAsync(resourceId);
+                if (need != null && resource != null)
+                {
+                    await NotifyOwnerAsync(resource, $"er levert tilbake. Behovet «{need.Name}» ble slettet.");
+                }
+            }
+
             return RedirectToAction(nameof(Overview));
         }
 
