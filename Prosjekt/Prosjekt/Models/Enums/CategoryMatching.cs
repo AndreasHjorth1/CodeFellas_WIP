@@ -19,7 +19,7 @@ namespace Prosjekt.Models.Enums
             [NeedViewModel.NeedType.Machinery] = [ResourceViewModel.ResourceType.Tool, ResourceViewModel.ResourceType.Vehicle],
             [NeedViewModel.NeedType.Evacuation] = [ResourceViewModel.ResourceType.Vehicle],
             [NeedViewModel.NeedType.Communication] = [ResourceViewModel.ResourceType.Tool],
-            [NeedViewModel.NeedType.Personnel] = [ResourceViewModel.ResourceType.Other],
+            [NeedViewModel.NeedType.Personnel] = [ResourceViewModel.ResourceType.Competence],
         };
 
         /// <summary>
