@@ -218,11 +218,11 @@
             const LAG = "layer_340";
             const statusTekst = document.getElementById("tilfluktsromStatus");
 
-            // Lager kartet med hele Norge i bildet, og OpenStreetMap som bakgrunn
+            // Lager kartet med hele Norge i bildet, og Kartverkets topografiske kart som bakgrunn
             const kart = L.map("tilfluktsromKart").setView([64.5, 12], 4);
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Tilfluktsrom: DSB'
+            L.tileLayer("https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png", {
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a> | Tilfluktsrom: DSB'
             }).addTo(kart);
 
             // Tjenesten gir bare koordinater i UTM sone 33 (EPSG:32633), men Leaflet trenger
