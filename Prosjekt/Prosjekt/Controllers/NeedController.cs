@@ -82,6 +82,18 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            if (!model.Deadline.HasValue)
+            {
+                ModelState.AddModelError(nameof(model.Deadline), "En tidsfrist må registreres.");
+                return View("Index", model);
+            }
+
+            if (model.Importance == ImportanceLevel.Undefined)
+            {
+                ModelState.AddModelError(nameof(model.Importance), "Du må velge om behovet er akutt eller planlagt.");
+                return View("Index", model);
+            }
+
             foreach (var baseNeed in model.NeedList.Where(n => !string.IsNullOrWhiteSpace(n.Name)))
             {
                 var needEntity = new Need
@@ -91,7 +103,7 @@ namespace Prosjekt.Controllers
                     Category = baseNeed.Type.ToString(),
                     PhoneNumber = baseNeed.Phone ?? string.Empty,
                     Priority = model.Importance.ToString(),
-                    NeededBy = NorwegianTime.ToUtc(baseNeed.Deadline ?? model.Deadline),
+                    NeededBy = NorwegianTime.ToUtc(baseNeed.Deadline ?? model.Deadline.Value),
                     Coords = coords,
                     AreaGeoJson = model.AreaGeoJson,
                     AreaSquareMeters = model.AreaSquareMeters,
@@ -144,6 +156,18 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
+            if (!model.Deadline.HasValue)
+            {
+                ModelState.AddModelError(nameof(model.Deadline), "En tidsfrist må registreres.");
+                return View(model);
+            }
+
+            if (model.Importance == ImportanceLevel.Undefined)
+            {
+                ModelState.AddModelError(nameof(model.Importance), "Du må velge om behovet er akutt eller planlagt.");
+                return View(model);
+            }
+
             var existingNeed = await _repo.GetByIdAsync(id);
             if (existingNeed == null) return NotFound();
 
@@ -159,7 +183,7 @@ namespace Prosjekt.Controllers
             existingNeed.PhoneNumber = model.Phone;
             existingNeed.Category = model.Type.ToString();
             existingNeed.Priority = model.Importance.ToString();
-            existingNeed.NeededBy = NorwegianTime.ToUtc(model.Deadline);
+            existingNeed.NeededBy = NorwegianTime.ToUtc(model.Deadline.Value);
             existingNeed.Status = model.Status;
             existingNeed.Coords = coords;
             existingNeed.AreaGeoJson = model.AreaGeoJson;
@@ -204,8 +228,7 @@ namespace Prosjekt.Controllers
                     { "description", n.Description },
                     { "type", Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat)
                         ? cat : NeedViewModel.NeedType.Other },
-                    { "importance", Enum.TryParse<ImportanceLevel>(n.Priority, out var prio)
-                        ? prio : ImportanceLevel.Planned },
+                    { "importance", ParseImportance(n.Priority) },
                     { "status", n.Status },
                     { "latitude", n.Coords.Latitude },
                     { "longitude", n.Coords.Longitude },
@@ -245,8 +268,7 @@ namespace Prosjekt.Controllers
                     Category = r.Category,
                     Quantity = r.Quantity,
                     PhoneNumber = r.PhoneNumber,
-                    Latitude = r.Coords.Latitude,
-                    Longitude = r.Coords.Longitude,
+                    Coords = r.Coords,
                     DistanceMeters = Distance.InMeters(
                         need.Coords.Latitude, need.Coords.Longitude,
                         r.Coords.Latitude, r.Coords.Longitude),
@@ -350,7 +372,7 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Setter behovet til Løst. Bare Tildelt kan gå videre dit; fra Ny og Vurderes skjer det ingenting.
+        /// Setter behovet til Løst og leverer tildelte ressurser tilbake. Bare Tildelt kan gå videre dit.
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> Resolve(int id)
@@ -362,6 +384,14 @@ namespace Prosjekt.Controllers
             {
                 need.Status = EntryStatus.Resolved;
                 await _repo.UpdateAsync(need);
+
+                var allocations = await _allocationRepo.GetByNeedAsync(id);
+                await _allocationRepo.DeleteByNeedAsync(id);
+
+                foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
+                {
+                    await UpdateAvailabilityAsync(resourceId);
+                }
             }
 
             return RedirectToAction(nameof(Overview));
@@ -389,7 +419,7 @@ namespace Prosjekt.Controllers
             Description = n.Description,
             Phone = n.PhoneNumber,
             Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
-            Importance = Enum.TryParse<ImportanceLevel>(n.Priority, out var prio) ? prio : default,
+            Importance = ParseImportance(n.Priority),
             Deadline = NorwegianTime.FromUtc(n.NeededBy),
             Status = n.Status,
             Latitude = n.Coords.Latitude,
@@ -398,8 +428,19 @@ namespace Prosjekt.Controllers
             AreaSquareMeters = n.AreaSquareMeters,
             PerimeterMeters = n.PerimeterMeters
         };
-   
+
+
+        /// <summary>
+        /// Gamle eller ukjente verdier i databasen vises som planlagt, ikke som akutt.
+        /// </summary>
+        private static ImportanceLevel ParseImportance(string priority) =>
+            Enum.TryParse<ImportanceLevel>(priority, out var prio) && Enum.IsDefined(prio) && prio != ImportanceLevel.Undefined
+                ? prio
+                : ImportanceLevel.Planned;
+
+        /// <summary>
         /// holder IsAvailable i takt med tildelingene.
+        /// </summary>
         private async Task UpdateAvailabilityAsync(int resourceId)
         {
             var resource = await _resourceRepo.GetByIdAsync(resourceId);

@@ -193,7 +193,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.querySelectorAll('.password-toggle').forEach(function (button) {
             button.addEventListener('click', function () {
                 var input = document.getElementById(button.dataset.target);

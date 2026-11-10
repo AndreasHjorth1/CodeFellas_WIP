@@ -25,12 +25,12 @@ namespace Prosjekt.Models.Entities
         public string PhoneNumber { get; set; } = string.Empty;
 
         /// <summary>
-        /// Navnet på en ImportanceLevel, altså Acute eller Planned.
+        /// Navnet på en ImportanceLevel, altså Acute eller Planned. Undefined til noen har valgt.
         /// </summary>
         [StringLength(50)]
-        public string Priority { get; set; } = "Medium";
+        public string Priority { get; set; } = "Undefined";
 
-        public DateTime? NeededBy { get; set; }
+        public DateTime NeededBy { get; set; }
 
         /// <summary>
         /// Hvor i statusflyten behovet er. Ny => Vurderes => Tildelt => Løst
@@ -47,6 +47,6 @@ namespace Prosjekt.Models.Entities
         public string? AreaGeoJson { get; set; }
         public double? AreaSquareMeters { get; set; }
         public double? PerimeterMeters { get; set; }
-        public string? UserId { get; set; }
+        public string? UserId { get; init; }
     }
 }

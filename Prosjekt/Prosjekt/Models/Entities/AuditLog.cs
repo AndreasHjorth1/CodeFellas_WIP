@@ -4,29 +4,29 @@ namespace Prosjekt.Models.Entities
 {
     public class AuditLog
     {
-        public int Id { get; set; }
+        public int Id { get; init; }
 
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTimeOffset Timestamp { get; init; }
             = DateTimeOffset.UtcNow;
 
         [MaxLength(450)]
-        public string? UserId { get; set; }
+        public string? UserId { get; init; }
 
         [Required]
         [MaxLength(30)]
-        public string Action { get; set; } = string.Empty;
+        public string Action { get; init; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
-        public string EntityType { get; set; } = string.Empty;
+        public string EntityType { get; init; } = string.Empty;
 
-        public int EntityId { get; set; }
+        public int EntityId { get; init; }
 
         [MaxLength(100)]
-        public string? FieldName { get; set; }
+        public string? FieldName { get; init; }
 
-        public string? OldValue { get; set; }
+        public string? OldValue { get; init; }
 
-        public string? NewValue { get; set; }
+        public string? NewValue { get; init; }
     }
 }

@@ -818,13 +818,13 @@ else
                     <select id="kategoriFilter" class="form-select form-select-sm">
                         <option value="">Alle</option>
                         <optgroup label="Behov">
-                            @foreach (var i in Html.GetEnumSelectList<NeedViewModel.NeedType>())
+                            @foreach (var i in Html.GetEnumSelectList<NeedViewModel.NeedType>().OrderBy(i => i.Value == ((int)NeedViewModel.NeedType.Other).ToString()))
                             {
                                 <option value="behov:@i.Value">@i.Text</option>
                             }
                         </optgroup>
                         <optgroup label="Ressurser">
-                            @foreach (var i in Html.GetEnumSelectList<ResourceViewModel.ResourceType>())
+                            @foreach (var i in Html.GetEnumSelectList<ResourceViewModel.ResourceType>().OrderBy(i => i.Value == ((int)ResourceViewModel.ResourceType.Other).ToString()))
                             {
                                 <option value="ressurs:@i.Value">@i.Text</option>
                             }
@@ -850,7 +850,7 @@ else
                     <label class="filter-label" for="viktighetFilter">Viktighet <span class="hint">(behov)</span></label>
                     <select id="viktighetFilter" class="form-select form-select-sm">
                         <option value="">Alle</option>
-                        @foreach (var i in Html.GetEnumSelectList<ImportanceLevel>())
+                        @foreach (var i in Html.GetEnumSelectList<ImportanceLevel>().Where(i => i.Value != ((int)ImportanceLevel.Undefined).ToString()))
                         {
                             <option value="@i.Value">@i.Text</option>
                         }
@@ -881,7 +881,7 @@ else
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.addEventListener("DOMContentLoaded", async function () {
             /// 1. Definer kartlagene med noWrap
             var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -913,9 +913,9 @@ else
                 kartElementer.forEach(function(e) {
                     var synlig = true;
 
-                    /// radiusSenter og radiusMeter settes av settOppRadiusSok i site.js
-                    if (radiusSenter && !isNaN(e.lat) && !isNaN(e.lng)) {
-                        if (radiusSenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeter) synlig = false;
+                    /// radiusCenter og radiusMeters settes av setupRadiusSearch i site.js
+                    if (radiusCenter && !isNaN(e.lat) && !isNaN(e.lng)) {
+                        if (radiusCenter.distanceTo(L.latLng(e.lat, e.lng)) > radiusMeters) synlig = false;
                     }
 
                     if (vis !== '' && e.type !== vis) synlig = false;
@@ -1005,8 +1005,8 @@ else
                         fetch('@Url.Action("GetInformation", "Need")')
                     ]);
 
-                    var ressurser = resResponse.ok ? fraGeoJson(await resResponse.json()) : [];
-                    var behov = needResponse.ok ? fraGeoJson(await needResponse.json()) : [];
+                    var ressurser = resResponse.ok ? fromGeoJson(await resResponse.json()) : [];
+                    var behov = needResponse.ok ? fromGeoJson(await needResponse.json()) : [];
 
                     ressurser.forEach(function (res) {
                         var lat = parseFloat(res.latitude);
@@ -1257,7 +1257,7 @@ else
                 ['visFilter', 'kategoriFilter', 'tilgjengelighetFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
                     document.getElementById(id).value = '';
                 });
-                if (radiusSenter) nullstillRadius(map, filtrerKart);
+                if (radiusCenter) resetRadius(map, filtrerKart);
                 filtrerKart();
             });
 
@@ -1278,7 +1278,7 @@ else
               const resResponse = await fetch('@Url.Action("GetInformation", "Resource")');
               
                 if (resResponse.ok) {
-                    const resourcesData = fraGeoJson(await resResponse.json());
+                    const resourcesData = fromGeoJson(await resResponse.json());
 
                     resourcesData.forEach(function (res) {
                         var lat = parseFloat(res.latitude ?? res.Latitude);
@@ -1311,7 +1311,7 @@ else
               const needResponse = await fetch('@Url.Action("GetInformation", "Need")');
               
                 if (needResponse.ok) {
-                    const needsData = fraGeoJson(await needResponse.json());
+                    const needsData = fromGeoJson(await needResponse.json());
 
                     needsData.forEach(function (need) {
                         var lat = parseFloat(need.latitude ?? need.Latitude);
@@ -1341,7 +1341,7 @@ else
 
                                 var omrade = L.geoJSON(parsedGeoJson, {
                                     style: {
-                                        color: importance === 0 ? '#dc3545' : '#fd7e14',
+                                        color: MapSymbols.isAcute(importance) ? '#dc3545' : '#fd7e14',
                                         weight: 2,
                                         fillOpacity: 0.25
                                     }
@@ -1383,7 +1383,7 @@ else
                     ['visFilter', 'kategoriFilter', 'tilgjengelighetFilter', 'statusFilter', 'viktighetFilter'].forEach(function (id) {
                         document.getElementById(id)?.addEventListener('change', filtrerKart);
                     });
-                    settOppRadiusSok(map, filtrerKart);
+                    setupRadiusSearch(map, filtrerKart);
                     filtrerKart();
 
                 /// 6. Tilpass kartzoomen dersom det finnes markører eller områder
