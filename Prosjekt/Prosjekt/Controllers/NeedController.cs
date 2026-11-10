@@ -372,7 +372,7 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Setter behovet til Løst. Bare Tildelt kan gå videre dit; fra Ny og Vurderes skjer det ingenting.
+        /// Setter behovet til Løst og leverer tildelte ressurser tilbake. Bare Tildelt kan gå videre dit.
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> Resolve(int id)
@@ -384,6 +384,14 @@ namespace Prosjekt.Controllers
             {
                 need.Status = EntryStatus.Resolved;
                 await _repo.UpdateAsync(need);
+
+                var allocations = await _allocationRepo.GetByNeedAsync(id);
+                await _allocationRepo.DeleteByNeedAsync(id);
+
+                foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
+                {
+                    await UpdateAvailabilityAsync(resourceId);
+                }
             }
 
             return RedirectToAction(nameof(Overview));
@@ -421,6 +429,7 @@ namespace Prosjekt.Controllers
             PerimeterMeters = n.PerimeterMeters
         };
 
+
         /// <summary>
         /// Gamle eller ukjente verdier i databasen vises som planlagt, ikke som akutt.
         /// </summary>
@@ -429,6 +438,9 @@ namespace Prosjekt.Controllers
                 ? prio
                 : ImportanceLevel.Planned;
 
+        /// <summary>
+        /// holder IsAvailable i takt med tildelingene.
+        /// </summary>
         private async Task UpdateAvailabilityAsync(int resourceId)
         {
             var resource = await _resourceRepo.GetByIdAsync(resourceId);

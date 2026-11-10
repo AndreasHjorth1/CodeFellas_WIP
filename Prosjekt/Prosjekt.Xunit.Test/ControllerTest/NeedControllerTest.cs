@@ -858,6 +858,73 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.Equal(EntryStatus.UnderReview, needs.Needs.Single().Status);
         }
 
+        [Fact]
+        public async Task Resolve_AssignedNeed_ReturnsResources()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.Assigned, Coords = new Coordinates(58.1467, 7.9956) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 2 });
+            var controller = new NeedController(needs, resources, allocations);
+
+            // Act
+            var result = await controller.Resolve(1);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal(EntryStatus.Resolved, needs.Needs.Single().Status);
+            Assert.Empty(await allocations.GetByNeedAsync(1));
+            Assert.True(resources.Resources.Single().IsAvailable);
+        }
+
+        [Fact]
+        public async Task Resolve_OnlyReturnsAllocationsForThisNeed()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.Assigned, Coords = new Coordinates(58.1467, 7.9956) });
+            needs.Needs.Add(new Need { Id = 2, Name = "Strøm", Status = EntryStatus.Assigned, Coords = new Coordinates(59.9, 10.7) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 1 });
+            await allocations.AddAsync(new Allocation { NeedId = 2, ResourceId = 1, Quantity = 1 });
+            var controller = new NeedController(needs, resources, allocations);
+
+            // Act
+            await controller.Resolve(1);
+
+            // Assert
+            Assert.Empty(await allocations.GetByNeedAsync(1));
+            Assert.Single(await allocations.GetByNeedAsync(2));
+            // Én av to er ledig igjen, så ressursen er tilgjengelig
+            Assert.True(resources.Resources.Single().IsAvailable);
+        }
+
+        [Fact]
+        public async Task Resolve_NewNeed_KeepsAllocations()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.New, Coords = new Coordinates(58.1467, 7.9956) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 1, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 1 });
+            var controller = new NeedController(needs, resources, allocations);
+
+            // Act
+            await controller.Resolve(1);
+
+            // Assert
+            Assert.Equal(EntryStatus.New, needs.Needs.Single().Status);
+            Assert.Single(await allocations.GetByNeedAsync(1));
+            Assert.False(resources.Resources.Single().IsAvailable);
+        }
+
         private sealed class EmptyTempDataProvider : ITempDataProvider
         {
             public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();
