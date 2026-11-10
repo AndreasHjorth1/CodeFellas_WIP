@@ -136,7 +136,10 @@ namespace Prosjekt.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(int id, NeedViewModel model)
         {
-            if (id != model.Id) return BadRequest();
+            if (id != model.Id)
+            {
+                return BadRequest();
+            }
 
             if (!ModelState.IsValid)
             {
@@ -169,7 +172,11 @@ namespace Prosjekt.Controllers
             }
 
             var existingNeed = await _repo.GetByIdAsync(id);
-            if (existingNeed == null) return NotFound();
+
+            if (existingNeed == null)
+            {
+                return NotFound();
+            }
 
             if (!EntryStatusFlow.CanMove(existingNeed.Status, model.Status))
             {
@@ -211,7 +218,10 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> GetInformation()
         {
-            if (User.Identity?.IsAuthenticated != true) return Challenge();
+            if (User.Identity?.IsAuthenticated != true)
+            {
+                return Challenge();
+            }
 
             var canSeePhone = User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
             var needs = await _repo.GetAllAsync();
@@ -246,7 +256,11 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Match(int id)
         {
             var need = await _repo.GetByIdAsync(id);
-            if (need == null) return NotFound();
+
+            if (need == null)
+            {
+                return NotFound();
+            }
 
             var needType = Enum.TryParse<NeedViewModel.NeedType>(need.Category, out var nt)
                 ? nt : NeedViewModel.NeedType.Other;
@@ -303,7 +317,10 @@ namespace Prosjekt.Controllers
         {
             var need = await _repo.GetByIdAsync(needId);
             var resource = await _resourceRepo.GetByIdAsync(resourceId);
-            if (need == null || resource == null) return NotFound();
+            if (need == null || resource == null)
+            {
+                return NotFound();
+            }
 
             if (!resource.IsAvailable)
             {
@@ -347,7 +364,10 @@ namespace Prosjekt.Controllers
         {
             var allocations = await _allocationRepo.GetByNeedAsync(needId);
             var allocation = allocations.FirstOrDefault(a => a.Id == allocationId);
-            if (allocation is null) return NotFound();
+            if (allocation is null)
+            {
+                return NotFound();
+            }
 
             var resourceId = allocation.ResourceId;
 
@@ -378,7 +398,10 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Resolve(int id)
         {
             var need = await _repo.GetByIdAsync(id);
-            if (need == null) return NotFound();
+            if (need == null)
+            {
+                return NotFound();
+            }
 
             if (EntryStatusFlow.CanMove(need.Status, EntryStatus.Resolved))
             {
@@ -401,7 +424,10 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Unresolve(int id)
         {
             var need = await _repo.GetByIdAsync(id);
-            if (need == null) return NotFound();
+            if (need == null)
+            {
+                return NotFound();
+            }
 
             if (need.Status != EntryStatus.Resolved) return RedirectToAction(nameof(Overview));
 
@@ -444,7 +470,10 @@ namespace Prosjekt.Controllers
         private async Task UpdateAvailabilityAsync(int resourceId)
         {
             var resource = await _resourceRepo.GetByIdAsync(resourceId);
-            if (resource == null) return;
+            if (resource == null)
+            {
+                return;
+            }
 
             var all = await _allocationRepo.GetAllAsync();
             var taken = all.Where(a => a.ResourceId == resourceId).Sum(a => a.Quantity);
