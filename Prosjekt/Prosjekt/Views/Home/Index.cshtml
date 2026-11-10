@@ -411,8 +411,9 @@
         min-height: 100%;
     }
 
+    /* Bredere side på store skjermer, så kartet får plassen som før var tom */
     .dashboard {
-        max-width: 1200px;
+        max-width: 1600px;
         margin: 0 auto;
         padding: 1.5rem 1.5rem 2.5rem;
         color: #0b1f3a;
@@ -513,10 +514,11 @@
         color: #5b6b7f;
     }
 
+    /* Kartet tar all bredden som er igjen, listen «Trenger handling» har fast bredde til høyre */
     .dashboard-main {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 340px;
-        gap: 0.9rem;
+        grid-template-columns: minmax(0, 1fr) 380px;
+        gap: 1rem;
     }
 
     /* Kartet følger med når man blar i «Trenger handling». top = høyden på navbaren + litt luft */
@@ -526,7 +528,7 @@
         border-radius: 4px;
         overflow: hidden;
         position: sticky;
-        top: 80px;
+        top: calc(62px + 1rem);
         align-self: start;
     }
 
@@ -715,6 +717,14 @@
 
 @if (visDashboard)
 {
+    @* _Layout setter body til høyden på skjermen. Da slipper menyen øverst taket etter én skjermhøyde,
+       og kartet som står fast får et hull over seg. Gjelder bare oversikten: kartet i fullskjerm trenger full høyde. *@
+    <style>
+        body {
+            height: auto !important;
+        }
+    </style>
+
     <div class="dashboard-page">
         <div class="dashboard">
 

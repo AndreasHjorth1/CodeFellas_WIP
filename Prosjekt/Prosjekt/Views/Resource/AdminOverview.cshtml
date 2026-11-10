@@ -18,6 +18,7 @@
     var ressurser = (Model ?? Enumerable.Empty<ResourceViewModel>()).ToList();
     var naa = NorwegianTime.FromUtc(DateTime.UtcNow);
     var antallPerKategori = ressurser.GroupBy(r => r.Category).ToDictionary(g => g.Key, g => g.Count());
+    var stegNavn = new[] { "Registrert", "Tilgjengelig", "Tildelt behov", "Utløpt" };
 }
 
 <link rel="stylesheet" href="~/css/resource-icons.css" asp-append-version="true" />
@@ -65,6 +66,24 @@
         if (r.AvailableFrom.HasValue) return $"fra {r.AvailableFrom.Value:dd.MM.}";
         return "døgnet rundt";
     }
+
+    /// <summary>
+    /// Samme steg som på «Mine ressurser»: 1 registrert, 2 tilgjengelig, 3 tildelt et behov, 4 utløpt.
+    /// </summary>
+    int Steg(ResourceViewModel r, DateTime naa)
+    {
+        if (r.AvailableTo < naa) return 4;
+        if (r.Allocated > 0) return 3;
+        return r.Availability ? 2 : 1;
+    }
+
+    string StatusTekst(ResourceViewModel r, int steg) => steg switch
+    {
+        4 => "Perioden er over.",
+        3 => $"Tildelt et behov. {r.Allocated} av {r.Quantity} er i bruk.",
+        2 => "Klar. Ingen tildelinger ennå.",
+        _ => "Ikke tilgjengelig for oppdrag."
+    };
 }
 
 <style>
@@ -92,8 +111,9 @@
         border-bottom: 1px solid #dde3ea;
     }
 
+    /* Samme bredde som «Mine ressurser», så kartet får plassen som før var tom */
     .res-inner {
-        max-width: 1200px;
+        max-width: 1600px;
         margin: 0 auto;
         padding: 0 1.5rem;
     }
@@ -213,29 +233,79 @@
 
     #adminRessursKart {
         width: 100%;
-        /* Større kart, men aldri mer enn en tredjedel av skjermen, så listen fortsatt får plass */
         height: clamp(240px, 34vh, 340px);
     }
 
-    /* Kartet står fast under menyen mens man blar i listen (bare på større skjermer) */
-    @@media (min-width: 768px) {
-        /* Når man blar, legger kartet seg rett under menyen uten mellomrom, så listen ikke synes over eller under det.
-           Før man blar har kartet de vanlige avstandene. */
-        .vis-delt .res-map-wrap {
-            position: sticky;
-            top: 62px; /* høyden på menyen øverst */
-            z-index: 5;
-        }
+    /* Kart-visningen bruker hele bredden og høyden som er igjen under menyen, overskriften og kategoriene */
+    .vis-kart .res-body {
+        max-width: none;
+        padding-bottom: 1rem;
+    }
+
+    .vis-kart .res-map-wrap {
+        margin-bottom: 0;
     }
 
     .vis-kart #adminRessursKart {
-        height: calc(100vh - 260px);
+        height: calc(100vh - 62px - 160px);
         min-height: 360px;
     }
 
     .vis-liste .res-map-wrap,
     .vis-kart .res-table-section {
         display: none;
+    }
+
+    /* --- Delt visning: listen til venstre og kartet til høyre, som på «Mine ressurser» --- */
+
+    /* Mobil og nettbrett: kartet øverst og listen under. Kartet står fast øverst mens man blar i listen. */
+    @@media (max-width: 991px) {
+        .vis-delt .res-split {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .vis-delt .res-map-wrap {
+            order: -1;
+            position: sticky;
+            top: 62px; /* høyden på menyen øverst */
+            z-index: 5;
+        }
+
+        .vis-delt #adminRessursKart {
+            height: 35vh;
+            min-height: 220px;
+        }
+    }
+
+    /* Desktop: to kolonner. Kartet får mest plass og står fast ved siden av listen. */
+    @@media (min-width: 992px) {
+        .vis-delt .res-split {
+            display: grid;
+            grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .vis-delt .res-map-wrap {
+            position: sticky;
+            top: calc(62px + 1rem); /* høyden på menyen øverst, pluss litt luft */
+            margin-bottom: 0;
+        }
+
+        .vis-delt #adminRessursKart {
+            height: calc(100vh - 62px - 2rem);
+            min-height: 420px;
+        }
+
+        .vis-delt .res-table-filters {
+            width: 100%;
+        }
+
+        .vis-delt .res-table-filters .form-control {
+            flex: 1 1 200px;
+            width: auto;
+        }
     }
 
     .res-table-head {
@@ -267,152 +337,161 @@
         width: 240px;
     }
 
-    .res-table-card {
+    /* --- Ressurskort, samme utseende som på «Mine ressurser» --- */
+    .resource-card {
         background-color: #ffffff;
         border: 1px solid #dde3ea;
         border-radius: 4px;
-        overflow-x: auto;
+        padding: 1.1rem 1.1rem 1rem;
+        margin-bottom: 1rem;
     }
 
-    .res-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.88rem;
+    .resource-card:hover {
+        border-color: #b9c4d3;
     }
 
-    .res-table th {
-        background-color: #f4f6f9;
-        color: #5b6b7f;
-        font-size: 0.72rem;
-        font-weight: 600;
-        text-align: left;
-        padding: 0.5rem 0.75rem;
-        border-bottom: 1px solid #dde3ea;
-        white-space: nowrap;
-    }
-
-    .res-table td {
-        padding: 0.7rem 0.75rem;
-        border-bottom: 1px solid #edf0f4;
-        vertical-align: middle;
-    }
-
-    .res-table tbody tr {
-        cursor: pointer;
-    }
-
-    .res-table tbody tr:hover {
-        background-color: #f8f9fb;
-    }
-
-    .res-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .res-name {
-        font-weight: 700;
-    }
-
-    .res-sub {
-        color: #5b6b7f;
-        font-size: 0.75rem;
-        max-width: 260px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .mono {
-        font-family: ui-monospace, Consolas, monospace;
-        font-size: 0.8rem;
-        white-space: nowrap;
-    }
-
-    .mono.phone {
-        font-weight: 700;
-    }
-
-    .status-badge {
-        display: inline-block;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        padding: 0.15rem 0.55rem;
-        white-space: nowrap;
-    }
-
-    .status-free { background-color: #dcefe3; color: #1e6b43; }
-    .status-busy { background-color: #dfe5f0; color: #04245a; }
-    .status-off { background-color: #eceef1; color: #5b6b7f; }
-    .status-expired { background-color: #f8e1e3; color: #9b1c2c; }
-
-    .row-actions {
-        display: flex;
-        gap: 0.75rem;
-        white-space: nowrap;
-    }
-
-    .row-actions a,
-    .row-actions button {
-        background: none;
-        border: none;
-        padding: 0;
-        color: #2d4f86;
-        font-size: 0.85rem;
-        text-decoration: underline;
-    }
-
-    .row-actions button.delete-link {
-        color: #b02a37;
-    }
-
-    .row-edit-actions {
-        display: inline-flex;
-        gap: 0.75rem;
-    }
-
-    /* «Se mer» og raden med informasjon under */
-    .row-actions .see-more-btn i {
-        font-size: 0.7rem;
-        margin-left: 0.15rem;
-        transition: transform 0.2s;
-    }
-
-    .row-actions .see-more-btn:not(.collapsed) i {
-        transform: rotate(180deg);
-    }
-
-    /* Raden man har trykket på får en annen farge */
-    .res-table tbody tr.table-row-clickable[aria-expanded="true"],
-    .res-table tbody tr.table-row-clickable[aria-expanded="true"] + .res-detail-row {
-        background-color: #e6ecf5;
-    }
-
-    .res-table tbody tr.table-row-clickable[aria-expanded="true"] td:first-child {
+    /* Kortet man har åpnet med «Se mer» får en annen farge */
+    .resource-card:has(.see-more-btn:not(.collapsed)) {
+        background-color: #f3f6fb;
+        border-color: #04245a;
         box-shadow: inset 3px 0 0 #04245a;
     }
 
-    .res-table tbody tr.res-detail-row {
-        cursor: default;
+    .resource-card-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
     }
 
-    .res-table tbody tr.res-detail-row td {
+    .resource-card .icon-circle {
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: #e9eff6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .resource-card .icon-circle img {
+        width: 26px;
+        height: 26px;
+    }
+
+    .resource-card .card-title-block {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .resource-card h3 {
+        color: #0f2a4f;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 0.15rem;
+    }
+
+    .resource-card .card-sub {
+        color: #5f6f86;
+        font-size: 0.85rem;
+    }
+
+    .resource-card .card-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        font-size: 0.9rem;
+    }
+
+    .resource-card .card-actions a,
+    .resource-card .card-actions button,
+    .resource-card .see-more-btn {
+        color: #2d4f86;
+        text-decoration: underline;
+        background: none;
+        border: none;
         padding: 0;
-        border-bottom: none;
+        font-size: 0.9rem;
     }
 
-    /* Filteret skjuler bare hovedraden, så informasjonsraden skjules sammen med den */
-    .res-table tbody tr.table-row-clickable.d-none + .res-detail-row {
-        display: none;
+    .resource-card .card-actions button.delete-link {
+        color: #b02a37;
+    }
+
+    .progress-steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.35rem;
+        margin: 1rem 0 0.75rem;
+    }
+
+    .progress-steps .step-bar {
+        height: 3px;
+        background-color: #dde3ea;
+        margin-bottom: 0.4rem;
+    }
+
+    .progress-steps .step.done .step-bar {
+        background-color: #04245a;
+    }
+
+    .progress-steps .step-label {
+        color: #5f6f86;
+        font-size: 0.75rem;
+    }
+
+    .resource-card .card-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .resource-card .card-status {
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .resource-card .see-more-btn {
+        flex-shrink: 0;
+    }
+
+    .resource-card .see-more-btn i {
+        font-size: 0.75rem;
+        margin-left: 0.2rem;
+        transition: transform 0.2s;
+    }
+
+    .resource-card .see-more-btn:not(.collapsed) i {
+        transform: rotate(180deg);
+    }
+
+    /* I Liste-visningen er det plass til flere kort ved siden av hverandre */
+    .vis-liste .res-card-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+        gap: 1rem;
+        align-items: start;
+    }
+
+    .vis-liste .res-card-list .resource-card {
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 575px) {
+        .vis-liste .res-card-list {
+            grid-template-columns: 1fr;
+        }
     }
 
     .resource-details {
         display: grid;
         grid-template-columns: 170px 1fr;
         gap: 0.4rem 1rem;
-        margin: 0;
-        padding: 0.25rem 0.75rem 1rem 1rem;
-        border-bottom: 1px solid #edf0f4;
+        margin: 1rem 0 0;
+        padding-top: 1rem;
+        border-top: 1px solid #dde3ea;
         font-size: 0.85rem;
     }
 
@@ -437,13 +516,16 @@
     }
 
     .res-empty {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
         padding: 2rem;
         text-align: center;
         color: #5b6b7f;
     }
 
     @@media print {
-        .res-head-actions, .chip-row, .res-map-wrap, .res-table-filters, .row-actions, .res-detail-row {
+        .res-head-actions, .chip-row, .res-map-wrap, .res-table-filters, .card-actions, .see-more-btn {
             display: none !important;
         }
     }
@@ -492,9 +574,8 @@
             }
         </select>
 
-        <div class="res-map-wrap">
-            <div id="adminRessursKart"></div>
-        </div>
+        @* Listen står først og kartet sist, så kartet havner til høyre på desktop. På mobil flyttes kartet øverst med CSS. *@
+        <div class="res-split">
 
         <section class="res-table-section">
             <div class="res-table-head">
@@ -505,67 +586,73 @@
                 </div>
             </div>
 
-            <div class="res-table-card">
-                <table class="res-table">
-                    <thead>
-                        <tr>
-                            <th>Ressurs</th>
-                            <th>Kategori</th>
-                            <th>Status</th>
-                            <th>Ledig</th>
-                            <th>Telefon</th>
-                            <th><span class="visually-hidden">Handlinger</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <div class="res-card-list">
                         @if (ressurser.Any())
                         {
                             @foreach (var res in ressurser)
                             {
                                 var status = Status(res, naa);
+                                var steg = Steg(res, naa);
                                 var lat = (res.Latitude ?? 0).ToString(CultureInfo.InvariantCulture);
                                 var lng = (res.Longitude ?? 0).ToString(CultureInfo.InvariantCulture);
+                                var ledigTekst = !res.Availability
+                                    ? "ikke tilgjengelig"
+                                    : res.AvailableTo.HasValue ? $"ledig til {res.AvailableTo.Value:dd.MM. 'kl.' HH:mm}" : "ledig";
 
-                                @* Raden og «Se mer» åpner informasjonen i raden under (Bootstrap collapse) *@
-                                <tr class="table-row-clickable collapsed"
-                                    data-lat="@lat" data-lng="@lng"
-                                    data-id="@res.Id" data-type="@res.Category"
-                                    data-sok="@(($"{res.Name}{res.Description} {res.PhoneNumber} {OversettKategori(res.Category)}").ToLower())"
-                                    data-bs-toggle="collapse" data-bs-target="#ressursInfo-@res.Id"
-                                    aria-expanded="false" aria-controls="ressursInfo-@res.Id">
-                                    <td>
-                                        <div class="res-name">@res.Name</div>
-                                        <div class="res-sub">@res.Available av @res.Quantity stk@(res.Allocated > 0 ? $" ({res.Allocated} i bruk)" : "")@(string.IsNullOrWhiteSpace(res.Description) ? "" : $" · {res.Description}")</div>
-                                    </td>
-                                    <td>@OversettKategori(res.Category)</td>
-                                    <td><span class="status-badge @status.Klasse">@status.Tekst</span></td>
-                                    <td class="mono">@LedigPeriode(res)</td>
-                                    <td class="mono phone">@res.PhoneNumber</td>
-                                    <td>
-                                        <div class="row-actions">
-                                            <button type="button" class="see-more-btn collapsed"
-                                                    data-bs-toggle="collapse" data-bs-target="#ressursInfo-@res.Id"
-                                                    aria-expanded="false" aria-controls="ressursInfo-@res.Id">
-                                                Se mer <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-                                            </button>
-                                            @* Endre og Slett skal ikke åpne «Se mer» *@
-                                            <span class="row-edit-actions" data-stop-click>
-                                                <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
-                                                @if (erAdmin || res.UserId == minId)
+                                @* table-row-clickable og data-feltene må stå, filteret i site.js finner kortene med dem *@
+                                <div class="resource-card table-row-clickable"
+                                     data-lat="@lat" data-lng="@lng"
+                                     data-id="@res.Id" data-type="@res.Category"
+                                     data-sok="@(($"{res.Name}{res.Description} {res.PhoneNumber} {OversettKategori(res.Category)}").ToLower())">
+
+                                    <div class="resource-card-head">
+                                        <span class="icon-circle">
+                                            <img src="@Url.Content($"~/images/resources/{RessursIkonFil(res.Category, res.Availability)}")" alt="" />
+                                        </span>
+                                        <div class="card-title-block">
+                                            <h3>@res.Name</h3>
+                                            <div class="card-sub">
+                                                @OversettKategori(res.Category) · @res.Available av @res.Quantity stk · @ledigTekst
+                                                @if (!string.IsNullOrWhiteSpace(res.PhoneNumber))
                                                 {
-                                                    @* data-confirm leses av site.js. Razor koder navnet, så det kan ikke kjøres som JavaScript (XSS). *@
-                                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-confirm="Er du sikker på at du vil slette @res.Name?">
-                                                        @Html.AntiForgeryToken()
-                                                        <button type="submit" class="delete-link">Slett</button>
-                                                    </form>
+                                                    <span> · Tlf. @res.PhoneNumber</span>
                                                 }
-                                            </span>
+                                            </div>
                                         </div>
-                                    </td>
-                                </tr>
-                                <tr class="res-detail-row">
-                                    <td colspan="6">
-                                        <div class="collapse" id="ressursInfo-@res.Id">
+                                        <div class="card-actions">
+                                            <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
+                                            @if (erAdmin || res.UserId == minId)
+                                            {
+                                                @* data-confirm leses av site.js. Razor koder navnet, så det kan ikke kjøres som JavaScript (XSS). *@
+                                                <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-confirm="Er du sikker på at du vil slette @res.Name?">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="delete-link">Slett</button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="progress-steps" aria-label="Status: @stegNavn[steg - 1]">
+                                        @for (int i = 0; i < stegNavn.Length; i++)
+                                        {
+                                            <div class="step @(i < steg ? "done" : "")">
+                                                <div class="step-bar"></div>
+                                                <div class="step-label">@stegNavn[i]</div>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="card-bottom">
+                                        <p class="card-status">@StatusTekst(res, steg)</p>
+                                        <button type="button" class="see-more-btn collapsed"
+                                                data-bs-toggle="collapse" data-bs-target="#ressursInfo-@res.Id"
+                                                aria-expanded="false" aria-controls="ressursInfo-@res.Id">
+                                            Se mer <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+
+                                    @* Mer informasjon om ressursen, vises under kortet når man trykker «Se mer» *@
+                                    <div class="collapse" id="ressursInfo-@res.Id">
                                             <dl class="resource-details">
                                                 <dt>Kategori</dt>
                                                 <dd>@OversettKategori(res.Category)</dd>
@@ -619,19 +706,22 @@
                                                 <dt>Beskrivelse</dt>
                                                 <dd>@(string.IsNullOrWhiteSpace(res.Description) ? "Ingen beskrivelse" : res.Description)</dd>
                                             </dl>
-                                        </div>
-                                    </td>
-                                </tr>
+                                    </div>
+                                </div>
                             }
                         }
                         else
                         {
-                            <tr><td colspan="6" class="res-empty">Ingen ressurser registrert ennå.</td></tr>
+                            <div class="res-empty">Ingen ressurser registrert ennå.</div>
                         }
-                    </tbody>
-                </table>
             </div>
         </section>
+
+        <div class="res-map-wrap">
+            <div id="adminRessursKart"></div>
+        </div>
+
+        </div>
     </div>
 </div>
 
