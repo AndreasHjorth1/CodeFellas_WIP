@@ -28,9 +28,11 @@ namespace Prosjekt.Services
             const string userPhone = "41234567";
             const string coordinatorPhone = "92345678";
 
+            /// <summary>
+            /// Testbrukeren har 14 ressurser, koordinatoren har 6 ressurser. Alle er plassert rundt Kristiansand.
+            /// </summary>
             return new List<Resource>
               {
-                  // Testbrukeren sine 14 ressurser
                   NewResource("Personbil", "Toyota Corolla stasjonsvogn [Reg.nr: EB12345]", "Vehicle", "Car", 1, 58.1462, 7.9946, userId, userPhone),
                   NewResource("Lastebil", "Lastebil med kran [Reg.nr: EL45678]", "Vehicle", "Truck", 1, 58.1810, 8.1240, userId, userPhone),
                   NewResource("Traktor med snøfreser", "Kan brøyte og frese snø", "Vehicle", "Tractor", 1, 58.0930, 7.8140, userId, userPhone),
@@ -46,7 +48,6 @@ namespace Prosjekt.Services
                   NewResource("Vinterjakker", "Varme jakker", "Clothing", "L", 15, 58.0290, 7.4580, userId, userPhone),
                   NewResource("Sambandsradioer", "VHF-radioer med lader", "Tool", "Other", 4, 58.1910, 8.0280, userId, userPhone),
 
-                  // Koordinatoren sine 6 ressurser
                   NewResource("Minibuss", "16 seter [Reg.nr: EF98765]", "Vehicle", "Bus", 1, 58.2490, 8.3770, coordinatorId, coordinatorPhone),
                   NewResource("Pickup", "Firehjulstrekk [Reg.nr: EV24680]", "Vehicle", "Car", 1, 58.1590, 8.0000, coordinatorId, coordinatorPhone),
                   NewResource("Presenninger", "4 x 6 meter", "Materials", "Plastic", 30, 58.1460, 8.0300, coordinatorId, coordinatorPhone),
