@@ -6,7 +6,7 @@ using Prosjekt.Models.Authorization;
 
 namespace Prosjekt.Controllers
 {
-    [Authorize(Roles = RoleNames.Admin)]
+    [Authorize(Roles = RoleNames.AdminOrCoordinator)]
     public class AuditLogController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -24,6 +24,30 @@ namespace Prosjekt.Controllers
                 .ThenByDescending(log => log.Id)
                 .Take(100)
                 .ToListAsync();
+
+            /// Loggen lagrer bare ID-er. Her slås e-posten til brukerne og navnet på behovene opp,
+            /// så siden kan vise hvem og hva. Slettede behov og brukere finnes ikke lenger og får ikke navn.
+            var brukerIder = logs
+                .Where(log => log.UserId != null)
+                .Select(log => log.UserId!)
+                .Distinct()
+                .ToList();
+
+            ViewBag.Brukere = await _context.Users
+                .AsNoTracking()
+                .Where(user => brukerIder.Contains(user.Id))
+                .ToDictionaryAsync(user => user.Id, user => user.Email ?? user.UserName ?? string.Empty);
+
+            var behovIder = logs
+                .Where(log => log.EntityType == "Need")
+                .Select(log => log.EntityId)
+                .Distinct()
+                .ToList();
+
+            ViewBag.Behov = await _context.Needs
+                .AsNoTracking()
+                .Where(need => behovIder.Contains(need.Id))
+                .ToDictionaryAsync(need => need.Id, need => need.Name);
 
             return View(logs);
         }

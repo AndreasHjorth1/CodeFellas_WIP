@@ -2,32 +2,32 @@
 
 namespace Prosjekt.Models.ModelView.ResourceType
 {
-    public class MaterialsViewModel : ResourceViewModel
+    public record MaterialsViewModel : ResourceViewModel
     {
         public enum MaterialType
         {
-            [Display(Name = "Treverk (meter)")]
-            Wood,
-            [Display(Name = "Metall (kg)")]
-            Metal,
-            [Display(Name = "Plast (kg)")]
-            Plastic,
-            [Display(Name = "Glass (m*2)")]
-            Glass,
-            [Display(Name = "Grus (Kg)")]
-            Gravel,
-            [Display(Name = "Stein (Kg)")]
-            Stone,
-            [Display(Name = "Jord (Kg)")]
-            Soil,
-            [Display(Name = "Sand (Kg)")]
-            Sand,
             [Display(Name = "Annet")]
-            Other
+            Other = 0,
+            [Display(Name = "Treverk (meter)")]
+            Wood = 1,
+            [Display(Name = "Metall (kg)")]
+            Metal = 2,
+            [Display(Name = "Plast (kg)")]
+            Plastic = 3,
+            [Display(Name = "Glass (m*2)")]
+            Glass = 4,
+            [Display(Name = "Grus (Kg)")]
+            Gravel = 5,
+            [Display(Name = "Stein (Kg)")]
+            Stone = 6,
+            [Display(Name = "Jord (Kg)")]
+            Soil = 7,
+            [Display(Name = "Sand (Kg)")]
+            Sand = 8
         }
 
         [Display(Name = "Materialtype")]
-        public MaterialType Type { get; set; } = MaterialType.Other;
+        public MaterialType Type { get; init; } = MaterialType.Other;
 
         public MaterialsViewModel()
         {

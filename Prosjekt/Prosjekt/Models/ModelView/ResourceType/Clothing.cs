@@ -2,20 +2,22 @@
 
 namespace Prosjekt.Models.ModelView.ResourceType
 {
-    public class ClothingViewModel : ResourceViewModel
+    public record ClothingViewModel : ResourceViewModel
     {
         public enum ClothingSize
-        { 
-            XS,
-            S,
-            M,
-            L,
-            XL,
-            XXL
+        {
+            [Display(Name = "Ikke valgt")]
+            Undefined = 0,
+            XS = 1,
+            S = 2,
+            M = 3,
+            L = 4,
+            XL = 5,
+            XXL = 6
         }
 
         [Display(Name = "Størrelse")]
-        public ClothingSize Size { get; set; } = ClothingSize.M;
+        public ClothingSize Size { get; init; } = ClothingSize.M;
 
         public ClothingViewModel()
         {

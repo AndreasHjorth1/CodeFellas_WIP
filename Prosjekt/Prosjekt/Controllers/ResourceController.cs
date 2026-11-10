@@ -90,9 +90,18 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            var resourcesToCreate = model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)).ToList();
+
+            /// Sjekkes før noe lagres, så en ugyldig rad ikke gir halvveis lagrede ressurser
+            if (resourcesToCreate.Any(r => !r.AvailableFrom.HasValue || !r.AvailableTo.HasValue))
+            {
+                ModelState.AddModelError("", "Alle ressurser må ha tilgjengelig fra og til.");
+                return View("Index", model);
+            }
+
             var createdResources = new List<ResourceViewModel>();
 
-            foreach (var baseResource in model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)))
+            foreach (var baseResource in resourcesToCreate)
             {
                 var resourceEntity = new Resource
                 {
@@ -103,18 +112,20 @@ namespace Prosjekt.Controllers
                     IsAvailable = baseResource.Availability,
                     PhoneNumber = baseResource.PhoneNumber,
                     Quantity = baseResource.Quantity,
-                    AvailableFrom = NorwegianTime.ToUtc(baseResource.AvailableFrom),
-                    AvailableTo = NorwegianTime.ToUtc(baseResource.AvailableTo),
+                    AvailableFrom = NorwegianTime.ToUtc(baseResource.AvailableFrom!.Value),
+                    AvailableTo = NorwegianTime.ToUtc(baseResource.AvailableTo!.Value),
                     Coords = coords,
                     UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(resourceEntity);
 
-                baseResource.Id = resourceEntity.Id;
-                baseResource.Latitude = model.Latitude;
-                baseResource.Longitude = model.Longitude;
-                createdResources.Add(baseResource);
+                createdResources.Add(baseResource with
+                {
+                    Id = resourceEntity.Id,
+                    Latitude = model.Latitude,
+                    Longitude = model.Longitude
+                });
             }
 
             return View("Create", createdResources);
@@ -243,6 +254,12 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
+            if (!model.AvailableFrom.HasValue || !model.AvailableTo.HasValue)
+            {
+                ModelState.AddModelError("", "Ressursen må ha tilgjengelig fra og til.");
+                return View(model);
+            }
+
             var resourceEntity = await _repo.GetByIdAsync(id);
             if (resourceEntity == null) return NotFound();
             if (!CanEdit(resourceEntity)) return Forbid();
@@ -255,8 +272,8 @@ namespace Prosjekt.Controllers
             resourceEntity.Category = model.Category.ToString();
             resourceEntity.SubCategory = GetSubCategory(model);
             resourceEntity.Coords = coords;
-            resourceEntity.AvailableFrom = NorwegianTime.ToUtc(model.AvailableFrom);
-            resourceEntity.AvailableTo = NorwegianTime.ToUtc(model.AvailableTo);
+            resourceEntity.AvailableFrom = NorwegianTime.ToUtc(model.AvailableFrom.Value);
+            resourceEntity.AvailableTo = NorwegianTime.ToUtc(model.AvailableTo.Value);
 
             await _repo.UpdateAsync(resourceEntity);
             return RedirectToAction(nameof(Overview));

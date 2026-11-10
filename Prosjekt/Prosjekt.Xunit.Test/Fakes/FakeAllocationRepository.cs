@@ -16,7 +16,7 @@ namespace Prosjekt.Xunit.Test.Fakes
 
         public Task AddAsync(Allocation allocation)
         {
-            allocation.Id = _nextId++;
+            typeof(Allocation).GetProperty("Id")?.SetValue(allocation, _nextId++);
             _allocations.Add(allocation);
             return Task.CompletedTask;
         }

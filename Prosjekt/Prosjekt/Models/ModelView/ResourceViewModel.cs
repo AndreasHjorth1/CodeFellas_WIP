@@ -2,29 +2,32 @@
 
 namespace Prosjekt.Models.ModelView
 {
-    public class ResourceViewModel
+    public record ResourceViewModel
     {
         /// <summary>
         /// La inn Id for å kunne bruke denne modellen til å redigere eksisterende ressurser.
         /// </summary>
-        public int Id { get; set; }
+        public int Id { get; init; }
 
-        public string? UserId { get; set; }
+        public string? UserId { get; init; }
 
+        /// <summary>
+        /// Rekkefølgen må stemme med resourceTypes i wwwroot/js/map-symbols.js.
+        /// </summary>
         public enum ResourceType
         {
-            [Display(Name = "Provisjon")]
-            Provision,
-            [Display(Name = "Klær")]
-            Clothing,
-            [Display(Name = "Verktøy")]
-            Tool,
-            [Display(Name = "Kjøretøy")]
-            Vehicle,
-            [Display(Name = "Materialer")]
-            Materials,
             [Display(Name = "Annet")]
-            Other
+            Other = 0,
+            [Display(Name = "Provisjon")]
+            Provision = 1,
+            [Display(Name = "Klær")]
+            Clothing = 2,
+            [Display(Name = "Verktøy")]
+            Tool = 3,
+            [Display(Name = "Kjøretøy")]
+            Vehicle = 4,
+            [Display(Name = "Materialer")]
+            Materials = 5
         }
 
         [Display(Name = "Navn")]
@@ -56,10 +59,10 @@ namespace Prosjekt.Models.ModelView
         public bool Availability { get; init; } = true;
 
         [Display(Name = "Breddegrad")]
-        public double? Latitude { get; set; }
+        public double? Latitude { get; init; }
 
         [Display(Name = "Lengdegrad")]
-        public double? Longitude { get; set; }
+        public double? Longitude { get; init; }
 
         [Display(Name = "Kategori")]
         [Required(ErrorMessage = "Du må velge en kategori.")]
@@ -79,18 +82,18 @@ namespace Prosjekt.Models.ModelView
         public string? LicensePlate { get; init; }
         
         [Display(Name = "Kjøretøytype")]
-        public string? VehicleType { get; set; }
+        public string? VehicleType { get; init; }
 
         [Display(Name = "Størrelse")]
         public string? Size { get; init; }
 
         [Display(Name = "Verktøytype")]
-        public string? ToolType { get; set; }
+        public string? ToolType { get; init; }
 
         [Display(Name = "Materialtype")]
-        public string? MaterialType { get; set; }
+        public string? MaterialType { get; init; }
 
         [Display(Name = "Provisjonstype")]
-        public string? ProvisionType { get; set; }
+        public string? ProvisionType { get; init; }
     }
 }
