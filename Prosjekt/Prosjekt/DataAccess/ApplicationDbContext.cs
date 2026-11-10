@@ -16,6 +16,7 @@ namespace Prosjekt.DataAccess
 
         public DbSet<Allocation> Allocations { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
