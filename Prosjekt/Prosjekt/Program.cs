@@ -160,6 +160,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 /// <summary>
+/// Viser egen 404 - side når siden ikke finnes. Status koden er 404
+/// <summary>
+app.UseStatusCodePagesWithReExecute("/Home/PageNotFound");
+
+/// <summary>
 /// Står etter feilhåndteringen, så også feilsiden får sikkerhetsheaderne
 /// </summary>
 app.UseSecurityHeaders();
