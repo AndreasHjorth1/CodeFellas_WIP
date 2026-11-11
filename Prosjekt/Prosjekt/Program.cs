@@ -121,18 +121,25 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await IdentitySeeder.SeedRolesAsync(roleManager);
 
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        await IdentitySeeder.SeedDevelopmentAdminAsync(userManager);
-        await IdentitySeeder.SeedDevelopmentUserAsync(userManager);
-        await IdentitySeeder.SeedDevelopmentCoordinatorAsync(userManager);
 
         /// <summary>
-        /// Testdata for ressurser og behov, eid av testbrukerne over
+        /// Testbrukere med kjent passord seedes bare lokalt (Development eller SeedDemoData=true fra AppHost)
         /// </summary>
-        var admin = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentAdminEmail);
-        var coordinator = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentCoordinatorEmail);
-        var user = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentUserEmail);
-        await DataSeeder.SeedAsync(dbContext, user!.Id, coordinator!.Id, admin!.Id);
+        if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("SeedDemoData"))
+        {
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            await IdentitySeeder.SeedDevelopmentAdminAsync(userManager);
+            await IdentitySeeder.SeedDevelopmentUserAsync(userManager);
+            await IdentitySeeder.SeedDevelopmentCoordinatorAsync(userManager);
+
+            /// <summary>
+            /// Testdata for ressurser og behov, eid av testbrukerne over
+            /// </summary>
+            var admin = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentAdminEmail);
+            var coordinator = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentCoordinatorEmail);
+            var user = await userManager.FindByEmailAsync(IdentitySeeder.DevelopmentUserEmail);
+            await DataSeeder.SeedAsync(dbContext, user!.Id, coordinator!.Id, admin!.Id);
+        }
     }
     catch (Exception ex)
     {
