@@ -5,13 +5,18 @@ namespace Prosjekt.Services
 {
     /// <summary>
     /// Oppretter rollene og tre testbrukere ved oppstart, hvis de ikke finnes.
-    /// Testbrukerne har ikke passord før det settes med «Glemt passord».
+    /// Testbrukerne får passordet i <see cref="DevelopmentPassword"/>, og seedes bare ved lokal kjøring.
     /// </summary>
     public class IdentitySeeder
     {
         public const string DevelopmentAdminEmail = "admin@heimevernet.local";
         public const string DevelopmentUserEmail = "user@heimevernet.local";
         public const string DevelopmentCoordinatorEmail = "koordinator@heimevernet.local";
+
+        /// <summary>
+        /// Felles passord for alle testbrukerne. Brukes bare ved lokal kjøring.
+        /// </summary>
+        public const string DevelopmentPassword = "Demo2026!";
 
         public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
         {
@@ -66,6 +71,7 @@ namespace Prosjekt.Services
             string email)
         {
             var user = await userManager.FindByEmailAsync(email);
+
             if (user is null)
             {
                 user = new IdentityUser
@@ -76,8 +82,14 @@ namespace Prosjekt.Services
                 };
 
                 await EnsureSucceededAsync(
-                    userManager.CreateAsync(user),
+                    userManager.CreateAsync(user, DevelopmentPassword),
                     "Could not create the development user.");
+            }
+            else if (!await userManager.HasPasswordAsync(user))
+            {
+                await EnsureSucceededAsync(
+                    userManager.AddPasswordAsync(user, DevelopmentPassword),
+                    "Could not set a password on the development user.");
             }
 
             return user;
