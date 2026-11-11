@@ -332,9 +332,6 @@
     }
     else
     {
-        /// «Kart» er forsiden med ?visning=kart, så den skal ikke også markere «Oversikt»
-        var visKart = Context.Request.Query["visning"] == "kart";
-
         var erKoordinator = !User.IsInRole("Admin");
 
         <!-- Navbar for admin og koordinator -->
@@ -347,41 +344,35 @@
                            asp-controller="Home" asp-action="Index">
                             Totalforsvaret
                         </a>
-                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Home", "Index") && !visKart ? "active" : "")"
+                        @* Oversikten har både «Trenger handling», filter og kart, så det er ingen egen Kart-side *@
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Home", "Index") ? "active" : "")"
                            asp-controller="Home" asp-action="Index">
                             Oversikt
-                        </a>
-                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Home", "Index") && visKart ? "active" : "")"
-                           asp-controller="Home" asp-action="Index" asp-route-visning="kart">
-                            Kart
                         </a>
                         <a class="public-nav-link d-none d-md-inline @(currentController == "Need" ? "active" : "")"
                            asp-controller="Need" asp-action="Overview">
                             Behov
                         </a>
-                        @* d-md-flex og ikke d-md-inline, ellers havner lenken litt lavere enn de andre *@
-                        <div class="dropdown d-none d-md-flex">
-                            @* Ikke Bootstrap sin dropdown-toggle, den bruker ::after som også er den rosa streken *@
-                            <a class="public-nav-link @(currentController == "Resource" ? "active" : "")"
-                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Ressurser <i class="fa-solid fa-chevron-down ms-1 small" aria-hidden="true"></i>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Oversikt</a></li>
-                                @if (erKoordinator)
-                                {
-                                    <li><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
-                                }
-                                else
-                                {
-                                    <li><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
-                                }
-                            </ul>
-                        </div>
+                        <a class="public-nav-link d-none d-md-inline @(currentController == "Resource" && currentAction != "MyResources" ? "active" : "")"
+                           asp-controller="Resource" asp-action="Overview">
+                            Ressurser
+                        </a>
+                        <a class="public-nav-link d-none d-md-inline @(IsCurrent("Resource", "MyResources") ? "active" : "")"
+                           asp-controller="Resource" asp-action="MyResources">
+                            Mine ressurser
+                        </a>
                         <a class="public-nav-link d-none d-md-inline @(currentController == "AuditLog" ? "active" : "")"
                            asp-controller="AuditLog" asp-action="Index">
                             Logg
                         </a>
+                        @* Bare admin kan opprette brukere (CreateUser krever Admin-rollen) *@
+                        @if (!erKoordinator)
+                        {
+                            <a class="public-nav-link d-none d-md-inline @(IsCurrent("Account", "CreateUser") ? "active" : "")"
+                               asp-controller="Account" asp-action="CreateUser">
+                                Opprett bruker
+                            </a>
+                        }
                     </div>
 
                     <div class="dropdown">
@@ -391,18 +382,14 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index">Oversikt</a></li>
-                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index" asp-route-visning="kart">Kart</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Need" asp-action="Overview">Behov</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Ressurser</a></li>
-                            @if (erKoordinator)
-                            {
-                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
-                            }
-                            else
-                            {
-                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Index">Registrer ny ressurs</a></li>
-                            }
+                            <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="MyResources">Mine ressurser</a></li>
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="AuditLog" asp-action="Index">Logg</a></li>
+                            @if (!erKoordinator)
+                            {
+                                <li class="d-md-none"><a class="dropdown-item" asp-controller="Account" asp-action="CreateUser">Opprett bruker</a></li>
+                            }
                             <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">Min profil</a></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
@@ -590,7 +577,7 @@
             crossorigin="anonymous"></script>
     <script src="~/js/leaflet-draw-no.js" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         // Spør om brukeren vil logge ut før skjemaet sendes
         (function () {
             const modalElement = document.getElementById("logoutConfirmModal");

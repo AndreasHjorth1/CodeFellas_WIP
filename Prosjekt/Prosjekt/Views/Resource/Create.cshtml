@@ -193,7 +193,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.addEventListener("DOMContentLoaded", function () {
             /// Konverterer tall trygt til punktum som desimaltegn
             var lat = @(forste?.Latitude is double la ? la.ToString(CultureInfo.InvariantCulture) : "null");
@@ -221,8 +221,8 @@
             }
 
             var kart = L.map('kvitteringRessursKart').setView([lat, lng], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
             }).addTo(kart);
 
             var adresseTekst = 'Henter adresse...';

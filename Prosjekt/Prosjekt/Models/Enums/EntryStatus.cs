@@ -3,14 +3,15 @@ using System.ComponentModel.DataAnnotations;
 namespace Prosjekt.Models.Enums;
 
 /// <summary>
-/// Stadiene en oppføring går gjennom, status flyt
+/// Stadiene en oppføring går gjennom, status flyt.
+/// Lagres som tall i databasen, og CanMove regner på tallene, så verdiene må ikke endres.
 /// </summary>
 public enum EntryStatus
 {
-    [Display(Name = "Ny")] New,
-    [Display(Name = "Vurderes")] UnderReview,
-    [Display(Name = "Tildelt")] Assigned,
-    [Display(Name = "Løst")] Resolved
+    [Display(Name = "Ny")] New = 0,
+    [Display(Name = "Vurderes")] UnderReview = 1,
+    [Display(Name = "Tildelt")] Assigned = 2,
+    [Display(Name = "Løst")] Resolved = 3
 }
 
 public static class EntryStatusFlow

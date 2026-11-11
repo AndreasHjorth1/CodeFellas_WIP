@@ -66,14 +66,21 @@
 }
 
 <style>
+    /* _Layout setter body til høyden på skjermen. Da slipper menyen øverst taket etter én skjermhøyde,
+       og kartet som står fast får et hull over seg. Med auto følger body innholdet. */
+    body {
+        height: auto !important;
+    }
+
     .overview-page {
         background-color: #eff3f6;
         min-height: 100%;
-        padding: 2rem 1rem 3rem;
+        padding: 2rem 1.5rem 3rem;
     }
 
+    /* Bredere side på store skjermer, så kartet får plassen som før var tom */
     .overview-inner {
-        max-width: 1100px;
+        max-width: 1600px;
         margin: 0 auto;
     }
 
@@ -417,10 +424,17 @@
         margin-bottom: 0.3rem;
     }
 
+    /* På desktop står kartet fast ved siden av listen og fyller nesten hele høyden.
+       Det som trekkes fra er menyen øverst, overskriften, tegnforklaringen og teksten under kartet. */
     @@media (min-width: 992px) {
         .overview-side {
             position: sticky;
-            top: 80px;
+            top: calc(62px + 1rem);
+        }
+
+        #oversiktRessursKart {
+            height: calc(100vh - 62px - 250px);
+            min-height: 360px;
         }
     }
 
@@ -439,11 +453,12 @@
 
         <div class="row g-4">
             <!-- Venstre kolonne: ressursene -->
-            <div class="col-lg-8">
+            @* Listen til venstre og kartet til høyre. På store skjermer får kartet litt mer plass enn listen. *@
+            <div class="col-lg-6 col-xl-5">
                 <div class="overview-head">
                     <h1>@ViewData["Title"]</h1>
                     <div class="d-flex flex-wrap gap-2 head-buttons">
-                        <button type="button" class="btn-light-outline" onclick="window.print()">
+                        <button type="button" class="btn-light-outline" data-on-click="print">
                             <i class="fa-solid fa-print me-1" aria-hidden="true"></i> Skriv ut liste
                         </button>
 
@@ -457,7 +472,7 @@
                                     <label class="form-label" for="typeFilter">Kategori</label>
                                     <select id="typeFilter" class="form-select">
                                         <option value="">Alle kategorier</option>
-                                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>())
+                                        @foreach (var k in Enum.GetValues<ResourceViewModel.ResourceType>().OrderBy(k => k == ResourceViewModel.ResourceType.Other))
                                         {
                                             <option value="@k">@OversettKategori(k)</option>
                                         }
@@ -488,7 +503,7 @@
                             <strong>@(antallTildelt == 1 ? "1 ressurs er tildelt et behov" : $"{antallTildelt} ressurser er tildelt et behov")</strong>
                             Kommunen har koblet @(antallTildelt == 1 ? "den" : "dem") til et behov. Sjekk at opplysningene fortsatt stemmer.
                         </div>
-                        <button type="button" class="btn-dark-blue" onclick="visForsteTildelte()">Se ressurs</button>
+                        <button type="button" class="btn-dark-blue" data-on-click="visForsteTildelte">Se ressurs</button>
                     </div>
                 }
 
@@ -524,10 +539,10 @@
                                         · @ledigTekst
                                     </div>
                                 </div>
-                                <div class="card-actions" onclick="event.stopPropagation();">
+                                <div class="card-actions" data-stop-click>
                                     <a asp-action="Edit" asp-route-id="@res.Id">Endre</a>
-                                    @* Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et ressursnavn kjøres som JavaScript (XSS). *@
-                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-navn="@res.Name" onsubmit="return confirm('Er du sikker på at du vil slette ' + this.dataset.navn + '?');">
+                                    @* data-confirm leses av site.js. Razor koder navnet, så det kan ikke kjøres som JavaScript (XSS). *@
+                                    <form asp-action="Delete" asp-route-id="@res.Id" method="post" class="d-inline" data-confirm="Er du sikker på at du vil slette @res.Name?">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="delete-link">Slett</button>
                                     </form>
@@ -623,7 +638,7 @@
             </div>
 
             <!-- Høyre kolonne: kart og filter -->
-            <div class="col-lg-4">
+            <div class="col-lg-6 col-xl-7">
                 <div class="overview-side">
                     <div class="side-card">
                         <div class="side-card-head">
@@ -647,7 +662,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         var kart;
         var markorerMap = {};
         var symbolMarkers;
@@ -682,8 +697,8 @@
             kart = L.map('oversiktRessursKart', { zoomControl: false }).setView([58.163, 8.003], 12);
             L.control.zoom({ position: 'bottomright' }).addTo(kart);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
+            L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
             }).addTo(kart);
 
             var bounds = [];
@@ -742,7 +757,7 @@
             /// Behovene fra kommunen vises med egne symboler, utenfor filteret for ressursene
             fetch('@Url.Action("GetInformation", "Need")')
                 .then(svar => svar.ok ? svar.json() : null)
-                .then(fraGeoJson)
+                .then(fromGeoJson)
                 .then(behov => {
                     behov.forEach(function (n) {
                         var lat = parseFloat(n.latitude ?? n.Latitude);
@@ -759,8 +774,8 @@
                 })
                 .catch(function () { /* Kartet fungerer uten behovene */ });
 
-            var kjorFilter = settOppFilter(kart, [markorerMap], [symbolMarkers]);
-            settOppStedssok(kart, kjorFilter);
+            var kjorFilter = setupFilter(kart, [markorerMap], [symbolMarkers]);
+            setupPlaceSearch(kart, kjorFilter);
 
             if (bounds.length > 0) {
                 kart.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });

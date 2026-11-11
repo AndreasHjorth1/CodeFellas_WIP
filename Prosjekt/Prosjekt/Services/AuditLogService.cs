@@ -4,6 +4,11 @@ using Prosjekt.Models.Entities;
 
 namespace Prosjekt.Services
 {
+    /// <summary>
+    /// AuditLogService er ansvarlig for å logge endringer i systemet til en AuditLog-tabell i databasen.
+    /// Den registrerer handlinger som opprettelse, oppdatering og sletting av entiteter, 
+    /// samt hvilke felter som ble endret og av hvilken bruker.
+    /// </summary>
     public class AuditLogService
     {
         private readonly ApplicationDbContext _context;

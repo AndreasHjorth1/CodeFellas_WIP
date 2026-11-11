@@ -1,4 +1,7 @@
-﻿@using Prosjekt.Models.ModelView
+<link rel="stylesheet" href="~/css/map-symbols.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/lib/leaflet-markercluster/MarkerCluster.Default.css" asp-append-version="true" />
+@using Prosjekt.Models.ModelView
 @using Prosjekt.Models.Enums
 @model List<ResourceMatchViewModel>
 
@@ -8,6 +11,16 @@
 }
 
 @functions {
+        string RessursIkonFil(string? kategori, bool harLedige) =>
+        (kategori switch
+        {
+            "Vehicle" => "vehicle",
+            "Tool" => "tool",
+            "Clothing" => "clothing",
+            "Provision" => "provision",
+            "Materials" => "materials",
+            _ => "other"
+        }) + (harLedige ? "" : "-unavailable") + ".svg";
     /// Viser avstand i meter under 1 km, ellers kilometer
     string FormatDistance(double meters) =>
         meters < 1000
@@ -27,6 +40,11 @@
 }
 
 <style>
+        .match-resource-selected {
+        border-radius: 50%;
+        outline: 3px solid #04245a;
+        outline-offset: 3px;
+    }
     /* Raden man har trykket på får en annen farge, slik som på ressurssiden */
     .match-table tbody tr.match-row {
         cursor: pointer;
@@ -154,7 +172,12 @@
                                 data-bs-toggle="collapse" data-bs-target="#ressursInfo-@m.Id"
                                 aria-expanded="false" aria-controls="ressursInfo-@m.Id">
                                 <td>
-                                    <strong>@m.Name</strong><br />
+                                    <div class="d-flex align-items-center gap-2">
+    <img class="map-symbol-small"
+         src="@Url.Content($"~/images/resources/{RessursIkonFil(m.Category, m.Available > 0)}")"
+         width="28" height="28" alt="" />
+    <strong>@m.Name</strong>
+</div>
                                     <small class="text-secondary">@m.Description</small><br />
                                     <small class="text-muted">📞 @m.PhoneNumber</small>
                                     @if (m.AllocatedToThisNeed > 0)
@@ -171,7 +194,7 @@
                                 <td class="small">@m.Available av @m.Quantity</td>
                                 <td><span class="badge bg-primary">@FormatDistance(m.DistanceMeters)</span></td>
                                 @* Tildel-skjemaet skal ikke åpne «Se mer» *@
-                                <td class="text-nowrap" onclick="event.stopPropagation();">
+                                <td class="text-nowrap" data-stop-click>
                                     @if (m.Available > 0)
                                     {
                                         <form asp-action="Allocate" method="post" class="d-flex gap-1">
@@ -248,15 +271,22 @@
 </div>
 
 @section Scripts {
-    <script>
+
+    <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
+    <script src="~/js/map-symbols.js"
+            data-resources-url="@Url.Content("~/images/resources/")"
+            data-needs-url="@Url.Content("~/images/needs/")"
+            asp-append-version="true"></script>
+    <script nonce="@Context.CspNonce()">
+  
         var needLat = @ViewBag.NeedLat;
         var needLng = @ViewBag.NeedLng;
         var matches = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
 
         var kart = L.map('matchKart').setView([needLat, needLng], 11);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+        L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
         }).addTo(kart);
 
         /// Behovet selv - rød sirkel i midten
@@ -267,21 +297,34 @@
         var punkter = [[needLat, needLng]];
 
         /// Markørene etter ressurs-id, så en valgt rad kan finne sin markør
-        var vanligStil = { radius: 7, color: '#198754', fillColor: '#198754', fillOpacity: 0.7 };
-        var valgtStil = { radius: 11, color: '#04245a', fillColor: '#04245a', fillOpacity: 0.9 };
+        var resourceMarkers = MapSymbols.createCluster(kart);
         var markorer = {};
+        var vanligeIkoner = {};
+        var valgteIkoner = {};
 
         matches.forEach(function (m) {
-            markorer[m.Id] = L.circleMarker([m.Latitude, m.Longitude], vanligStil).addTo(kart).bindPopup(
+
+            var harLedige = m.Available > 0;
+            var ikonUrl = MapSymbols.resourceUrl(m.Category, harLedige);
+
+            vanligeIkoner[m.Id] = MapSymbols.resourceIcon(m.Category, harLedige);
+            valgteIkoner[m.Id] = MapSymbols.icon(ikonUrl, 'match-resource-selected');
+
+            markorer[m.Id] = L.marker([m.Coords.Latitude, m.Coords.Longitude], {
+                icon: vanligeIkoner[m.Id],
+                title: m.Name,
+                alt: m.Name
+            }).addTo(resourceMarkers).bindPopup(
+          
                 `<b>${escapeHtml(m.Name)}</b><br/>Antall: ${m.Quantity}<br/>📞 ${escapeHtml(m.PhoneNumber)}`
             );
 
             /// Strek fra behovet til ressursen
-            L.polyline([[needLat, needLng], [m.Latitude, m.Longitude]], {
+            L.polyline([[needLat, needLng], [m.Coords.Latitude, m.Coords.Longitude]], {
                 color: '#198754', weight: 1, opacity: 0.4, dashArray: '4 4'
             }).addTo(kart);
 
-            punkter.push([m.Latitude, m.Longitude]);
+            punkter.push([m.Coords.Latitude, m.Coords.Longitude]);
         });
 
         if (punkter.length > 1) {
@@ -298,13 +341,18 @@
         document.addEventListener('show.bs.collapse', function (e) {
             var markor = markorForPanel(e.target);
             if (!markor) return;
-            markor.setStyle(valgtStil).bringToFront();
-            kart.flyTo(markor.getLatLng(), Math.max(kart.getZoom(), 14), { duration: 0.8 });
+            var id = e.target.id.replace('ressursInfo-', '');
+            markor.setIcon(valgteIkoner[id]);
+            markor.setZIndexOffset(1000);
+            MapSymbols.focus(resourceMarkers, markor);
         });
 
         document.addEventListener('hide.bs.collapse', function (e) {
             var markor = markorForPanel(e.target);
-            if (markor) markor.setStyle(vanligStil);
+                        if (!markor) return;
+            var id = e.target.id.replace('ressursInfo-', '');
+            markor.setIcon(vanligeIkoner[id]);
+            markor.setZIndexOffset(0);
         });
     </script>
 }

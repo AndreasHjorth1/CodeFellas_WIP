@@ -465,7 +465,7 @@
 <!-- KART-SKRIPT OG DYNAMISK LASTING            -->
 <!-- ========================================== -->
 @section Scripts {
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.addEventListener("DOMContentLoaded", function () {
 
             /// FAQ-ikon veksling
@@ -486,16 +486,16 @@
             /// Tom liste i dag: HomeController.FrontPage sender ikke med noen modell.
             var needs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<Prosjekt.Models.ModelView.NeedViewModel>()));
 
-            /// Standard OpenStreetMap-lag
-            var osmKart = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            /// Topografisk kart fra Kartverket
+            var topoKart = L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
                 noWrap: true
             });
 
             var map = L.map('homeMap', {
                 center: [58.1467, 7.9956],
                 zoom: 11,
-                layers: [osmKart],
+                layers: [topoKart],
                 zoomControl: false
             });
 
@@ -522,14 +522,16 @@
                 var lng = parseFloat(n.Longitude);
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    var ikon = (n.Importance === 0) ? ikonAkutt : ikonPlanlagt;
+                    /// ImportanceLevel.Acute er 1
+                    var erAkutt = n.Importance === 1;
+                    var ikon = erAkutt ? ikonAkutt : ikonPlanlagt;
 
                     var marker = L.marker([lat, lng], { icon: ikon }).addTo(map);
 
                     marker.bindPopup(`
                         <div style="font-size:0.85rem; color:#1a3048;">
-                            <strong style="text-transform:uppercase; font-size:0.65rem; color:${n.Importance === 0 ? '#dc3545' : '#d4a373'}">
-                                ${n.Importance === 0 ? 'Akutt behov' : 'Planlagt behov'}
+                            <strong style="text-transform:uppercase; font-size:0.65rem; color:${erAkutt ? '#dc3545' : '#d4a373'}">
+                                ${erAkutt ? 'Akutt behov' : 'Planlagt behov'}
                             </strong><br>
                             <b>${n.Name}</b><br>
                             <span style="color:#5a6572">${n.Description || ''}</span>

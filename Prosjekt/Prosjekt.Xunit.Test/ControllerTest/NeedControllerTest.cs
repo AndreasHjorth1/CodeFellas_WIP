@@ -124,7 +124,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                     new NeedViewModel { Name = "" }
                 },
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -151,7 +152,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                     new NeedViewModel { Name = "Vann" }
                 },
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -181,7 +183,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                     new NeedViewModel { Name = "Vann" }
                 },
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -191,6 +194,88 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var viewResult = Assert.IsType<ViewResult>(result);
             Assert.Equal("Create", viewResult.ViewName);
             Assert.Single(repo.Needs);
+        }
+
+        [Fact]
+        public async Task Create_MissingDeadline_ReturnsViewWithErrorAndSavesNothing()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            var controller = CreateSignedInController(repo, isAdmin: true);
+
+            var model = new NeedCreatorViewModel
+            {
+                NeedList = new List<NeedViewModel>
+                {
+                    new NeedViewModel { Name = "Vann" }
+                },
+                Latitude = 58.1467,
+                Longitude = 7.9956
+            };
+
+            // Act
+            var result = await controller.Create(model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Index", viewResult.ViewName);
+            Assert.True(controller.ModelState.ContainsKey(nameof(NeedCreatorViewModel.Deadline)));
+            Assert.Empty(repo.Needs);
+        }
+
+        [Fact]
+        public async Task Create_UndefinedImportance_ReturnsViewWithErrorAndSavesNothing()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            var controller = CreateSignedInController(repo, isAdmin: true);
+
+            var model = new NeedCreatorViewModel
+            {
+                NeedList = new List<NeedViewModel>
+                {
+                    new NeedViewModel { Name = "Vann" }
+                },
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0),
+                Importance = ImportanceLevel.Undefined
+            };
+
+            // Act
+            var result = await controller.Create(model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Equal("Index", viewResult.ViewName);
+            Assert.True(controller.ModelState.ContainsKey(nameof(NeedCreatorViewModel.Importance)));
+            Assert.Empty(repo.Needs);
+        }
+
+        [Fact]
+        public async Task Edit_Post_UndefinedImportance_ReturnsViewWithErrorAndKeepsPriority()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need { Id = 1, Name = "Vann", Priority = "Acute", Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository());
+            var model = new NeedViewModel
+            {
+                Id = 1,
+                Name = "Vann",
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0)
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Same(model, viewResult.Model);
+            Assert.True(controller.ModelState.ContainsKey(nameof(NeedViewModel.Importance)));
+            Assert.Equal("Acute", repo.Needs.Single().Priority);
         }
 
         [Fact]
@@ -208,7 +293,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                     new NeedViewModel { Name = "Traktor" }
                 },
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -314,7 +400,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Arrange
             var repo = new FakeNeedRepository();
             var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository());
-            var model = new NeedViewModel { Id = 99, Name = "Vann", Latitude = 58.1467, Longitude = 7.9956 };
+            var model = new NeedViewModel { Id = 99, Name = "Vann", Latitude = 58.1467, Longitude = 7.9956, Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned };
 
             // Act
             var result = await controller.Edit(99, model);
@@ -336,7 +422,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Mat",
                 Status = EntryStatus.UnderReview,
                 Latitude = 59.9,
-                Longitude = 10.7
+                Longitude = 10.7,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -388,7 +475,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Vann",
                 Status = EntryStatus.Resolved, // Hopper over Vurderes og Tildelt
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -423,7 +511,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Vann",
                 Status = EntryStatus.UnderReview, // Ett steg tilbake (angre en feil)
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -448,7 +537,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             {
                 NeedList = null!,
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -477,7 +567,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                       new NeedViewModel { Name = "Vann" }
                   },
                 Latitude = 58.1467,
-                Longitude = 7.9956
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
             };
 
             // Act
@@ -584,6 +675,63 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var punkt = Assert.IsType<NtsPoint>(vann.Geometry);
             Assert.Equal(58.1467, punkt.Y);
             Assert.Equal(7.9956, punkt.X);
+        }
+
+        [Fact]
+        public async Task GetInformation_IncludesDeadlineInNorwegianTimeAndAllocatedResources()
+        {
+            // Arrange
+            var repo = new FakeNeedRepository();
+            repo.Needs.Add(new Need
+            {
+                Id = 1,
+                Name = "Vann",
+                NeededBy = new DateTime(2026, 11, 18, 15, 0, 0, DateTimeKind.Utc),
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            repo.Needs.Add(new Need
+            {
+                Id = 2,
+                Name = "Traktor",
+                Coords = new Coordinates(59.9, 10.7)
+            });
+
+            // To tildelinger av samme ressurs teller som én ressurs
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 10 });
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 10 });
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 11 });
+
+            var controller = new NeedController(repo, new FakeResourceRepository(), allocations)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, "user-1"),
+                            new Claim(ClaimTypes.Role, RoleNames.Admin)
+                        }, "Test"))
+                    }
+                }
+            };
+
+            // Act
+            var result = await controller.GetInformation();
+
+            // Assert
+            var features = GetFeatures(result);
+            var vann = features.Single(f => (string)f.Attributes["name"] == "Vann");
+            var traktor = features.Single(f => (string)f.Attributes["name"] == "Traktor");
+
+            // 15:00 UTC er 16:00 norsk vintertid
+            Assert.Equal("2026-11-18T16:00", vann.Attributes["deadline"]);
+            Assert.Equal(2, vann.Attributes["allocatedResources"]);
+
+            // Uten frist blir feltet tomt, og uten tildelinger er antallet 0
+            Assert.Equal(string.Empty, traktor.Attributes["deadline"]);
+            Assert.Equal(0, traktor.Attributes["allocatedResources"]);
         }
 
         [Fact]
@@ -765,6 +913,73 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.IsType<RedirectToActionResult>(result);
             Assert.Empty(await allocations.GetAllAsync());
             Assert.Equal(EntryStatus.UnderReview, needs.Needs.Single().Status);
+        }
+
+        [Fact]
+        public async Task Resolve_AssignedNeed_ReturnsResources()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.Assigned, Coords = new Coordinates(58.1467, 7.9956) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 2 });
+            var controller = new NeedController(needs, resources, allocations);
+
+            // Act
+            var result = await controller.Resolve(1);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal(EntryStatus.Resolved, needs.Needs.Single().Status);
+            Assert.Empty(await allocations.GetByNeedAsync(1));
+            Assert.True(resources.Resources.Single().IsAvailable);
+        }
+
+        [Fact]
+        public async Task Resolve_OnlyReturnsAllocationsForThisNeed()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.Assigned, Coords = new Coordinates(58.1467, 7.9956) });
+            needs.Needs.Add(new Need { Id = 2, Name = "Strøm", Status = EntryStatus.Assigned, Coords = new Coordinates(59.9, 10.7) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 1 });
+            await allocations.AddAsync(new Allocation { NeedId = 2, ResourceId = 1, Quantity = 1 });
+            var controller = new NeedController(needs, resources, allocations);
+
+            // Act
+            await controller.Resolve(1);
+
+            // Assert
+            Assert.Empty(await allocations.GetByNeedAsync(1));
+            Assert.Single(await allocations.GetByNeedAsync(2));
+            // Én av to er ledig igjen, så ressursen er tilgjengelig
+            Assert.True(resources.Resources.Single().IsAvailable);
+        }
+
+        [Fact]
+        public async Task Resolve_NewNeed_KeepsAllocations()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.New, Coords = new Coordinates(58.1467, 7.9956) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 1, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 1 });
+            var controller = new NeedController(needs, resources, allocations);
+
+            // Act
+            await controller.Resolve(1);
+
+            // Assert
+            Assert.Equal(EntryStatus.New, needs.Needs.Single().Status);
+            Assert.Single(await allocations.GetByNeedAsync(1));
+            Assert.False(resources.Resources.Single().IsAvailable);
         }
 
         private sealed class EmptyTempDataProvider : ITempDataProvider

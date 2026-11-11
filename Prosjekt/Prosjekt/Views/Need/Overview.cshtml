@@ -312,49 +312,148 @@
         flex: 1;
         overflow-y: auto;
         border-top: 1px solid #dde3ea;
+        background-color: #eef1f5;
+        padding: 0.9rem 1rem;
     }
 
-    .need-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.7rem;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #edf0f4;
+    /* --- Behovskort, samme utseende som ressurskortene under Ressurser --- */
+    .need-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
+        padding: 1rem 1.1rem 0.9rem;
+        margin-bottom: 0.8rem;
         cursor: pointer;
     }
 
-    .need-row:hover {
-        background-color: #f8f9fb;
+    .need-card:hover {
+        border-color: #b9c4d3;
     }
 
-    .need-row.selected {
-        background-color: #e8eef7;
+    /* Behovet som er valgt, eller har «Se mer» åpent, får samme farge som et åpent ressurskort */
+    .need-card.selected,
+    .need-card:has(.see-more-btn:not(.collapsed)) {
+        background-color: #f3f6fb;
+        border-color: #04245a;
+        box-shadow: inset 3px 0 0 #04245a;
     }
 
-    .need-row .row-icon {
-        font-size: 1rem;
-        margin-top: 0.15rem;
+    .need-card-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
     }
 
-    .need-row .row-icon.acute { color: #c8102e; }
-    .need-row .row-icon.planned { color: #e0a800; }
+    /* Samme symbol for behovstypen som i kartet, med rød eller gul ring for akutt eller planlagt */
+    .need-card .icon-circle {
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: #e9eff6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-    .need-row .row-text {
+    .need-card .card-title-block {
         flex: 1;
         min-width: 0;
     }
 
-    .need-row .row-name {
-        font-weight: 700;
-        font-size: 0.92rem;
+    .need-card .card-title-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
 
-    .need-row .row-meta {
-        color: #5b6b7f;
-        font-size: 0.78rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .need-card h3 {
+        color: #0f2a4f;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .need-card .card-sub {
+        color: #5f6f86;
+        font-size: 0.82rem;
+        margin-top: 0.15rem;
+    }
+
+    .progress-steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.35rem;
+        margin: 0.9rem 0 0.7rem;
+    }
+
+    .progress-steps .step-bar {
+        height: 3px;
+        background-color: #dde3ea;
+        margin-bottom: 0.4rem;
+    }
+
+    .progress-steps .step.done .step-bar {
+        background-color: #04245a;
+    }
+
+    .progress-steps .step-label {
+        color: #5f6f86;
+        font-size: 0.72rem;
+    }
+
+    .need-card .card-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .need-card .card-status {
+        color: #0f2a4f;
+        font-size: 0.88rem;
+        margin: 0;
+    }
+
+    .need-card .see-more-btn {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        padding: 0;
+        color: #2d4f86;
+        font-size: 0.85rem;
+        text-decoration: underline;
+    }
+
+    .need-card .see-more-btn i {
+        font-size: 0.72rem;
+        margin-left: 0.2rem;
+        transition: transform 0.2s;
+    }
+
+    .need-card .see-more-btn:not(.collapsed) i {
+        transform: rotate(180deg);
+    }
+
+    .need-details {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 0.35rem 1rem;
+        margin: 0.9rem 0 0;
+        padding-top: 0.9rem;
+        border-top: 1px solid #dde3ea;
+        font-size: 0.85rem;
+        cursor: default;
+    }
+
+    .need-details dt {
+        font-weight: 600;
+    }
+
+    .need-details dd {
+        margin: 0;
+        overflow-wrap: anywhere;
     }
 
     .imp-badge {
@@ -384,14 +483,15 @@
         color: #1e6b43;
     }
 
-    /* Endre og Slett til høyre i hver rad */
+    /* Finn ressurser, Endre og Slett oppe til høyre i hvert kort */
     .row-actions {
         flex-shrink: 0;
         display: flex;
         align-items: center;
         gap: 0.75rem;
         margin-left: 0.5rem;
-        font-size: 0.82rem;
+        font-size: 0.85rem;
+        cursor: default;
     }
 
     .row-actions a,
@@ -400,7 +500,7 @@
         border: none;
         padding: 0;
         color: #2d4f86;
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         text-decoration: underline;
     }
 
@@ -409,6 +509,9 @@
     }
 
     .list-empty {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 4px;
         padding: 2rem 1rem;
         text-align: center;
         color: #5b6b7f;
@@ -577,8 +680,8 @@
                                 <span class="filter-label">Viktighet</span>
                                 <div class="chip-row" role="group" aria-label="Viktighet">
                                     <button type="button" class="chip active" data-viktighet="">Alle</button>
-                                    <button type="button" class="chip" data-viktighet="0">Akutt <span data-antall="akutt"></span></button>
-                                    <button type="button" class="chip" data-viktighet="1">Planlagt <span data-antall="planlagt"></span></button>
+                                    <button type="button" class="chip" data-viktighet="1">Akutt <span data-antall="akutt"></span></button>
+                                    <button type="button" class="chip" data-viktighet="2">Planlagt <span data-antall="planlagt"></span></button>
                                 </div>
                             </div>
 
@@ -586,7 +689,7 @@
                                 <label class="filter-label" for="kategoriFilter">Kategori</label>
                                 <select id="kategoriFilter" class="form-select form-select-sm">
                                     <option value="">Alle kategorier</option>
-                                    @foreach (var t in Enum.GetValues<NeedViewModel.NeedType>())
+                                    @foreach (var t in Enum.GetValues<NeedViewModel.NeedType>().OrderBy(t => t == NeedViewModel.NeedType.Other))
                                     {
                                         <option value="@((int)t)">@OversettNeedType(t)</option>
                                     }
@@ -628,7 +731,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         document.addEventListener("DOMContentLoaded", function () {
             var behov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(behov.Select(b => new
             {
@@ -658,9 +761,24 @@
             var token = document.querySelector('#slettToken input[name="__RequestVerificationToken"]').value;
 
             var statusNavn = ['Meldt', 'Vurderes', 'Tildelt', 'Løst'];
+            /// Teksten nederst i kortet, som på ressurskortene
+            var statusTekst = [
+                'Meldt. Ikke vurdert ennå.',
+                'Vurderes. Finn ressurser som kan dekke behovet.',
+                'Ressurser er tildelt.',
+                'Løst. Behovet er dekket.'
+            ];
             var perSide = 25;
 
-            var valg = { status: 'aktive', viktighet: '', kategori: '', sok: '', sortering: 'viktigst', bareKart: false, side: 1, valgtId: null };
+            /// apne: kortene med «Se mer» åpent. Listen tegnes på nytt når kartet flyttes, så det må huskes.
+            var valg = { status: 'aktive', viktighet: '', kategori: '', sok: '', sortering: 'viktigst', bareKart: false, side: 1, valgtId: null, apne: new Set() };
+
+            document.getElementById('behovListe').addEventListener('show.bs.collapse', function (e) {
+                valg.apne.add(Number(e.target.id.replace('behovInfo-', '')));
+            });
+            document.getElementById('behovListe').addEventListener('hide.bs.collapse', function (e) {
+                valg.apne.delete(Number(e.target.id.replace('behovInfo-', '')));
+            });
 
             /// --- Kart ---
             var kart = L.map('oversiktBehovKart', { zoomControl: false }).setView([58.163, 8.003], 12);
@@ -681,8 +799,8 @@
             });
             new MinPosisjon().addTo(kart);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
+            L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
             }).addTo(kart);
 
             var symbolMarkers = MapSymbols.createCluster(kart);
@@ -763,8 +881,8 @@
                 });
 
                 var iFanen = behov.filter(passerStatus);
-                document.querySelector('[data-antall="akutt"]').textContent = iFanen.filter(function (b) { return b.importance === 0; }).length;
-                document.querySelector('[data-antall="planlagt"]').textContent = iFanen.filter(function (b) { return b.importance === 1; }).length;
+                document.querySelector('[data-antall="akutt"]').textContent = iFanen.filter(function (b) { return MapSymbols.isAcute(b.importance); }).length;
+                document.querySelector('[data-antall="planlagt"]').textContent = iFanen.filter(function (b) { return !MapSymbols.isAcute(b.importance); }).length;
 
                 var filtrert = etterResten.filter(passerStatus);
                 var iKart = filtrert.filter(erIKartutsnitt);
@@ -799,28 +917,64 @@
                     liste.innerHTML = '<div class="list-empty">Ingen behov passer filteret.</div>';
                 } else {
                     liste.innerHTML = side.map(function (b) {
-                        var akutt = MapSymbols.isAcute(b.importance);
-                        var meta = [b.typeName, b.frist, statusNavn[b.status]].filter(Boolean).join(' · ');
+                        var meta = [b.typeName, b.frist, b.phone ? 'Tlf. ' + b.phone : ''].filter(Boolean).join(' · ');
+                        var apen = valg.apne.has(b.id);
+
+                        /// Statusstreken: Meldt, Vurderes, Tildelt og Løst, som på ressurskortene
+                        var steg = statusNavn.map(function (navn, i) {
+                            return `<div class="step ${i <= b.status ? 'done' : ''}"><div class="step-bar"></div><div class="step-label">${navn}</div></div>`;
+                        }).join('');
+
+                        var detaljer = [
+                            ['Kategori', b.typeName],
+                            ['Viktighet', MapSymbols.isAcute(b.importance) ? 'Akutt' : 'Planlagt'],
+                            ['Status', statusNavn[b.status]],
+                            ['Frist', b.fristFull || 'Ingen frist'],
+                            ['Telefon', b.phone || 'Ikke oppgitt'],
+                            ['Område', b.areaSquareMeters ? 'ca. ' + Math.round(b.areaSquareMeters).toLocaleString('no-NO') + ' m²' : ''],
+                            ['Beskrivelse', b.description || 'Ingen beskrivelse']
+                        ].filter(function (r) { return r[1]; })
+                         .map(function (r) { return `<dt>${r[0]}</dt><dd>${escapeHtml(r[1])}</dd>`; }).join('');
+
                         return `
-                            <div class="need-row ${b.id === valg.valgtId ? 'selected' : ''}" data-id="${b.id}" tabindex="0">
-                                <i class="fa-solid ${akutt ? 'fa-location-dot' : 'fa-clock'} row-icon ${akutt ? 'acute' : 'planned'}" aria-hidden="true"></i>
-                                <div class="row-text">
-                                    <div class="row-name">${escapeHtml(b.name)}</div>
-                                    <div class="row-meta">${escapeHtml(meta)}</div>
+                            <div class="need-card ${b.id === valg.valgtId ? 'selected' : ''}" data-id="${b.id}" tabindex="0">
+                                <div class="need-card-head">
+                                    <span class="icon-circle">${MapSymbols.image(MapSymbols.needUrl(b.type), MapSymbols.needClass(b.importance))}</span>
+                                    <div class="card-title-block">
+                                        <div class="card-title-row">
+                                            <h3>${escapeHtml(b.name)}</h3>
+                                            ${merke(b)}
+                                        </div>
+                                        <div class="card-sub">${escapeHtml(meta)}</div>
+                                    </div>
+                                    <div class="row-actions">
+                                        <a href="${urls.match}/${b.id}">Finn ressurser</a>
+                                        <a href="${urls.edit}/${b.id}">Endre</a>
+                                        <form method="post" action="${urls.delete}/${b.id}" class="d-inline" data-navn="${escapeHtml(b.name)}">
+                                            <input type="hidden" name="__RequestVerificationToken" value="${escapeHtml(token)}" />
+                                            <button type="submit" class="delete-link">Slett</button>
+                                        </form>
+                                    </div>
                                 </div>
-                                ${merke(b)}
-                                <div class="row-actions">
-                                    <a href="${urls.match}/${b.id}">Finn ressurser</a>
-                                    <a href="${urls.edit}/${b.id}">Endre</a>
-                                    <form method="post" action="${urls.delete}/${b.id}" class="d-inline" data-navn="${escapeHtml(b.name)}">
-                                        <input type="hidden" name="__RequestVerificationToken" value="${escapeHtml(token)}" />
-                                        <button type="submit" class="delete-link">Slett</button>
-                                    </form>
+
+                                <div class="progress-steps" aria-label="Status: ${statusNavn[b.status]}">${steg}</div>
+
+                                <div class="card-bottom">
+                                    <p class="card-status">${statusTekst[b.status] || ''}</p>
+                                    <button type="button" class="see-more-btn ${apen ? '' : 'collapsed'}"
+                                            data-bs-toggle="collapse" data-bs-target="#behovInfo-${b.id}"
+                                            aria-expanded="${apen ? 'true' : 'false'}" aria-controls="behovInfo-${b.id}">
+                                        Se mer <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+
+                                <div class="collapse ${apen ? 'show' : ''}" id="behovInfo-${b.id}">
+                                    <dl class="need-details">${detaljer}</dl>
                                 </div>
                             </div>`;
                     }).join('');
 
-                    /// Klikk på Finn ressurser, Endre og Slett skal ikke også velge raden
+                    /// Klikk på Finn ressurser, Endre og Slett skal ikke også velge kortet
                     liste.querySelectorAll('.row-actions').forEach(function (handlinger) {
                         handlinger.addEventListener('click', function (e) { e.stopPropagation(); });
                         handlinger.addEventListener('keydown', function (e) { e.stopPropagation(); });
@@ -833,10 +987,15 @@
                         });
                     });
 
-                    liste.querySelectorAll('.need-row').forEach(function (rad) {
-                        rad.addEventListener('click', function () { velgBehov(Number(rad.dataset.id), true); });
-                        rad.addEventListener('keydown', function (e) {
-                            if (e.key === 'Enter') velgBehov(Number(rad.dataset.id), true);
+                    liste.querySelectorAll('.need-card').forEach(function (kort) {
+                        kort.addEventListener('click', function (e) {
+                            /// «Se mer» og informasjonen under skal ikke velge kortet og flytte kartet.
+                            /// Klikket må likevel boble videre, ellers åpner ikke Bootstrap informasjonen.
+                            if (e.target.closest('.see-more-btn, .need-details')) return;
+                            velgBehov(Number(kort.dataset.id), true);
+                        });
+                        kort.addEventListener('keydown', function (e) {
+                            if (e.key === 'Enter' && e.target === kort) velgBehov(Number(kort.dataset.id), true);
                         });
                     });
                 }
@@ -881,8 +1040,8 @@
             function velgBehov(id, flyttKart) {
                 valg.valgtId = id;
 
-                document.querySelectorAll('.need-row').forEach(function (rad) {
-                    rad.classList.toggle('selected', Number(rad.dataset.id) === id);
+                document.querySelectorAll('.need-card').forEach(function (kort) {
+                    kort.classList.toggle('selected', Number(kort.dataset.id) === id);
                 });
 
                 if (flyttKart && markorer[id]) MapSymbols.focus(symbolMarkers, markorer[id]);

@@ -1,9 +1,10 @@
 (function () {
     'use strict';
     const config = document.currentScript.dataset;
-    const resourceTypes = ['Provision','Clothing','Tool','Vehicle','Materials','Other'];
-    const needTypes = ['Food','Medicine','Transport','PowerGenerator','SnowRemoval','SandGravel','Machinery','Evacuation','Communication','Personnel','Other'];
-    const resourceFiles = {Provision:'provision',Clothing:'clothing',Tool:'tool',Vehicle:'vehicle',Materials:'materials', Competence: 'other', Other:'other'};
+    /// Plassen i listen er enum-verdien, så rekkefølgen må stemme med ResourceType og NeedType i C#
+    const resourceTypes = ['Other','Provision','Clothing','Tool','Vehicle','Materials'];
+    const needTypes = ['Other','Food','Medicine','Transport','PowerGenerator','SnowRemoval','SandGravel','Machinery','Evacuation','Communication','Personnel'];
+    const resourceFiles = {Provision:'provision',Clothing:'clothing',Tool:'tool',Vehicle:'vehicle',Materials:'materials',Competence:'other',Other:'other'};
     const needFiles = {Food:'food',Medicine:'medicine',Transport:'transport',PowerGenerator:'power',SnowRemoval:'snow',SandGravel:'gravel',Machinery:'machinery',Evacuation:'evacuation',Communication:'communication',Personnel:'personnel',Other:'other'};
     /// <summary>
     /// Typen kan komme som tall (enum-verdi) eller som navn, avhengig av hvor dataene kommer fra.
@@ -13,7 +14,8 @@
         return types.find(t => t.toLowerCase() === String(value).toLowerCase()) || 'Other';
     }
     function isAvailable(value) { return value === true || value === 1 || value === 'true' || value === 'True'; }
-    function isAcute(value) { return value === 0 || value === '0' || value === 'Acute'; }
+    /// ImportanceLevel.Acute er 1. 0 er Undefined.
+    function isAcute(value) { return value === 1 || value === '1' || value === 'Acute'; }
     function resourceUrl(type, available) {
         return config.resourcesUrl + resourceFiles[typeName(type,resourceTypes)] + (isAvailable(available) ? '' : '-unavailable') + '.svg';
     }

@@ -25,9 +25,6 @@ namespace Prosjekt.Controllers
             _allocationRepo = allocationRepo;
         }
 
-        /// <summary>
-        /// Admin og koordinator ser og kan endre alle ressurser.
-        /// </summary>
         private bool CanSeeAllResources()
         {
             return User.IsInRole(RoleNames.Admin) || User.IsInRole(RoleNames.Coordinator);
@@ -90,9 +87,20 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            var resourcesToCreate = model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)).ToList();
+
+            /// <summary>
+            /// Sjekkes før noe lagres, så en ugyldig rad ikke gir halvveis lagrede ressurser
+            /// </summary>
+            if (resourcesToCreate.Any(r => !r.AvailableFrom.HasValue || !r.AvailableTo.HasValue))
+            {
+                ModelState.AddModelError("", "Alle ressurser må ha tilgjengelig fra og til.");
+                return View("Index", model);
+            }
+
             var createdResources = new List<ResourceViewModel>();
 
-            foreach (var baseResource in model.ResourceList.Where(r => !string.IsNullOrWhiteSpace(r.Name)))
+            foreach (var baseResource in resourcesToCreate)
             {
                 var resourceEntity = new Resource
                 {
@@ -103,18 +111,20 @@ namespace Prosjekt.Controllers
                     IsAvailable = baseResource.Availability,
                     PhoneNumber = baseResource.PhoneNumber,
                     Quantity = baseResource.Quantity,
-                    AvailableFrom = NorwegianTime.ToUtc(baseResource.AvailableFrom),
-                    AvailableTo = NorwegianTime.ToUtc(baseResource.AvailableTo),
+                    AvailableFrom = NorwegianTime.ToUtc(baseResource.AvailableFrom!.Value),
+                    AvailableTo = NorwegianTime.ToUtc(baseResource.AvailableTo!.Value),
                     Coords = coords,
                     UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                 };
 
                 await _repo.AddAsync(resourceEntity);
 
-                baseResource.Id = resourceEntity.Id;
-                baseResource.Latitude = model.Latitude;
-                baseResource.Longitude = model.Longitude;
-                createdResources.Add(baseResource);
+                createdResources.Add(baseResource with
+                {
+                    Id = resourceEntity.Id,
+                    Latitude = model.Latitude,
+                    Longitude = model.Longitude
+                });
             }
 
             return View("Create", createdResources);
@@ -128,16 +138,18 @@ namespace Prosjekt.Controllers
         {
             var resourceViewModels = await ToOverviewViewModelsAsync(await GetVisibleResourcesAsync());
 
-            /// Admin og koordinator har en egen side med tabell og kart, andre får kortene med sine egne ressurser
+            /// <summary>
+            /// Admin og koordinator har en egen side med tabell og kart, andre får sidene med sine egne ressurser
+            /// </summary>
             var viewName = CanSeeAllResources() ? "AdminOverview" : "Overview";
             return View(viewName, resourceViewModels);
         }
 
         /// <summary>
-        /// Koordinatorens egne ressurser, vist med kortene som vanlige brukere får.
+        /// Admin og koordinator sine egne ressurser, vist med sidene som vanlige brukere får.
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = RoleNames.Coordinator)]
+        [Authorize(Roles = RoleNames.AdminOrCoordinator)]
         public async Task<IActionResult> MyResources()
         {
             var ownResources = await _repo.GetByUserIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -173,8 +185,15 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var resource = await _repo.GetByIdAsync(id);
-            if (resource == null) return NotFound();
-            if (!CanEdit(resource)) return Forbid();
+            if (resource == null)
+            {
+                return NotFound();
+            }
+
+            if (!CanEdit(resource))
+            {
+                return Forbid();
+            }
 
             string description = resource.Description ?? "";
             string licensePlate = "";
@@ -243,9 +262,22 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
+            if (!model.AvailableFrom.HasValue || !model.AvailableTo.HasValue)
+            {
+                ModelState.AddModelError("", "Ressursen må ha tilgjengelig fra og til.");
+                return View(model);
+            }
+
             var resourceEntity = await _repo.GetByIdAsync(id);
-            if (resourceEntity == null) return NotFound();
-            if (!CanEdit(resourceEntity)) return Forbid();
+            if (resourceEntity == null)
+            {
+                return NotFound();
+            }
+
+            if (!CanEdit(resourceEntity))
+            {
+                return Forbid();
+            }
 
             resourceEntity.Name = model.Name;
             resourceEntity.Description = GetFullDescription(model);
@@ -255,8 +287,8 @@ namespace Prosjekt.Controllers
             resourceEntity.Category = model.Category.ToString();
             resourceEntity.SubCategory = GetSubCategory(model);
             resourceEntity.Coords = coords;
-            resourceEntity.AvailableFrom = NorwegianTime.ToUtc(model.AvailableFrom);
-            resourceEntity.AvailableTo = NorwegianTime.ToUtc(model.AvailableTo);
+            resourceEntity.AvailableFrom = NorwegianTime.ToUtc(model.AvailableFrom.Value);
+            resourceEntity.AvailableTo = NorwegianTime.ToUtc(model.AvailableTo.Value);
 
             await _repo.UpdateAsync(resourceEntity);
             return RedirectToAction(nameof(Overview));
@@ -269,8 +301,15 @@ namespace Prosjekt.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var resource = await _repo.GetByIdAsync(id);
-            if (resource == null) return NotFound();
-            if (!CanDelete(resource)) return Forbid();
+            if (resource == null)
+            {
+                return NotFound();
+            }
+
+            if (!CanDelete(resource)) 
+            {
+                return Forbid();
+            }
 
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByResourceAsync(id);

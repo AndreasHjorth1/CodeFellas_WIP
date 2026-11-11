@@ -6,7 +6,7 @@ namespace Prosjekt.Models.ModelView.Account
     {
         [Required]
         [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public string Email { get; init; } = string.Empty;
 
         [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
         [Phone(ErrorMessage = "Ugyldig telefonnummer.")]
@@ -15,12 +15,12 @@ namespace Prosjekt.Models.ModelView.Account
 
         [Required]
         [DataType(DataType.Password)]
-        public string Password { get; set; } = string.Empty;
+        public string Password { get; init; } = string.Empty;
 
         [Required]
         [DataType(DataType.Password)]
         [Compare(nameof(Password), ErrorMessage = "The passwords do not match.")]
         [Display(Name = "Confirm password")]
-        public string ConfirmPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; init; } = string.Empty;
     }
 }

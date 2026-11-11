@@ -411,7 +411,7 @@
 
                 <div class="mb-3">
                     <label class="form-label" for="kategoriVelger">Kategori</label>
-                    <select id="kategoriVelger" class="form-select" onchange="oppdaterSkjemavisning()">
+                    <select id="kategoriVelger" class="form-select" data-on-change="oppdaterSkjemavisning">
                         <option value="Vehicle">Transport og kjøretøy</option>
                         <option value="Provision">Provisjon</option>
                         <option value="Materials">Materialer</option>
@@ -438,6 +438,7 @@
                     <div class="mb-3">
                         <label class="form-label" for="inputLicensePlate">Skiltnummer</label>
                         <input id="inputLicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
+                        <div class="form-text">Kan stå tomt for sykkel, traktor, doser og gravemaskin</div>
                     </div>
                 </div>
 
@@ -502,6 +503,7 @@
                     <div class="col-6">
                         <label class="form-label" for="inputQuantity">Antall</label>
                         <input id="inputQuantity" type="number" min="1" value="1" class="form-control" />
+                        <div class="form-text d-none" id="antallLast">Kjøretøy med skilt registreres ett om gangen.</div>
                     </div>
                     <div class="col-6">
                         <label class="form-label" for="inputPhoneNumber">Telefonnummer</label>
@@ -529,7 +531,7 @@
                     <textarea id="inputDescription" class="form-control" rows="2"></textarea>
                 </div>
 
-                <button type="button" class="btn-add-to-list" onclick="leggTilIListe()">+ Legg til i listen</button>
+                <button type="button" class="btn-add-to-list" data-on-click="leggTilIListe">+ Legg til i listen</button>
 
                 <div class="side-divider"></div>
 
@@ -555,7 +557,7 @@
                     <label class="form-check-label" for="kontrollertSjekk">Jeg har kontrollert opplysningene i listen.</label>
                 </div>
 
-                <button type="submit" class="btn btn-register-all" id="registrerKnapp" onclick="return validerInnsending()">Registrer ressurser</button>
+                <button type="submit" class="btn btn-register-all" id="registrerKnapp" data-on-click="validerInnsending">Registrer ressurser</button>
             </form>
         </div>
     </div>
@@ -565,7 +567,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         let mekortListe = [];
         var sideMeny = document.getElementById('sideMeny');
         var infoKort = document.getElementById('infoKort');
@@ -623,7 +625,7 @@
                 [90, 180]
             ],
             maxBoundsViscosity: 1.0,
-            layers: [osmKart]
+            layers: [geonorgeTopo]
         });
 
         /// 3. Lag menyen oppe i hjørnet for å bytte kart
@@ -763,6 +765,37 @@
             else if (valgtTekst === "Competence") document.getElementById('seksjonKompetanse').style.display = 'block';
         }
 
+        function oppdaterAntallsfelt() {
+            var antall = document.getElementById('inputQuantity');
+            var hjelp = document.getElementById('antallLast');
+            var kategori = document.getElementById('kategoriVelger').value;
+            var type = document.getElementById('inputVehicleType')?.value ?? '';
+
+            var laast = kategori === 'Vehicle' && ['Car', 'Bus', 'Motorcycle', 'Truck'].includes(type);
+
+            antall.dataset.laast = laast ? '1' : '';
+            if (laast && Number(antall.value) > 1) { antall.value = '1'; }
+            hjelp.classList.add('d-none');
+        }
+
+        function sjekkAntall() 
+        {
+            var antall = document.getElementById('inputQuantity');
+            if (antall.dataset.laast !== '1') return;
+            if (Number(antall.value) <= 1) return;
+
+            antall.value = '1';
+
+            var hjelp = document.getElementById('antallLast');
+            hjelp.classList.remove('d-none');
+            hjelp.classList.add('text-danger');
+        }
+
+        document.getElementById('inputVehicleType')?.addEventListener('change', oppdaterAntallsfelt);
+        document.getElementById('kategoriVelger')?.addEventListener('change', oppdaterAntallsfelt);
+        document.getElementById('inputQuantity').addEventListener('input', sjekkAntall);
+        oppdaterAntallsfelt();
+
         function oppdaterRessursSymbol() {
             const select = document.getElementById('kategoriVelger');
             const available = document.getElementById('inputAvailability').checked;
@@ -799,7 +832,12 @@
             if (!availableFrom) { alert("Vennligst velg 'Tilgjengelig fra'."); document.getElementById('inputAvailableFrom').focus(); return; }
             if (!availableTo) { alert("Vennligst velg 'Tilgjengelig til'."); document.getElementById('inputAvailableTo').focus(); return; }
             if (!quantity || quantity <= 0) { alert("Vennligst fyll ut et gyldig 'Antall'."); document.getElementById('inputQuantity').focus(); return; }
-            if (category === "Vehicle" && !licensePlate) { alert("Vennligst fyll ut 'Skiltnummer'."); document.getElementById('inputLicensePlate').focus(); return; }
+            let trengerSkilt = ['Car', 'Bus', 'Motorcycle', 'Truck'].includes(vehicleType);
+            if (category === "Vehicle" && trengerSkilt && !licensePlate) {
+                alert("vennligst fyll ut 'Skiltnummer'.");
+                document.getElementById('inputLicensePlate').focus();
+                return;
+            }
 
             mekortListe.push({
                 name, description, phoneNumber, availability, availableFrom, availableTo,
@@ -847,7 +885,7 @@
                             <div class="item-name">${escapeHtml(item.name)}</div>
                             <div class="item-meta">${escapeHtml(item.quantity)} stk. · ${escapeHtml(item.categoryNameNO)} · Fra ${formaterDato(item.availableFrom)}</div>
                         </div>
-                        <button type="button" class="item-remove" onclick="fjernFraListe(${index})" aria-label="Fjern ${escapeHtml(item.name)}">
+                        <button type="button" class="item-remove" data-on-click="fjernFraListe" data-arg="${index}" aria-label="Fjern ${escapeHtml(item.name)}">
                             <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
                         </button>
                     </div>`;

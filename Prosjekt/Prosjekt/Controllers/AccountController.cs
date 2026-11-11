@@ -69,7 +69,7 @@ namespace Prosjekt.Controllers
                 }
             }
 
-            ModelState.AddModelError(string.Empty, "Invalid email or password.");
+            ModelState.AddModelError(string.Empty, "Ugyldig e-post eller passord.");
             return View(model);
         }
 
@@ -203,12 +203,12 @@ namespace Prosjekt.Controllers
                     "Account",
                     new { code = encodedCode, email = user.Email },
                     Request.Scheme)
-                    ?? throw new InvalidOperationException("Could not generate the password reset URL.");
+                    ?? throw new InvalidOperationException("Kunne ikke generere URL for tilbakestilling av passord.");
 
                 await emailSender.SendEmailAsync(
                     user.Email!,
-                    "Reset your password",
-                    $"Reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    "Tilbakestill passord",
+                    $"Tilbakestill passord ved å <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>klikke her</a>.");
             }
 
             /// <summary>   
@@ -238,7 +238,7 @@ namespace Prosjekt.Controllers
         {
             if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(email))
             {
-                return BadRequest("A password reset code and email address are required.");
+                return BadRequest("En tilbakestillingskode og e-postadresse er påkrevd.");
             }
 
             return View(new ResetPasswordViewModel { Code = code, Email = email });
@@ -271,7 +271,7 @@ namespace Prosjekt.Controllers
             }
             catch (FormatException)
             {
-                ModelState.AddModelError(string.Empty, "The password reset code is invalid.");
+                ModelState.AddModelError(string.Empty, "Koden for tilbakestilling av passord er ugyldig.");
                 return View(model);
             }
 

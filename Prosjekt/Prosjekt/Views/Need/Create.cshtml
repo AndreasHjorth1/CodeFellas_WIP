@@ -277,7 +277,7 @@
             @for (var i = 0; i < antall; i++)
             {
                 var need = Model.NeedList[i];
-                <div class="need-list-item" data-need-type="@need.Type" onclick="fokuserPaKart(@i)">
+                <div class="need-list-item" data-need-type="@need.Type" data-on-click="fokuserPaKart" data-arg="@i">
                     <div class="item-text">
                         <div class="item-name">@need.Name</div>
                         <div class="item-meta">@OversettNeedType(need.Type)@(string.IsNullOrWhiteSpace(need.Description) ? "" : $" · {need.Description}")</div>
@@ -303,7 +303,7 @@
     <script src="~/lib/leaflet-markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@Context.CspNonce()">
         var needMarkers;
         var receiptMarkers = [];
 
@@ -340,15 +340,15 @@
             }
 
             var kart = L.map('kvitteringBehovKart').setView([lat, lng], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
             }).addTo(kart);
 
             /// Full informasjon om behovet i popupen. Feltene som mangler, hoppes over.
             function popupInnhold(b, adresse) {
                 var rader = [
                     ['Kategori', b.kategori],
-                    ['Viktighet', importanceNumber === 0 ? 'Akutt' : 'Planlagt'],
+                    ['Viktighet', MapSymbols.isAcute(importanceNumber) ? 'Akutt' : 'Planlagt'],
                     ['Frist', frist],
                     ['Telefon', b.telefon],
                     ['Beskrivelse', b.beskrivelse],
@@ -377,7 +377,7 @@
             if (omradeJson) {
                 try {
                     var omrade = L.geoJSON(JSON.parse(omradeJson), {
-                        style: { color: importanceNumber === 0 ? '#c8102e' : '#e0a800', weight: 2, dashArray: '6 4', fillOpacity: 0.15 }
+                        style: { color: MapSymbols.isAcute(importanceNumber) ? '#c8102e' : '#e0a800', weight: 2, dashArray: '6 4', fillOpacity: 0.15 }
                     }).addTo(kart);
                     kart.fitBounds(omrade.getBounds(), { padding: [20, 20] });
                 } catch (err) {

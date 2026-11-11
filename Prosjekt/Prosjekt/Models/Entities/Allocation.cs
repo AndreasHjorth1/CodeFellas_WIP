@@ -7,17 +7,17 @@ namespace Prosjekt.Models.Entities
         /// </summary>
         public class Allocation
         {
-            public int Id { get; set; }
+            public int Id { get; init; }
 
             [Required]
-            public int NeedId { get; set; }
+            public int NeedId { get; init; }
 
             [Required]
-            public int ResourceId { get; set; }
+            public int ResourceId { get; init; }
 
             [Range(1, 100000)]
-            public int Quantity { get; set; } = 1;
+            public int Quantity { get; init; } = 1;
 
-            public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+            public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
         }
 }
