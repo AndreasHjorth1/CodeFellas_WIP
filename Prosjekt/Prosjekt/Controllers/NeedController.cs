@@ -21,12 +21,14 @@ namespace Prosjekt.Controllers
         private readonly INeedRepository _repo;
         private readonly IResourceRepository _resourceRepo;
         private readonly IAllocationRepository _allocationRepo;
+        private readonly INotificationRepository _notificationRepo;
 
-        public NeedController(INeedRepository repo, IResourceRepository resourceRepo, IAllocationRepository allocationRepo)
+        public NeedController(INeedRepository repo, IResourceRepository resourceRepo, IAllocationRepository allocationRepo, INotificationRepository notificationRepo)
         {
             _repo = repo;
             _resourceRepo = resourceRepo;
             _allocationRepo = allocationRepo;
+            _notificationRepo = notificationRepo;
         }
 
         [HttpGet]
@@ -206,8 +208,25 @@ namespace Prosjekt.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
+            // Må hentes før sletting, ellers vet vi ikke hvilke ressurser som var tildelt
+            var need = await _repo.GetByIdAsync(id);
+            var allocations = await _allocationRepo.GetByNeedAsync(id);
+
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByNeedAsync(id);
+
+            // Ressursene blir ledige igjen, og eierne får beskjed
+            foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
+            {
+                await UpdateAvailabilityAsync(resourceId);
+
+                var resource = await _resourceRepo.GetByIdAsync(resourceId);
+                if (need != null && resource != null)
+                {
+                    await NotifyOwnerAsync(resource, $"er levert tilbake. Behovet «{need.Name}» ble slettet.");
+                }
+            }
+
             return RedirectToAction(nameof(Overview));
         }
 
@@ -359,6 +378,8 @@ namespace Prosjekt.Controllers
                 Quantity = quantity
             });
 
+            await NotifyOwnerAsync(resource, $"ble tildelt behovet «{need.Name}» ({quantity} stk).");
+
             await UpdateAvailabilityAsync(resourceId);
 
             if (need.Status == EntryStatus.New || need.Status == EntryStatus.UnderReview)
@@ -385,18 +406,21 @@ namespace Prosjekt.Controllers
             await _allocationRepo.DeleteAsync(allocationId);
             await UpdateAvailabilityAsync(resourceId);
 
+            var need = await _repo.GetByIdAsync(needId);
+            var resource = await _resourceRepo.GetByIdAsync(resourceId);
+            if (need != null && resource != null)
+            {
+                await NotifyOwnerAsync(resource, $"er levert tilbake fra behovet «{need.Name}».");
+            }
+
             /// <summary>
             /// Står behovet uten tildelinger, går det tilbake til Vurderes
             /// </summary>
             var igjen = await _allocationRepo.GetByNeedAsync(needId);
-            if (!igjen.Any())
+            if (!igjen.Any() && need != null && need.Status == EntryStatus.Assigned)
             {
-                var need = await _repo.GetByIdAsync(needId);
-                if (need != null && need.Status == EntryStatus.Assigned)
-                {
-                    need.Status = EntryStatus.UnderReview;
-                    await _repo.UpdateAsync(need);
-                }
+                need.Status = EntryStatus.UnderReview;
+                await _repo.UpdateAsync(need);
             }
 
             return RedirectToAction(nameof(Match), new { id = needId });
@@ -425,6 +449,12 @@ namespace Prosjekt.Controllers
                 foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
                 {
                     await UpdateAvailabilityAsync(resourceId);
+
+                    var resource = await _resourceRepo.GetByIdAsync(resourceId);
+                    if (resource != null)
+                    {
+                        await NotifyOwnerAsync(resource, $"er levert tilbake. Behovet «{need.Name}» er løst.");
+                    }
                 }
             }
 
@@ -491,6 +521,23 @@ namespace Prosjekt.Controllers
 
             resource.IsAvailable = resource.Quantity - taken > 0;
             await _resourceRepo.UpdateAsync(resource);
+        }
+
+        /// <summary>
+        /// Sender et varsel til den som eier ressursen. Gjør ingenting hvis ressursen ikke har en eier.
+        /// </summary>
+        private async Task NotifyOwnerAsync(Resource resource, string tekst)
+        {
+            if (string.IsNullOrEmpty(resource.UserId))
+            {
+                return;
+            }
+
+            await _notificationRepo.AddAsync(new Notification
+            {
+                UserId = resource.UserId,
+                Message = $"«{resource.Name}» {tekst}"
+            });
         }
     }
 }
