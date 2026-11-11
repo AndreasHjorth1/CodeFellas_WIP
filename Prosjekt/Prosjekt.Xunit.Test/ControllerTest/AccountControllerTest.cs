@@ -12,6 +12,7 @@ using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Authorization;
 using Prosjekt.Models.Authorization;
+using Prosjekt.Models.Entities;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
 {
@@ -37,7 +38,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             };
         }
 
-        private static IdentityUser TestUser() => new() { Email = "ola@test.no", UserName = "ola@test.no" };
+        private static ApplicationUser TestUser() => new() { Email = "ola@test.no", UserName = "ola@test.no" };
 
         private static string EncodeCode(string code) =>
             WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -221,7 +222,13 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         [Fact]
         public async Task Register_Post_Success_CreatesConfirmedUserAndRedirectsToLogin()
         {
-            var model = new RegisterViewModel { Email = "ny@test.no", Password = "Passord1!", ConfirmPassword = "Passord1!" };
+            var model = new RegisterViewModel
+            {
+                FullName = "  Ola Nordmann ",
+                Email = "ny@test.no",
+                Password = "Passord1!",
+                ConfirmPassword = "Passord1!"
+            };
 
             var result = await _controller.Register(model);
 
@@ -231,6 +238,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.Equal("ny@test.no", _userManager.CreatedUser.UserName);
             Assert.True(_userManager.CreatedUser.EmailConfirmed);
             Assert.Equal("Passord1!", _userManager.CreatedPassword);
+
+            /// Navnet lagres på brukeren, uten mellomrom i endene
+            Assert.Equal("Ola Nordmann", _userManager.CreatedUser.FullName);
         }
 
         [Fact]
@@ -276,6 +286,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             var model = new CreateUserViewModel
             {
+                FullName = "Kari Nordmann",
                 Email = "ny@test.no",
                 Password = "Passord1!",
                 ConfirmPassword = "Passord1!",
@@ -288,6 +299,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.Equal("CreateUser", redirect.ActionName);
             Assert.Equal("ny@test.no", _userManager.CreatedUser!.Email);
             Assert.True(_userManager.CreatedUser.EmailConfirmed);
+            Assert.Equal("Kari Nordmann", _userManager.CreatedUser.FullName);
             Assert.Equal(role, _userManager.AddedRole);
             Assert.NotNull(_controller.TempData["CreateUserSuccess"]);
         }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Prosjekt.Models.Authorization;
+using Prosjekt.Models.Entities;
 
 namespace Prosjekt.Services
 {
@@ -32,7 +33,7 @@ namespace Prosjekt.Services
             }
         }
 
-        public static async Task SeedDevelopmentAdminAsync(UserManager<IdentityUser> userManager)
+        public static async Task SeedDevelopmentAdminAsync(UserManager<ApplicationUser> userManager)
         {
             var user = await FindOrCreateDevelopmentUserAsync(userManager, DevelopmentAdminEmail);
 
@@ -44,7 +45,7 @@ namespace Prosjekt.Services
             }
         }
 
-        public static async Task SeedDevelopmentCoordinatorAsync(UserManager<IdentityUser> userManager)
+        public static async Task SeedDevelopmentCoordinatorAsync(UserManager<ApplicationUser> userManager)
         {
             var user = await FindOrCreateDevelopmentUserAsync(userManager, DevelopmentCoordinatorEmail);
 
@@ -56,22 +57,23 @@ namespace Prosjekt.Services
             }
         }
 
-        public static async Task<IdentityUser> SeedDevelopmentUserAsync(UserManager<IdentityUser> userManager)
+        public static async Task<ApplicationUser> SeedDevelopmentUserAsync(UserManager<ApplicationUser> userManager)
         {
             return await FindOrCreateDevelopmentUserAsync(userManager, DevelopmentUserEmail);
         }
 
-        private static async Task<IdentityUser> FindOrCreateDevelopmentUserAsync(
-            UserManager<IdentityUser> userManager,
+        private static async Task<ApplicationUser> FindOrCreateDevelopmentUserAsync(
+            UserManager<ApplicationUser> userManager,
             string email)
         {
             var user = await userManager.FindByEmailAsync(email);
             if (user is null)
             {
-                user = new IdentityUser
+                user = new ApplicationUser
                 {
                     UserName = email,
                     Email = email,
+                    FullName = DevelopmentName(email),
                     EmailConfirmed = true
                 };
 
@@ -82,6 +84,13 @@ namespace Prosjekt.Services
 
             return user;
         }
+
+        private static string DevelopmentName(string email) => email switch
+        {
+            DevelopmentAdminEmail => "Test Admin",
+            DevelopmentCoordinatorEmail => "Test Koordinator",
+            _ => "Test Bruker"
+        };
 
         private static async Task EnsureSucceededAsync(Task<IdentityResult> operation, string failureMessage)
         {

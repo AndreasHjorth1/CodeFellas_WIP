@@ -8,25 +8,26 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Claims;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
+using Prosjekt.Models.Entities;
 
 namespace Prosjekt.Xunit.Test.Fakes
 {
     /// <summary>
     /// UserManager uten database. Testen bestemmer hva metodene svarer, og kan sjekke hva de fikk inn.
     /// </summary>
-    public class FakeUserManager : UserManager<IdentityUser>
+    public class FakeUserManager : UserManager<ApplicationUser>
     {
-        public IdentityUser? UserToFind { get; set; }
+        public ApplicationUser? UserToFind { get; set; }
         public bool EmailConfirmed { get; set; } = true;
         public IdentityResult CreateResult { get; set; } = IdentityResult.Success;
         public IdentityResult ResetResult { get; set; } = IdentityResult.Success;
         public string ResetToken { get; set; } = "reset-token";
         public bool IsAdmin { get; set; }
-        public IdentityUser? CurrentUser { get; set; }
+        public ApplicationUser? CurrentUser { get; set; }
         public IdentityResult PhoneResult { get; set; } = IdentityResult.Success;
         public string? SavedPhoneNumber { get; private set; }
 
-        public IdentityUser? CreatedUser { get; private set; }
+        public ApplicationUser? CreatedUser { get; private set; }
         public string? CreatedPassword { get; private set; }
         public string? UsedResetCode { get; private set; }
         public string? NewPassword { get; private set; }
@@ -34,41 +35,41 @@ namespace Prosjekt.Xunit.Test.Fakes
 
         public FakeUserManager()
             : base(new FakeUserStore(), null!, null!, null!, null!, null!, null!, null!,
-                NullLogger<UserManager<IdentityUser>>.Instance)
+                NullLogger<UserManager<ApplicationUser>>.Instance)
         {
         }
 
-        public override Task<IdentityUser?> FindByEmailAsync(string email) => Task.FromResult(UserToFind);
+        public override Task<ApplicationUser?> FindByEmailAsync(string email) => Task.FromResult(UserToFind);
 
-        public override Task<bool> IsEmailConfirmedAsync(IdentityUser user) => Task.FromResult(EmailConfirmed);
+        public override Task<bool> IsEmailConfirmedAsync(ApplicationUser user) => Task.FromResult(EmailConfirmed);
 
-        public override Task<bool> IsInRoleAsync(IdentityUser user, string role) =>
+        public override Task<bool> IsInRoleAsync(ApplicationUser user, string role) =>
             Task.FromResult(IsAdmin && role == "Admin");
 
-        public override Task<string> GeneratePasswordResetTokenAsync(IdentityUser user) => Task.FromResult(ResetToken);
+        public override Task<string> GeneratePasswordResetTokenAsync(ApplicationUser user) => Task.FromResult(ResetToken);
 
-        public override Task<IdentityResult> CreateAsync(IdentityUser user, string password)
+        public override Task<IdentityResult> CreateAsync(ApplicationUser user, string password)
         {
             CreatedUser = user;
             CreatedPassword = password;
             return Task.FromResult(CreateResult);
         }
-        public override Task<IdentityResult> AddToRoleAsync(IdentityUser user, string role)
+        public override Task<IdentityResult> AddToRoleAsync(ApplicationUser user, string role)
         {
             AddedRole = role;
             return Task.FromResult(IdentityResult.Success);
         }
 
-        public override Task<IdentityResult> ResetPasswordAsync(IdentityUser user, string token, string newPassword)
+        public override Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword)
         {
             UsedResetCode = token;
             NewPassword = newPassword;
             return Task.FromResult(ResetResult);
         }
-        public override Task<IdentityUser?> GetUserAsync(ClaimsPrincipal principal) =>
+        public override Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal principal) =>
             Task.FromResult(CurrentUser);
 
-        public override Task<IdentityResult> SetPhoneNumberAsync(IdentityUser user, string? phoneNumber)
+        public override Task<IdentityResult> SetPhoneNumberAsync(ApplicationUser user, string? phoneNumber)
         {
             SavedPhoneNumber = phoneNumber;
             if (PhoneResult.Succeeded)
@@ -82,22 +83,22 @@ namespace Prosjekt.Xunit.Test.Fakes
     /// <summary>
     /// UserManager krever en store, men alle metodene som brukes er overstyrt, så denne kalles aldri.
     /// </summary>
-    public class FakeUserStore : IUserStore<IdentityUser>
+    public class FakeUserStore : IUserStore<ApplicationUser>
     {
         public void Dispose() { }
-        public Task<IdentityResult> CreateAsync(IdentityUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<IdentityResult> DeleteAsync(IdentityUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<IdentityUser?> FindByIdAsync(string userId, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<IdentityUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<string?> GetNormalizedUserNameAsync(IdentityUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<string> GetUserIdAsync(IdentityUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<string?> GetUserNameAsync(IdentityUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task SetNormalizedUserNameAsync(IdentityUser user, string? normalizedName, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task SetUserNameAsync(IdentityUser user, string? userName, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<IdentityResult> UpdateAsync(IdentityUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<IdentityResult> CreateAsync(ApplicationUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<IdentityResult> DeleteAsync(ApplicationUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<ApplicationUser?> FindByIdAsync(string userId, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<ApplicationUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<string?> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<string> GetUserIdAsync(ApplicationUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<string?> GetUserNameAsync(ApplicationUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task SetNormalizedUserNameAsync(ApplicationUser user, string? normalizedName, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task SetUserNameAsync(ApplicationUser user, string? userName, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<IdentityResult> UpdateAsync(ApplicationUser user, CancellationToken cancellationToken) => throw new NotImplementedException();
     }
 
-    public class FakeSignInManager : SignInManager<IdentityUser>
+    public class FakeSignInManager : SignInManager<ApplicationUser>
     {
         public SignInResult SignInResult { get; set; } = SignInResult.Success;
         public bool SignInCalled { get; private set; }
@@ -108,16 +109,16 @@ namespace Prosjekt.Xunit.Test.Fakes
             : base(
                 userManager,
                 new HttpContextAccessor(),
-                new UserClaimsPrincipalFactory<IdentityUser>(userManager, Microsoft.Extensions.Options.Options.Create(new IdentityOptions())),
+                new UserClaimsPrincipalFactory<ApplicationUser>(userManager, Microsoft.Extensions.Options.Options.Create(new IdentityOptions())),
                 Microsoft.Extensions.Options.Options.Create(new IdentityOptions()),
-                NullLogger<SignInManager<IdentityUser>>.Instance,
+                NullLogger<SignInManager<ApplicationUser>>.Instance,
                 new AuthenticationSchemeProvider(Microsoft.Extensions.Options.Options.Create(new AuthenticationOptions())),
-                new DefaultUserConfirmation<IdentityUser>())
+                new DefaultUserConfirmation<ApplicationUser>())
         {
         }
 
         public override Task<SignInResult> PasswordSignInAsync(
-            IdentityUser user, string password, bool isPersistent, bool lockoutOnFailure)
+            ApplicationUser user, string password, bool isPersistent, bool lockoutOnFailure)
         {
             SignInCalled = true;
             LockoutOnFailure = lockoutOnFailure;

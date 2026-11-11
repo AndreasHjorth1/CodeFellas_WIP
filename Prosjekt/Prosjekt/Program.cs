@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
+using Prosjekt.Models.Entities;
 using Prosjekt.Services;
 using NetTopologySuite.IO.Converters;
 
@@ -67,7 +68,7 @@ builder.Services.AddScoped<AuditLogService>();
 /// Identity: innlogging, brukere og roller
 /// </summary>
 var identityBuilder = builder.Services
-    .AddIdentity<IdentityUser, IdentityRole>(options =>
+    .AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.User.RequireUniqueEmail = true;
@@ -119,7 +120,7 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await IdentitySeeder.SeedRolesAsync(roleManager);
 
-        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         await IdentitySeeder.SeedDevelopmentAdminAsync(userManager);
         await IdentitySeeder.SeedDevelopmentUserAsync(userManager);
         await IdentitySeeder.SeedDevelopmentCoordinatorAsync(userManager);

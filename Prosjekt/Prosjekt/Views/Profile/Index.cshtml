@@ -2,16 +2,15 @@
 @{
     ViewData["Title"] = "Min profil";
 
-    /// Samme visning av navn og initialer som i _Layout: «ola.haugland@...» blir «Ola Haugland» og «OH»
-    var email = User.Identity?.Name ?? "";
-    var nameParts = email.Split('@')[0]
-        .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-    var displayName = nameParts.Length > 0
-        ? string.Join(" ", nameParts.Select(p => char.ToUpper(p[0]) + p[1..]))
-        : email;
-    var initials = nameParts.Length >= 2
-        ? $"{nameParts[0][0]}{nameParts[1][0]}"
-        : displayName.Length >= 2 ? displayName[..2] : displayName;
+    /// Navn og e-post hentes fra databasen
+    var email = Model.Email;
+    var displayName = Model.FullName;
+
+    /// Samme initialer som i toppmenyen: «Ola Nordmann» blir «ON»
+    var nameParts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var initials = (nameParts.Length >= 2
+        ? $"{nameParts[0][0]}{nameParts[^1][0]}"
+        : displayName.Length >= 2 ? displayName[..2] : displayName).ToUpper();
 }
 
 <style>
@@ -160,16 +159,6 @@
         text-decoration: underline;
     }
 
-    .profile-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin: 1rem 0 0;
-    }
-
-    .profile-label + .profile-label {
-        margin-top: 0.75rem;
-    }
-
     .profile-text {
         font-size: 0.85rem;
         max-width: 310px;
@@ -191,30 +180,6 @@
 
     .profile-btn-dark:hover {
         background-color: #021738;
-    }
-
-    .profile-btn-light {
-        background-color: #f0f3f7;
-        color: #000000;
-        border: 1px solid #5b6b82;
-        border-radius: 3px;
-        padding: 0.45rem 0.9rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-
-    .profile-theme-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding-top: 0.6rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-
-    .profile-theme-buttons {
-        display: flex;
-        gap: 0.25rem;
     }
 
     @@media (max-width: 767px) {
@@ -270,7 +235,7 @@
         <!-- Innhold -->
         <div class="profile-content">
             <div class="profile-heading">
-                <span class="profile-avatar">@initials.ToUpper()</span>
+                <span class="profile-avatar">@initials</span>
                 <h1>@displayName</h1>
             </div>
 
@@ -284,7 +249,6 @@
                 <div class="profile-row">
                     <span class="profile-row-label">Navn</span>
                     <span class="profile-row-value">@displayName</span>
-                    <button type="button" class="profile-change">Endre</button>
                 </div>
                 <div class="profile-row">
                     <span class="profile-row-label">Mobil</span>
@@ -312,18 +276,16 @@
                 <div class="profile-row">
                     <span class="profile-row-label">E-post</span>
                     <span class="profile-row-value">@email</span>
-                    <button type="button" class="profile-change">Endre</button>
                 </div>
+                @* Navn og e-post kan ikke endres av brukeren selv, bare telefonnummeret *@
             </section>
 
             <section class="profile-card">
                 <h2>Passord og innlogging</h2>
 
-                <p class="profile-label">Passord</p>
-                <p class="profile-label">Sist endret</p>
-
                 <p class="profile-text">
-                    Vi sender en lenke til den epostadresse. Der lager du et nytt passord
+                    Vi sender en lenke til <strong>@email</strong>. Der lager du et nytt passord.
+                    Du blir logget ut når lenken er sendt.
                 </p>
 
                 @* Bruker den eksisterende «Glemt passord»-funksjonen med e-posten til den innloggede brukeren *@
@@ -331,22 +293,10 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="Email" value="@email" />
                     <button type="submit" class="profile-btn-dark">
-                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                        Tilbakestill Passord
+                        <i class="fa-solid fa-key" aria-hidden="true"></i>
+                        Tilbakestill passord
                     </button>
                 </form>
-            </section>
-
-            <section class="profile-card">
-                <h2>Visning</h2>
-
-                <div class="profile-theme-row">
-                    <span>Farger</span>
-                    <div class="profile-theme-buttons">
-                        <button type="button" class="profile-btn-light">Lys</button>
-                        <button type="button" class="profile-btn-dark">Mørk</button>
-                    </div>
-                </div>
             </section>
         </div>
 

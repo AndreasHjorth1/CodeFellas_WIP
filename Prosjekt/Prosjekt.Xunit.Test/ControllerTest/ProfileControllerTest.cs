@@ -6,6 +6,7 @@ using Prosjekt.Controllers;
 using Prosjekt.Models.ModelView.Account;
 using Prosjekt.Xunit.Test.Fakes;
 using Xunit;
+using Prosjekt.Models.Entities;
 
 namespace Prosjekt.Xunit.Test.ControllerTest
 {
@@ -25,11 +26,11 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             };
         }
 
-        private static IdentityUser TestUser() =>
-            new() { Email = "ola@test.no", UserName = "ola@test.no", PhoneNumber = "98765432" };
+        private static ApplicationUser TestUser() =>
+            new() { Email = "ola@test.no", UserName = "ola@test.no", PhoneNumber = "98765432", FullName = "Ola Nordmann" };
 
         [Fact]
-        public async Task Index_ShowsEmailAndPhoneNumber()
+        public async Task Index_ShowsNameEmailAndPhoneNumber()
         {
             _userManager.CurrentUser = TestUser();
 
@@ -37,8 +38,24 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 
             var view = Assert.IsType<ViewResult>(result);
             var model = Assert.IsType<ProfileViewModel>(view.Model);
+            Assert.Equal("Ola Nordmann", model.FullName);
             Assert.Equal("ola@test.no", model.Email);
             Assert.Equal("98765432", model.PhoneNumber);
+        }
+
+        /// Sikkerhet: navn og e-post sendt inn i skjemaet skal ikke brukes, de hentes fra databasen
+        [Fact]
+        public async Task UpdatePhoneNumber_InvalidModel_KeepsNameAndEmailFromDatabase()
+        {
+            _userManager.CurrentUser = TestUser();
+            _controller.ModelState.AddModelError("PhoneNumber", "Ugyldig telefonnummer.");
+
+            var result = await _controller.UpdatePhoneNumber(
+                new ProfileViewModel { FullName = "Hacker", Email = "annen@test.no", PhoneNumber = "tull" });
+
+            var model = Assert.IsType<ProfileViewModel>(Assert.IsType<ViewResult>(result).Model);
+            Assert.Equal("Ola Nordmann", model.FullName);
+            Assert.Equal("ola@test.no", model.Email);
         }
 
         [Fact]

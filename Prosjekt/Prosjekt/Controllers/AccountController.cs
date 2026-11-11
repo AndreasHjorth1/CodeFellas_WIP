@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Text.Encodings.Web;
 using Prosjekt.Models.Authorization;
+using Prosjekt.Models.Entities;
 using Prosjekt.Models.ModelView.Account;
 
 namespace Prosjekt.Controllers
@@ -14,7 +15,7 @@ namespace Prosjekt.Controllers
     /// Registrering, innlogging, utlogging og tilbakestilling av passord.
     /// POST-handlingene er CSRF-beskyttet av et globalt filter i Program.cs.
     /// </summary>
-    public sealed class AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager,
+    public sealed class AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
     IEmailSender emailSender) : Controller
     {
         [AllowAnonymous]
@@ -103,11 +104,12 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
-            var user = new IdentityUser
+            var user = new ApplicationUser
             {
                 UserName = model.Email,
                 Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
+                FullName = model.FullName.Trim(),
                 EmailConfirmed = true
             };
             var result = await userManager.CreateAsync(user, model.Password);
@@ -148,10 +150,11 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
-            var user = new IdentityUser
+            var user = new ApplicationUser
             {
                 UserName = model.Email,
                 Email = model.Email,
+                FullName = model.FullName.Trim(),
                 EmailConfirmed = true
             };
             var result = await userManager.CreateAsync(user, model.Password);

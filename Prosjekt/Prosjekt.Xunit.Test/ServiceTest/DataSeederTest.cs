@@ -73,9 +73,9 @@ namespace Prosjekt.Xunit
 
             // UserId er en fremmednøkkel, så brukerne må finnes i databasen
             context.Users.AddRange(
-                new IdentityUser { Id = "user", UserName = "user" },
-                new IdentityUser { Id = "coordinator", UserName = "coordinator" },
-                new IdentityUser { Id = "admin", UserName = "admin" });
+                new ApplicationUser { Id = "user", UserName = "user" },
+                new ApplicationUser { Id = "coordinator", UserName = "coordinator" },
+                new ApplicationUser { Id = "admin", UserName = "admin" });
             context.SaveChanges();
 
             return context;

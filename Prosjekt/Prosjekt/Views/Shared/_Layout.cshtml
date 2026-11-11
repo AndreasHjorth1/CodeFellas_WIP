@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@using Prosjekt.Models.Entities
+@inject UserManager<ApplicationUser> UserManager
+<!DOCTYPE html>
 <html lang="no">
 <head>
     <meta charset="utf-8" />
@@ -263,16 +266,15 @@
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
         bool IsCurrent(string controller, string action) => currentController == controller && currentAction == action;
 
-        /// Viser «ola.haugland@...» som «Ola Haugland» og «OH»
-        var userName = User.Identity?.Name ?? "";
-        var nameParts = userName.Split('@')[0]
-            .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-        var displayName = nameParts.Length > 0
-            ? string.Join(" ", nameParts.Select(p => char.ToUpper(p[0]) + p[1..]))
-            : userName;
-        var initials = nameParts.Length >= 2
-            ? $"{nameParts[0][0]}{nameParts[1][0]}"
-            : displayName.Length >= 2 ? displayName[..2] : displayName;
+        /// Navnet til den innloggede brukeren hentes fra databasen
+        var currentUser = await UserManager.GetUserAsync(User);
+        var displayName = currentUser?.FullName ?? string.Empty;
+
+        /// «Ola Nordmann» blir «ON», «Kari» blir «KA»
+        var nameParts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var initials = (nameParts.Length >= 2
+            ? $"{nameParts[0][0]}{nameParts[^1][0]}"
+            : displayName.Length >= 2 ? displayName[..2] : displayName).ToUpper();
     }
 
     @if (User.Identity == null || !User.Identity.IsAuthenticated)
@@ -335,7 +337,7 @@
                       <div class="dropdown">
                         <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="d-none d-sm-inline">@displayName</span>
-                            <span class="user-avatar">@initials.ToUpper()</span>
+                            <span class="user-avatar">@initials</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Resource" asp-action="Overview">Mine ressurser</a></li>
@@ -406,7 +408,7 @@
                       <div class="dropdown">
                         <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="d-none d-sm-inline">@displayName</span>
-                            <span class="user-avatar">@initials.ToUpper()</span>
+                            <span class="user-avatar">@initials</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li class="d-md-none"><a class="dropdown-item" asp-controller="Home" asp-action="Index">Oversikt</a></li>
