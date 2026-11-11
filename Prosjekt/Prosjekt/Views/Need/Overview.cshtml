@@ -950,7 +950,7 @@
                                     <div class="row-actions">
                                         <a href="${urls.match}/${b.id}">Finn ressurser</a>
                                         <a href="${urls.edit}/${b.id}">Endre</a>
-                                        <form method="post" action="${urls.delete}/${b.id}" class="d-inline" data-navn="${escapeHtml(b.name)}">
+                                        <form method="post" action="${urls.delete}/${b.id}" class="d-inline" data-confirm="Er du sikker på at du vil slette ${escapeHtml(b.name)}?" data-confirm-title="Slett behov">
                                             <input type="hidden" name="__RequestVerificationToken" value="${escapeHtml(token)}" />
                                             <button type="submit" class="delete-link">Slett</button>
                                         </form>
@@ -980,12 +980,7 @@
                         handlinger.addEventListener('keydown', function (e) { e.stopPropagation(); });
                     });
 
-                    /// Navnet ligger i data-navn og ikke rett i onsubmit, ellers kan et behovsnavn kjøres som JavaScript (XSS).
-                    liste.querySelectorAll('.row-actions form').forEach(function (skjema) {
-                        skjema.addEventListener('submit', function (e) {
-                            if (!confirm('Er du sikker på at du vil slette ' + skjema.dataset.navn + '?')) e.preventDefault();
-                        });
-                    });
+                    /// Slett-skjemaet har data-confirm, så site.js viser bekreftelsespopupen
 
                     liste.querySelectorAll('.need-card').forEach(function (kort) {
                         kort.addEventListener('click', function (e) {

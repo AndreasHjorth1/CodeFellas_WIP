@@ -595,6 +595,24 @@
     </div>
 
 
+    <!-- POPUP SOM BEKREFTER HANDLINGER (skjema med data-confirm, se site.js) -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="color: #04245a; border-radius: 8px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-semibold" id="confirmModalTitle">Bekreft</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Lukk"></button>
+                </div>
+                <div class="modal-body" id="confirmModalText"></div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Avbryt</button>
+                    <button type="button" class="btn btn-danger" id="confirmModalButton">Slett</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- SKRIPTER -->
     <script src="~/lib/leaflet/leaflet.js"></script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

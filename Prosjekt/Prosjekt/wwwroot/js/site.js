@@ -286,9 +286,36 @@ function resetRadius(map, runFilter) {
         if (element) invoke(element, 'onChange', e);
     });
 
+    /// Viser popupen #confirmModal fra _Layout i stedet for nettleserens confirm().
+    /// data-confirm-title og data-confirm-button kan endre tittel og knappetekst.
+    /// Teksten settes med textContent, så navn i teksten kan ikke kjøres som HTML (XSS).
+    var pendingForm = null;
+
     document.addEventListener('submit', function (e) {
         var form = e.target.closest('form[data-confirm]');
-        if (form && !confirm(form.dataset.confirm)) e.preventDefault();
+        if (!form) return;
+
+        var modalElement = document.getElementById('confirmModal');
+        if (!modalElement || typeof bootstrap === 'undefined') {
+            if (!confirm(form.dataset.confirm)) e.preventDefault();
+            return;
+        }
+
+        e.preventDefault();
+        pendingForm = form;
+        document.getElementById('confirmModalTitle').textContent = form.dataset.confirmTitle || 'Bekreft';
+        document.getElementById('confirmModalText').textContent = form.dataset.confirm;
+        document.getElementById('confirmModalButton').textContent = form.dataset.confirmButton || 'Slett';
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    });
+
+    /// form.submit() utløser ikke submit-hendelsen, så popupen vises ikke på nytt
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('#confirmModalButton') || !pendingForm) return;
+        var form = pendingForm;
+        pendingForm = null;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal')).hide();
+        form.submit();
     });
 
     /// <summary>
