@@ -34,6 +34,12 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult PageNotFound() /// 404 side.
+    {
+        Response.StatusCode = 404;
+        return View();
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
