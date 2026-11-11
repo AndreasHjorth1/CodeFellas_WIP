@@ -371,6 +371,7 @@ namespace Prosjekt.Controllers
                 ResourceViewModel.ResourceType.Clothing => model.Size,
                 ResourceViewModel.ResourceType.Provision => model.ProvisionType,
                 ResourceViewModel.ResourceType.Materials => model.MaterialType,
+                ResourceViewModel.ResourceType.Competence => model.CompetenceType,
                 _ => null
             };
 
