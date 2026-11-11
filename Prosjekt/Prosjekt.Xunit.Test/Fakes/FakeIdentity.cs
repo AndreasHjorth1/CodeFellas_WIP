@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Security.Claims;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace Prosjekt.Xunit.Test.Fakes
@@ -21,6 +22,9 @@ namespace Prosjekt.Xunit.Test.Fakes
         public IdentityResult ResetResult { get; set; } = IdentityResult.Success;
         public string ResetToken { get; set; } = "reset-token";
         public bool IsAdmin { get; set; }
+        public IdentityUser? CurrentUser { get; set; }
+        public IdentityResult PhoneResult { get; set; } = IdentityResult.Success;
+        public string? SavedPhoneNumber { get; private set; }
 
         public IdentityUser? CreatedUser { get; private set; }
         public string? CreatedPassword { get; private set; }
@@ -60,6 +64,18 @@ namespace Prosjekt.Xunit.Test.Fakes
             UsedResetCode = token;
             NewPassword = newPassword;
             return Task.FromResult(ResetResult);
+        }
+        public override Task<IdentityUser?> GetUserAsync(ClaimsPrincipal principal) =>
+            Task.FromResult(CurrentUser);
+
+        public override Task<IdentityResult> SetPhoneNumberAsync(IdentityUser user, string? phoneNumber)
+        {
+            SavedPhoneNumber = phoneNumber;
+            if (PhoneResult.Succeeded)
+            {
+                user.PhoneNumber = phoneNumber;
+            }
+            return Task.FromResult(PhoneResult);
         }
     }
 

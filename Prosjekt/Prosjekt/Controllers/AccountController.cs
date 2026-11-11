@@ -107,6 +107,7 @@ namespace Prosjekt.Controllers
             {
                 UserName = model.Email,
                 Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
                 EmailConfirmed = true
             };
             var result = await userManager.CreateAsync(user, model.Password);
@@ -294,7 +295,7 @@ namespace Prosjekt.Controllers
         public IActionResult ResetPasswordConfirmation()
         {
             return View();
-        }
+        } 
 
         /// <summary>
         /// Sender bare til lokale adresser, så returnUrl ikke kan føre brukeren til en annen nettside.

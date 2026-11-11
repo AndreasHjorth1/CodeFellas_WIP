@@ -27,7 +27,9 @@ namespace Prosjekt.Models.ModelView
             [Display(Name = "Kjøretøy")]
             Vehicle = 4,
             [Display(Name = "Materialer")]
-            Materials = 5
+            Materials = 5,
+            [Display(Name = "Kompetanse")]
+            Competence = 6,
         }
 
         [Display(Name = "Navn")]
@@ -94,6 +96,8 @@ namespace Prosjekt.Models.ModelView
         public string? MaterialType { get; init; }
 
         [Display(Name = "Provisjonstype")]
-        public string? ProvisionType { get; init; }
+        public string? ProvisionType { get; set; }
+        [Display(Name = "Yrke eller erfaringsområde")]
+        public string? CompetenceType { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿@{
+﻿@model Prosjekt.Models.ModelView.Account.ProfileViewModel
+@{
     ViewData["Title"] = "Min profil";
 
     /// Samme visning av navn og initialer som i _Layout: «ola.haugland@...» blir «Ola Haugland» og «OH»
@@ -276,6 +277,10 @@
             <section class="profile-card">
                 <h2>Kontaktinformasjon</h2>
 
+                @if (TempData["Melding"] != null)
+                {
+                    <div class="alert alert-success py-2 small" role="status">@TempData["Melding"]</div>
+                }
                 <div class="profile-row">
                     <span class="profile-row-label">Navn</span>
                     <span class="profile-row-value">@displayName</span>
@@ -283,8 +288,26 @@
                 </div>
                 <div class="profile-row">
                     <span class="profile-row-label">Mobil</span>
-                    <span class="profile-row-value">Ikke registrert</span>
-                    <button type="button" class="profile-change">Endre</button>
+                    <span class="profile-row-value">
+                        @(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "Ikke registrert" : Model.PhoneNumber)
+                    </span>
+                    <button type="button" class="profile-change" data-bs-toggle="collapse"
+                            data-bs-target="#endreMobil" aria-expanded="false" aria-controls="endreMobil">
+                        Endre
+                    </button>
+                </div>
+
+                @* Skjemaet er skjult til brukeren trykker «Endre». Åpnes automatisk hvis nummeret ble underkjent. *@
+                <div class="collapse @(ViewData.ModelState.IsValid ? "" : "show")" id="endreMobil">
+                    <form asp-controller="Profile" asp-action="UpdatePhoneNumber" method="post"
+                          class="d-flex gap-2 align-items-start mb-3">
+                        @Html.AntiForgeryToken()
+                        <div class="flex-grow-1">
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="F.eks. 98765432" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+                        <button type="submit" class="profile-btn-dark">Lagre</button>
+                    </form>
                 </div>
                 <div class="profile-row">
                     <span class="profile-row-label">E-post</span>

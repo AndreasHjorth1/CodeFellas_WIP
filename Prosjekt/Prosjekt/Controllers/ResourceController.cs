@@ -371,6 +371,7 @@ namespace Prosjekt.Controllers
                 ResourceViewModel.ResourceType.Clothing => model.Size,
                 ResourceViewModel.ResourceType.Provision => model.ProvisionType,
                 ResourceViewModel.ResourceType.Materials => model.MaterialType,
+                ResourceViewModel.ResourceType.Competence => model.CompetenceType,
                 _ => null
             };
 
@@ -378,13 +379,21 @@ namespace Prosjekt.Controllers
         }
 
         /// <summary>
-        /// Skiltnummer lagres i beskrivelsen, fordi det ikke har egen kolonne.
+        /// Skiltnummer og yrke lagres i beskrivelsen, fordi det ikke har egen kolonne.
         /// </summary>
         private static string GetFullDescription(ResourceViewModel model)
         {
-            return model.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(model.LicensePlate)
-                ? $"{model.Description} [Reg.nr: {model.LicensePlate.Trim()}]".Trim()
-                : model.Description ?? "";
+            if (model.Category == ResourceViewModel.ResourceType.Vehicle && !string.IsNullOrWhiteSpace(model.LicensePlate))
+            {
+                return $"{model.Description} [Reg.nr: {model.LicensePlate.Trim()}]".Trim();
+            }
+
+            if (model.Category == ResourceViewModel.ResourceType.Competence && !string.IsNullOrWhiteSpace(model.CompetenceType))
+            {
+                return $"{model.Description} [Yrke: {model.CompetenceType.Trim()}]".Trim();
+            }
+
+            return model.Description ?? string.Empty;
         }
     }
 }
