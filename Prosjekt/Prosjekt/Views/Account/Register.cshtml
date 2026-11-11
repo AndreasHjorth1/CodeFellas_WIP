@@ -138,6 +138,12 @@
             </div>
 
             <div class="mb-3">
+                <label asp-for="PhoneNumber" class="form-label"></label>
+                <input asp-for="PhoneNumber" class="form-control" placeholder="F.eks. 98765432" />
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
                 <label asp-for="Password" class="form-label">Passord</label>
                 <div class="password-field">
                     <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" />
