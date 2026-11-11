@@ -771,11 +771,21 @@
             var kategori = document.getElementById('kategoriVelger').value;
             var type = document.getElementById('inputVehicleType')?.value ?? '';
 
-            var laast = kategori === 'Vehicle' && ['Car', 'Bus', 'Motorcycle', 'Truck'].includes(type);
+            /// <summary>
+            /// Kjøretøy med skilt og kompetanse registreres ett om gangen, fordi raden beskriver ett konkret objekt eller én person.
+            /// </summary>
+            var skiltetKjoretoy = kategori === 'Vehicle' && ['Car', 'Bus', 'Motorcycle', 'Truck'].includes(type);
+            var kompetanse = kategori === 'Competence';
+            var laast = skiltetKjoretoy || kompetanse;
+
+            hjelp.textContent = kompetanse
+                ? 'Kompetanse registreres som én person om gangen.'
+                : 'Kjøretøy med skilt registreres ett om gangen.';
 
             antall.dataset.laast = laast ? '1' : '';
             if (laast && Number(antall.value) > 1) { antall.value = '1'; }
             hjelp.classList.add('d-none');
+            hjelp.classList.remove('text-danger');
         }
 
         function sjekkAntall() 
