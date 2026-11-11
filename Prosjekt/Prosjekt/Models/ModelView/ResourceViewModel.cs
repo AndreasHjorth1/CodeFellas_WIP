@@ -12,6 +12,11 @@ namespace Prosjekt.Models.ModelView
         public string? UserId { get; init; }
 
         /// <summary>
+        /// Navnet på den som eier ressursen. Fylles bare ut for admin og koordinator.
+        /// </summary>
+        public string? OwnerName { get; init; }
+
+        /// <summary>
         /// Rekkefølgen må stemme med resourceTypes i wwwroot/js/map-symbols.js.
         /// </summary>
         public enum ResourceType

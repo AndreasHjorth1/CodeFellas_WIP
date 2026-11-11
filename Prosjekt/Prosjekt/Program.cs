@@ -89,6 +89,7 @@ switch (dataAccessProvider.ToUpperInvariant())
         builder.Services.AddScoped<INeedRepository, NeedRepository>();
         builder.Services.AddScoped<IAllocationRepository, AllocationRepository>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
         break;
     default:
         throw new InvalidOperationException(

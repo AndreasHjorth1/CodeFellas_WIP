@@ -739,6 +739,7 @@
                 name = b.Name,
                 description = b.Description,
                 phone = b.Phone,
+                reportedBy = b.ReportedBy,
                 lat = b.Latitude,
                 lng = b.Longitude,
                 status = (int)b.Status,
@@ -930,6 +931,7 @@
                             ['Viktighet', MapSymbols.isAcute(b.importance) ? 'Akutt' : 'Planlagt'],
                             ['Status', statusNavn[b.status]],
                             ['Frist', b.fristFull || 'Ingen frist'],
+                            ['Meldt av', b.reportedBy || 'Ukjent'],
                             ['Telefon', b.phone || 'Ikke oppgitt'],
                             ['Område', b.areaSquareMeters ? 'ca. ' + Math.round(b.areaSquareMeters).toLocaleString('no-NO') + ' m²' : ''],
                             ['Beskrivelse', b.description || 'Ingen beskrivelse']
@@ -1048,6 +1050,7 @@
                     ['Kategori', b.typeName],
                     ['Status', statusNavn[b.status]],
                     ['Frist', b.fristFull],
+                    ['Meldt av', b.reportedBy],
                     ['Telefon', b.phone],
                     ['Adresse', adresse],
                     ['Område', b.areaSquareMeters ? 'ca. ' + Math.round(b.areaSquareMeters).toLocaleString('no-NO') + ' m²' : '']

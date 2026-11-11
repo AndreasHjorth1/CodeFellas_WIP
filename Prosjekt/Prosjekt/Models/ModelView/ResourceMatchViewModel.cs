@@ -22,6 +22,12 @@ namespace Prosjekt.Models.ModelView
         [Display(Name = "Telefonnummer")]
         public string PhoneNumber { get; init; } = string.Empty;
 
+        /// <summary>
+        /// Navnet på den som eier ressursen. Siden er bare for admin og koordinator.
+        /// </summary>
+        [Display(Name = "Eier")]
+        public string? OwnerName { get; init; }
+
         [Display(Name = "Posisjon")]
         public Coordinates Coords { get; init; }
 

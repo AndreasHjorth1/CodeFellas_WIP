@@ -4,8 +4,9 @@
 @{
     ViewData["Title"] = "Logg";
 
-    /// Oppslagene fra AuditLogController: bruker-ID til e-post og behov-ID til navn
-    var brukere = ViewBag.Brukere as Dictionary<string, string> ?? new Dictionary<string, string>();
+    /// Oppslagene fra AuditLogController: bruker-ID til navn og e-post, og behov-ID til navn
+    var brukere = ViewBag.Brukere as Dictionary<string, (string Navn, string Epost)>
+        ?? new Dictionary<string, (string Navn, string Epost)>();
     var behovsnavn = ViewBag.Behov as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
@@ -36,16 +37,6 @@
         "Delete" => ("fa-xmark", "slettet", "slettet et behov"),
         _ => ("fa-circle-info", "annet", log.Action)
     };
-
-    /// Samme visning som i toppmenyen: «ola.haugland@...» blir «Ola Haugland»
-    string NavnFraEpost(string epost)
-    {
-        var deler = epost.Split('@')[0]
-            .Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-        return deler.Length > 0
-            ? string.Join(" ", deler.Select(d => char.ToUpper(d[0]) + d[1..]))
-            : epost;
-    }
 
     /// Samme format som i bildet: BH-0012 for behov
     string Referanse(Prosjekt.Models.Entities.AuditLog log) =>
@@ -251,9 +242,12 @@
                 {
                     var handling = Handling(log);
                     var tid = NorwegianTime.FromUtc(log.Timestamp.UtcDateTime);
-                    var epost = log.UserId != null && brukere.TryGetValue(log.UserId, out var funnetEpost) ? funnetEpost : null;
+                    (string Navn, string Epost) bruker = default;
+                    var funnet = log.UserId != null && brukere.TryGetValue(log.UserId, out bruker);
+                    var epost = funnet ? bruker.Epost : null;
+                    /// Slettede brukere finnes ikke lenger og vises som «Ukjent bruker»
                     var hvem = log.UserId == null ? "System"
-                        : !string.IsNullOrEmpty(epost) ? NavnFraEpost(epost)
+                        : funnet ? bruker.Navn
                         : "Ukjent bruker";
 
                     /// Behovet kan være slettet, og da finnes ikke navnet lenger

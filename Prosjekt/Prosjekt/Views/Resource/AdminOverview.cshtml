@@ -605,7 +605,7 @@
                                 <div class="resource-card table-row-clickable"
                                      data-lat="@lat" data-lng="@lng"
                                      data-id="@res.Id" data-type="@res.Category"
-                                     data-sok="@(($"{res.Name}{res.Description} {res.PhoneNumber} {OversettKategori(res.Category)}").ToLower())">
+                                     data-sok="@(($"{res.Name}{res.Description} {res.PhoneNumber} {res.OwnerName} {OversettKategori(res.Category)}").ToLower())">
 
                                     <div class="resource-card-head">
                                         <span class="icon-circle">
@@ -701,6 +701,9 @@
                                                     <dt>Type mat og utstyr</dt>
                                                     <dd>@res.ProvisionType</dd>
                                                 }
+
+                                                <dt>Eier</dt>
+                                                <dd>@(string.IsNullOrWhiteSpace(res.OwnerName) ? "Ukjent" : res.OwnerName)</dd>
 
                                                 <dt>Telefon</dt>
                                                 <dd>@(string.IsNullOrWhiteSpace(res.PhoneNumber) ? "Ikke oppgitt" : res.PhoneNumber)</dd>
