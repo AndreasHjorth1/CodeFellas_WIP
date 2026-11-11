@@ -22,13 +22,16 @@ namespace Prosjekt.Controllers
         private readonly IResourceRepository _resourceRepo;
         private readonly IAllocationRepository _allocationRepo;
         private readonly INotificationRepository _notificationRepo;
+        private readonly IUserRepository _userRepo;
 
-        public NeedController(INeedRepository repo, IResourceRepository resourceRepo, IAllocationRepository allocationRepo, INotificationRepository notificationRepo)
+        public NeedController(INeedRepository repo, IResourceRepository resourceRepo, IAllocationRepository allocationRepo,
+            INotificationRepository notificationRepo, IUserRepository userRepo)
         {
             _repo = repo;
             _resourceRepo = resourceRepo;
             _allocationRepo = allocationRepo;
             _notificationRepo = notificationRepo;
+            _userRepo = userRepo;
         }
 
         [HttpGet]
@@ -123,8 +126,12 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public async Task<IActionResult> Overview()
         {
-            var needEntities = await _repo.GetAllAsync();
-            return View(needEntities.Select(ToViewModel).ToList());
+            var needEntities = (await _repo.GetAllAsync()).ToList();
+            var reporterNames = await _userRepo.GetFullNamesAsync(needEntities.Select(n => n.UserId));
+
+            return View(needEntities
+                .Select(n => ToViewModel(n, n.UserId != null ? reporterNames.GetValueOrDefault(n.UserId) : null))
+                .ToList());
         }
 
         [HttpGet]
@@ -297,8 +304,9 @@ namespace Prosjekt.Controllers
 
             var wanted = CategoryMatching.MatchingResources(needType);
 
-            var all = await _resourceRepo.GetAllAsync();
+            var all = (await _resourceRepo.GetAllAsync()).ToList();
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
+            var ownerNames = await _userRepo.GetFullNamesAsync(all.Select(r => r.UserId));
 
             var matches = all
                 .Where(r => r.IsAvailable)
@@ -312,6 +320,7 @@ namespace Prosjekt.Controllers
                     Category = r.Category,
                     Quantity = r.Quantity,
                     PhoneNumber = r.PhoneNumber,
+                    OwnerName = r.UserId != null ? ownerNames.GetValueOrDefault(r.UserId) : null,
                     Coords = r.Coords,
                     DistanceMeters = Distance.InMeters(
                         need.Coords.Latitude, need.Coords.Longitude,
@@ -479,12 +488,13 @@ namespace Prosjekt.Controllers
             return RedirectToAction(nameof(Overview));
         }
 
-        private static NeedViewModel ToViewModel(Need n) => new()
+        private static NeedViewModel ToViewModel(Need n, string? reportedBy = null) => new()
         {
             Id = n.Id,
             Name = n.Name,
             Description = n.Description,
             Phone = n.PhoneNumber,
+            ReportedBy = reportedBy,
             Type = Enum.TryParse<NeedViewModel.NeedType>(n.Category, out var cat) ? cat : NeedViewModel.NeedType.Other,
             Importance = ParseImportance(n.Priority),
             Deadline = NorwegianTime.FromUtc(n.NeededBy),

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Models.ModelView.Account;
+using Prosjekt.Models.Entities;
 
 namespace Prosjekt.Controllers
 {
@@ -9,7 +10,7 @@ namespace Prosjekt.Controllers
     /// Brukerens egen profilside. Viser kontaktinformasjon og lar brukeren endre telefonnummeret sitt.
     /// </summary>
     [Authorize]
-    public class ProfileController(UserManager<IdentityUser> userManager) : Controller
+    public class ProfileController(UserManager<ApplicationUser> userManager) : Controller
     {
         [HttpGet]
         public async Task<IActionResult> Index()
@@ -22,6 +23,7 @@ namespace Prosjekt.Controllers
 
             return View(new ProfileViewModel
             {
+                FullName = user.FullName,
                 Email = user.Email ?? string.Empty,
                 PhoneNumber = user.PhoneNumber ?? string.Empty
             });
@@ -29,7 +31,7 @@ namespace Prosjekt.Controllers
 
         /// <summary>
         /// Lagrer nytt telefonnummer på den innloggede brukeren.
-        /// E-posten hentes fra databasen, ikke fra skjemaet, så den ikke kan endres herfra.
+        /// Navn og e-post hentes fra databasen, ikke fra skjemaet, så de ikke kan endres herfra.
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> UpdatePhoneNumber(ProfileViewModel model)
@@ -40,6 +42,7 @@ namespace Prosjekt.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
+            model.FullName = user.FullName;
             model.Email = user.Email ?? string.Empty;
 
             if (!ModelState.IsValid)

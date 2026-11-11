@@ -18,6 +18,11 @@ namespace Prosjekt.Models.ModelView
         [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
         public string Phone { get; init; } = string.Empty;
 
+        /// <summary>
+        /// Navnet på den som meldte behovet. Vises bare på oversikten, som er for admin og koordinator.
+        /// </summary>
+        public string? ReportedBy { get; init; }
+
         [Display(Name = "Beskrivelse")]
         [Required(ErrorMessage = "Beskrivelse må fylles ut.")]
         public string Description { get; init; } = string.Empty;

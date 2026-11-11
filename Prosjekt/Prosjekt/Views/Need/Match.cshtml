@@ -104,6 +104,46 @@
         overflow-wrap: anywhere;
     }
 
+    /* Knappene under kartet - samme stil som «Meld behov» og «Eksporter» på oversikten */
+    .match-btn-primary,
+    .match-btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 3px;
+        font-size: 0.9rem;
+        padding: 0.55rem 1.1rem;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .match-btn-primary {
+        background-color: #04245a;
+        border: 1px solid #04245a;
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .match-btn-primary:hover,
+    .match-btn-primary:focus {
+        background-color: #0f3a80;
+        border-color: #0f3a80;
+        color: #ffffff;
+    }
+
+    .match-btn-outline {
+        background-color: #ffffff;
+        border: 1px solid #c3ccd8;
+        color: #0b1f3a;
+        font-weight: 600;
+    }
+
+    .match-btn-outline:hover,
+    .match-btn-outline:focus {
+        background-color: #f4f6f9;
+        color: #0b1f3a;
+    }
+
     @@media (max-width: 575px) {
         .match-details {
             grid-template-columns: 1fr;
@@ -228,6 +268,9 @@
                                             <dt>Avstand</dt>
                                             <dd>@FormatDistance(m.DistanceMeters) fra behovet</dd>
 
+                                            <dt>Eier</dt>
+                                            <dd>@(string.IsNullOrWhiteSpace(m.OwnerName) ? "Ukjent" : m.OwnerName)</dd>
+
                                             <dt>Telefon</dt>
                                             <dd>@(string.IsNullOrWhiteSpace(m.PhoneNumber) ? "Ikke oppgitt" : m.PhoneNumber)</dd>
 
@@ -249,13 +292,17 @@
 
         @* Knappene ligger under kartet, så man slipper å bla ned forbi hele listen *@
         <div class="d-flex flex-wrap gap-2 mt-3">
-            <a asp-action="Overview" class="btn btn-secondary">Tilbake til oversikten</a>
+            <a asp-action="Overview" class="match-btn-outline">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Tilbake til oversikten
+            </a>
             @if (ViewBag.NeedStatus == EntryStatus.Resolved)
             {
                 <form asp-action="Unresolve" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@ViewBag.NeedId" />
-                    <button type="submit" class="btn btn-outline-warning">Gjenåpne behovet</button>
+                    <button type="submit" class="match-btn-outline">
+                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Gjenåpne behovet
+                    </button>
                 </form>
             }
             else
@@ -263,7 +310,9 @@
                 <form asp-action="Resolve" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@ViewBag.NeedId" />
-                    <button type="submit" class="btn btn-success">Marker som løst</button>
+                    <button type="submit" class="match-btn-primary">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i> Marker som løst
+                    </button>
                 </form>
             }
         </div>

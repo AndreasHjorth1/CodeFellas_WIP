@@ -4,6 +4,11 @@ namespace Prosjekt.Models.ModelView.Account
 {
     public sealed class RegisterViewModel
     {
+        [Required(ErrorMessage = "Fullt navn må fylles ut.")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "Navnet må være mellom 2 og 100 tegn.")]
+        [Display(Name = "Fullt navn")]
+        public string FullName { get; init; } = string.Empty;
+
         [Required]
         [EmailAddress]
         public string Email { get; init; } = string.Empty;

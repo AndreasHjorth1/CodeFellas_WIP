@@ -5,7 +5,7 @@ using Prosjekt.Models.Entities;
 
 namespace Prosjekt.DataAccess
 {
-    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
@@ -23,6 +23,12 @@ namespace Prosjekt.DataAccess
         {
             base.OnModelCreating(modelBuilder);
 
+            /// Fullt navn ligger i AspNetUsers sammen med e-post og telefonnummer
+            modelBuilder.Entity<ApplicationUser>(entity =>
+            {
+                entity.Property(e => e.FullName).IsRequired().HasMaxLength(100);
+            });
+
             modelBuilder.Entity<Resource>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -32,7 +38,7 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
                 entity.Property(e => e.IsAvailable).HasDefaultValue(true);
 
-                entity.HasOne<IdentityUser>()
+                entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.SetNull);
@@ -54,7 +60,7 @@ namespace Prosjekt.DataAccess
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
                 entity.Property(e => e.Priority).HasMaxLength(50);
 
-                entity.HasOne<IdentityUser>()
+                entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.SetNull);

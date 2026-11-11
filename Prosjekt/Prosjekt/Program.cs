@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.DataAccess.Repositories;
+using Prosjekt.Models.Entities;
 using Prosjekt.Services;
 using NetTopologySuite.IO.Converters;
 
@@ -67,7 +68,7 @@ builder.Services.AddScoped<AuditLogService>();
 /// Identity: innlogging, brukere og roller
 /// </summary>
 var identityBuilder = builder.Services
-    .AddIdentity<IdentityUser, IdentityRole>(options =>
+    .AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.User.RequireUniqueEmail = true;
@@ -88,6 +89,7 @@ switch (dataAccessProvider.ToUpperInvariant())
         builder.Services.AddScoped<INeedRepository, NeedRepository>();
         builder.Services.AddScoped<IAllocationRepository, AllocationRepository>();
         builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
         break;
     default:
         throw new InvalidOperationException(
@@ -119,12 +121,13 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await IdentitySeeder.SeedRolesAsync(roleManager);
 
+
         /// <summary>
         /// Testbrukere med kjent passord seedes bare lokalt (Development eller SeedDemoData=true fra AppHost)
         /// </summary>
         if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("SeedDemoData"))
         {
-            var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
             await IdentitySeeder.SeedDevelopmentAdminAsync(userManager);
             await IdentitySeeder.SeedDevelopmentUserAsync(userManager);
             await IdentitySeeder.SeedDevelopmentCoordinatorAsync(userManager);

@@ -26,7 +26,7 @@ namespace Prosjekt.Controllers
                 .ToListAsync();
 
             /// <summary>
-            /// Loggen lagrer bare ID-er. Her slås e-posten til brukerne og navnet på behovene opp,
+            /// Loggen lagrer bare ID-er. Her slås navnet på brukerne og behovene opp,
             /// så siden kan vise hvem og hva. Slettede behov og brukere finnes ikke lenger og får ikke navn.
             /// </summary>
             var brukerIder = logs
@@ -38,7 +38,7 @@ namespace Prosjekt.Controllers
             ViewBag.Brukere = await _context.Users
                 .AsNoTracking()
                 .Where(user => brukerIder.Contains(user.Id))
-                .ToDictionaryAsync(user => user.Id, user => user.Email ?? user.UserName ?? string.Empty);
+                .ToDictionaryAsync(user => user.Id, user => (Navn: user.FullName, Epost: user.Email ?? string.Empty));
 
             var behovIder = logs
                 .Where(log => log.EntityType == "Need")

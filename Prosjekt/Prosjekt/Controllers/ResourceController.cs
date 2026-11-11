@@ -18,11 +18,13 @@ namespace Prosjekt.Controllers
     {
         private readonly IResourceRepository _repo;
         private readonly IAllocationRepository _allocationRepo;
+        private readonly IUserRepository _userRepo;
 
-        public ResourceController(IResourceRepository repo, IAllocationRepository allocationRepo)
+        public ResourceController(IResourceRepository repo, IAllocationRepository allocationRepo, IUserRepository userRepo)
         {
             _repo = repo;
             _allocationRepo = allocationRepo;
+            _userRepo = userRepo;
         }
 
         private bool CanSeeAllResources()
@@ -158,12 +160,19 @@ namespace Prosjekt.Controllers
 
         private async Task<List<ResourceViewModel>> ToOverviewViewModelsAsync(IEnumerable<Resource> resourceEntities)
         {
+            var resources = resourceEntities.ToList();
             var allocations = (await _allocationRepo.GetAllAsync()).ToList();
 
-            return resourceEntities.Select(r => new ResourceViewModel
+            /// Eierens navn vises bare for admin og koordinator
+            var ownerNames = CanSeeAllResources()
+                ? await _userRepo.GetFullNamesAsync(resources.Select(r => r.UserId))
+                : new Dictionary<string, string>();
+
+            return resources.Select(r => new ResourceViewModel
             {
                 Id = r.Id,
                 UserId = r.UserId,
+                OwnerName = r.UserId != null ? ownerNames.GetValueOrDefault(r.UserId) : null,
                 Name = r.Name,
                 Description = r.Description,
                 PhoneNumber = r.PhoneNumber,
