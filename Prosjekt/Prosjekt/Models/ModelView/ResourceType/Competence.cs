@@ -6,7 +6,7 @@ namespace Prosjekt.Models.ModelView.ResourceType
     /// Kompetanse som ressurs - et yrke eller erfaringsområde noen stiller til rådighet.
     /// Selve erfaringen beskrives i det vanlige Beskrivelse-feltet.
     /// </summary>
-    public class CompetenceViewModel : ResourceViewModel
+    public record CompetenceViewModel : ResourceViewModel
     {
         public enum CompetenceType
         {
