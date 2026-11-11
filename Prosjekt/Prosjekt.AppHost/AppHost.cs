@@ -13,7 +13,8 @@ var prosjekt = builder.AddDockerfile(
     .WithHttpEndpoint(
         port: 5027,
         targetPort: 8080)
-    .WithReference(Mapdb);
+    .WithReference(Mapdb)
+.WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development");
 
 /// <summary>
 /// HTTPS brukes bare når sertifikatet finnes, så appen også starter uten.

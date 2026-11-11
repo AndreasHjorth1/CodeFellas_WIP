@@ -62,10 +62,13 @@ namespace Prosjekt.Services
         }
 
         private static async Task<IdentityUser> FindOrCreateDevelopmentUserAsync(
-            UserManager<IdentityUser> userManager,
-            string email)
+    UserManager<IdentityUser> userManager,
+    string email)
         {
+            const string demoPassword = "Demo2026!";
+
             var user = await userManager.FindByEmailAsync(email);
+
             if (user is null)
             {
                 user = new IdentityUser
@@ -76,8 +79,14 @@ namespace Prosjekt.Services
                 };
 
                 await EnsureSucceededAsync(
-                    userManager.CreateAsync(user),
-                    "Could not create the development user.");
+                    userManager.CreateAsync(user, demoPassword),
+                    "Kunne ikke opprette testbrukeren.");
+            }
+            else if (!await userManager.HasPasswordAsync(user))
+            {
+                await EnsureSucceededAsync(
+                    userManager.AddPasswordAsync(user, demoPassword),
+                    "Kunne ikke sette passord på testbrukeren.");
             }
 
             return user;
