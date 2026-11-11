@@ -14,7 +14,10 @@ var prosjekt = builder.AddDockerfile(
         port: 5027,
         targetPort: 8080)
     .WithReference(Mapdb)
-.WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development");
+    /// <summary>
+    /// Seeder testbrukere og testdata ved lokal kjøring via Aspire
+    /// </summary>
+    .WithEnvironment("SeedDemoData", "true");
 
 /// <summary>
 /// HTTPS brukes bare når sertifikatet finnes, så appen også starter uten.

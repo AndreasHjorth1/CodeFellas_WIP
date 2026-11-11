@@ -118,7 +118,10 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await IdentitySeeder.SeedRolesAsync(roleManager);
 
-        if (app.Environment.IsDevelopment())
+        /// <summary>
+        /// Testbrukere med kjent passord seedes bare lokalt (Development eller SeedDemoData=true fra AppHost)
+        /// </summary>
+        if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("SeedDemoData"))
         {
             var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
             await IdentitySeeder.SeedDevelopmentAdminAsync(userManager);
