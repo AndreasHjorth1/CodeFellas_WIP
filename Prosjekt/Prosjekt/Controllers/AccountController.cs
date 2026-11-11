@@ -295,7 +295,62 @@ namespace Prosjekt.Controllers
         public IActionResult ResetPasswordConfirmation()
         {
             return View();
+        } 
+        /// <summary>
+        /// Viser profilsiden med brukerens e-post og telefonnummer.
+        /// </summary>
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Profile()
+        {
+            var user = await userManager.GetUserAsync(User);
+            if (user is null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            return View(new ProfileViewModel
+            {
+                Email = user.Email ?? string.Empty,
+                PhoneNumber = user.PhoneNumber ?? string.Empty
+            });
         }
+
+        /// <summary>
+        /// Lagrer nytt telefonnummer på den innloggede brukeren.
+        /// E-posten tas fra databasen, ikke fra skjemaet, så den ikke kan endres herfra.
+        /// </summary>
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> Profile(ProfileViewModel model)
+        {
+            var user = await userManager.GetUserAsync(User);
+            if (user is null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            model.Email = user.Email ?? string.Empty;
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var result = await userManager.SetPhoneNumberAsync(user, model.PhoneNumber);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+                return View(model);
+            }
+
+            TempData["Melding"] = "Telefonnummeret er oppdatert.";
+            return RedirectToAction(nameof(Profile));
+        }
+
 
         /// <summary>
         /// Sender bare til lokale adresser, så returnUrl ikke kan føre brukeren til en annen nettside.
