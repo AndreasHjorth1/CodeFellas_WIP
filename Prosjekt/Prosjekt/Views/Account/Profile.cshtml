@@ -1,0 +1,80 @@
+﻿@model Prosjekt.Models.ModelView.Account.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Min profil";
+}
+
+<style>
+    .profile-page {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #eff3f6;
+        padding: 2rem 1rem;
+    }
+
+    .profile-card {
+        width: 100%;
+        max-width: 400px;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 6px;
+        padding: 2rem 1.75rem 1.5rem;
+    }
+
+    .profile-card h1 {
+        color: #0f2a4f;
+        font-size: 1.9rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+
+    .profile-card .form-label {
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+
+    .profile-card .form-control {
+        border: 1px solid #8a9bb3;
+        border-radius: 0;
+        color: #0f2a4f;
+        font-size: 0.95rem;
+        padding: 0.65rem 0.6rem;
+    }
+</style>
+
+<div class="profile-page">
+    <div class="profile-card">
+        <h1>Min profil</h1>
+
+        @if (TempData["Melding"] != null)
+        {
+            <div class="alert alert-success py-2 small" role="status">@TempData["Melding"]</div>
+        }
+
+        <form asp-action="Profile" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" readonly disabled />
+                <div class="form-text">E-postadressen kan ikke endres her.</div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PhoneNumber" class="form-label"></label>
+                <input asp-for="PhoneNumber" class="form-control" placeholder="F.eks. 98765432" />
+                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Lagre endringer</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
