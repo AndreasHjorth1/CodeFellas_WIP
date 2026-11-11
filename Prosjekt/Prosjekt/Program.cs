@@ -87,6 +87,7 @@ switch (dataAccessProvider.ToUpperInvariant())
         builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
         builder.Services.AddScoped<INeedRepository, NeedRepository>();
         builder.Services.AddScoped<IAllocationRepository, AllocationRepository>();
+        builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
         break;
     default:
         throw new InvalidOperationException(
@@ -158,6 +159,11 @@ if (!app.Environment.IsDevelopment())
     /// </summary>
     app.UseHsts();
 }
+
+/// <summary>
+/// Viser egen 404 - side når siden ikke finnes. Status koden er 404
+/// <summary>
+app.UseStatusCodePagesWithReExecute("/Home/PageNotFound");
 
 /// <summary>
 /// Står etter feilhåndteringen, så også feilsiden får sikkerhetsheaderne

@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Fant ikke siden";
+}
+
+<style>
+    .notfound {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 6rem 1.5rem 8rem;
+        color: #0f2a4f;
+    }
+
+    .notfound-badge {
+        display: inline-block;
+        background-color: #ffd400;
+        color: #000;
+        font-size: 0.75rem;
+        padding: 0.1rem 0.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .notfound h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #0f2a4f;
+        margin: 0 0 2rem;
+    }
+
+    .notfound .intro {
+        color: #5b6b80;
+        font-size: 1.05rem;
+        margin: 0 0 2.5rem;
+    }
+
+    .notfound-links {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 4rem;
+    }
+
+    .notfound-links li {
+        margin-bottom: 0.75rem;
+    }
+
+    .notfound-links a {
+        color: #4b32c3;
+        text-decoration: underline;
+        font-size: 1.05rem;
+    }
+
+    .notfound-links a:hover {
+        color: #0f2a4f;
+    }
+
+    .notfound .emergency {
+        color: #5b6b80;
+        font-size: 0.9rem;
+    }
+</style>
+
+<section class="notfound">
+    <span class="notfound-badge">404</span>
+
+    <h1>Her slutter kartet.</h1>
+
+    <p class="intro">
+        Siden du leter etter finnes ikke, eller den er flyttet. Sjekk adressen, eller gå videre herfra:
+    </p>
+
+    <ul class="notfound-links">
+        <li><a asp-controller="Home" asp-action="FrontPage">Til forsiden</a></li>
+        <li><a asp-controller="Resource" asp-action="Index">Registrer en ressurs</a></li>
+        <li><a asp-controller="Home" asp-action="CrisisInformation">Kriseinformasjon</a></li>
+    </ul>
+
+    <p class="emergency">Er du i fare nå? Ring 110, 112 eller 113.</p>
+</section>
