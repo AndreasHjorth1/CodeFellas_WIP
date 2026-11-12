@@ -218,6 +218,7 @@ namespace Prosjekt.Controllers
                 Description = description,
                 PhoneNumber = resource.PhoneNumber,
                 Quantity = resource.Quantity,
+                Allocated = await GetAllocatedAsync(resource.Id),
                 Availability = resource.IsAvailable,
                 Latitude = resource.Coords.Latitude,
                 Longitude = resource.Coords.Longitude,
@@ -237,6 +238,16 @@ namespace Prosjekt.Controllers
             };
 
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Hvor mange av ressursen som er tildelt behov nå.
+        /// </summary>
+        private async Task<int> GetAllocatedAsync(int resourceId)
+        {
+            return (await _allocationRepo.GetAllAsync())
+                .Where(a => a.ResourceId == resourceId)
+                .Sum(a => a.Quantity);
         }
 
         /// <summary>
@@ -303,11 +314,21 @@ namespace Prosjekt.Controllers
                 return Forbid();
             }
 
+            /// Antallet kan ikke bli lavere enn det som allerede er tildelt behov
+            var allocated = await GetAllocatedAsync(id);
+            if (model.Quantity < allocated)
+            {
+                ModelState.AddModelError(nameof(model.Quantity),
+                    $"{allocated} er tildelt behov. Antallet kan ikke være lavere før de er levert tilbake.");
+                return View(model with { Allocated = allocated });
+            }
+
             resourceEntity.Name = model.Name;
             resourceEntity.Description = GetFullDescription(model);
             resourceEntity.PhoneNumber = model.PhoneNumber;
             resourceEntity.Quantity = model.Quantity;
-            resourceEntity.IsAvailable = model.Availability;
+            /// Er alt tildelt, er ressursen ikke ledig, uansett hva som er krysset av
+            resourceEntity.IsAvailable = model.Availability && model.Quantity - allocated > 0;
             resourceEntity.Category = model.Category.ToString();
             resourceEntity.SubCategory = GetSubCategory(model);
             resourceEntity.Coords = coords;

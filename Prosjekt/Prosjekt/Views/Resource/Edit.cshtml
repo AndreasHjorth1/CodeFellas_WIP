@@ -392,7 +392,12 @@
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <label class="form-label" asp-for="Quantity">Antall</label>
-                        <input asp-for="Quantity" type="number" min="1" class="form-control" required />
+                        <input asp-for="Quantity" type="number" min="@Math.Max(1, Model.Allocated)" class="form-control" required />
+                        <input asp-for="Allocated" type="hidden" />
+                        @if (Model.Allocated > 0)
+                        {
+                            <div class="form-text">@Model.Allocated er tildelt behov</div>
+                        }
                     </div>
                     <div class="col-6">
                         <label class="form-label" asp-for="PhoneNumber">Telefonnummer</label>

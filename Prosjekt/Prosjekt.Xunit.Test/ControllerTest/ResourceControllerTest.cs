@@ -24,7 +24,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         private static ResourceController CreateController(FakeResourceRepository repo, string userId =
-        "user-1", bool isAdmin = false, bool isCoordinator = false, FakeUserRepository? users = null)
+        "user-1", bool isAdmin = false, bool isCoordinator = false, FakeUserRepository? users = null,
+        FakeAllocationRepository? allocations = null)
         {
             var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, userId) };
             if (isAdmin)
@@ -42,7 +43,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             };
             httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
 
-            return new ResourceController(repo, new FakeAllocationRepository(), users ?? new FakeUserRepository())
+            return new ResourceController(repo, allocations ?? new FakeAllocationRepository(), users ?? new FakeUserRepository())
             {
                 ControllerContext = new ControllerContext { HttpContext = httpContext }
             };
@@ -462,6 +463,72 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             Assert.Equal(3, updatedResource.Quantity);
             Assert.False(updatedResource.IsAvailable);
             Assert.Equal(59.9, updatedResource.Coords.Latitude);
+        }
+
+        [Fact]
+        public async Task Edit_Post_QuantityBelowAllocated_ReturnsViewWithErrorAndKeepsQuantity()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 2 });
+            var controller = CreateController(repo, isAdmin: true, allocations: allocations);
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Quantity = 1,
+                Availability = true,
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var view = Assert.IsType<ViewResult>(result);
+            Assert.Equal(2, Assert.IsType<ResourceViewModel>(view.Model).Allocated);
+            Assert.True(controller.ModelState.ContainsKey(nameof(ResourceViewModel.Quantity)));
+            var resource = Assert.Single(repo.Resources);
+            Assert.Equal(2, resource.Quantity);
+            Assert.False(resource.IsAvailable);
+        }
+
+        [Theory]
+        [InlineData(2, false)] // Alt er tildelt: ikke ledig selv om det er krysset av
+        [InlineData(3, true)]  // Én er ledig
+        public async Task Edit_Post_WithAllocations_AvailabilityFollowsWhatIsLeft(int quantity, bool expectedAvailable)
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 2 });
+            var controller = CreateController(repo, isAdmin: true, allocations: allocations);
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Quantity = quantity,
+                Availability = true,
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            var resource = Assert.Single(repo.Resources);
+            Assert.Equal(quantity, resource.Quantity);
+            Assert.Equal(expectedAvailable, resource.IsAvailable);
         }
 
         [Fact]
