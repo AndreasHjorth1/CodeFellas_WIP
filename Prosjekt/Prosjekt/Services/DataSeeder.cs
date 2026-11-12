@@ -140,7 +140,7 @@ namespace Prosjekt.Services
                       NewResource("Motorsag", "Motorsag med ekstra kjede", "Tool", "PowerTool", 1,
                           58.3010, 8.1520, userId, userPhone, At(-4, 18), At(14, 20)),
                       NewResource("Snøskuffer", "Vanlige snøskuffer", "Tool", "HandTool", 10,
-                          58.1050, 7.9900, userId, userPhone, At(-4, 19), At(30, 20)),
+                          58.1250, 7.9560, userId, userPhone, At(-4, 19), At(30, 20)),
                       NewResource("Spader og river", "Til rydding etter flom og ras", "Tool", "GardenTool", 6,
                           58.0700, 7.9970, userId, userPhone, At(-3, 12), At(30, 20)),
                       NewResource("Strøsand", "Sand i sekker", "Materials", "Sand", 500,
