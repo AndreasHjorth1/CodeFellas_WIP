@@ -13,9 +13,9 @@ namespace Prosjekt.Services
         public const string DevelopmentAdminPhone = "98765432";
         public const string DevelopmentUserPhone = "41234567";
         public const string DevelopmentCoordinatorPhone = "92345678";
-        public const string DevelopmentAdminEmail = "admin@heimevernet.local";
-        public const string DevelopmentUserEmail = "user@heimevernet.local";
-        public const string DevelopmentCoordinatorEmail = "koordinator@heimevernet.local";
+        public const string DevelopmentAdminEmail = "admin@beredt.local";
+        public const string DevelopmentUserEmail = "user@beredt.local";
+        public const string DevelopmentCoordinatorEmail = "koordinator@beredt.local";
 
         /// <summary>
         /// Felles passord for alle testbrukerne. Brukes bare ved lokal kjøring.
