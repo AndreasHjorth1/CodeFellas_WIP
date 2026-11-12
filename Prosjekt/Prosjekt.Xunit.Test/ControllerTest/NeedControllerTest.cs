@@ -896,6 +896,33 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
+        public async Task Allocate_ResolvedNeed_AddsNothingAndShowsError()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.Resolved, Coords = new Coordinates(58.1467, 7.9956) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = true, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            var notifications = new FakeNotificationRepository();
+            var controller = new NeedController(needs, resources, allocations, notifications, new FakeUserRepository())
+            {
+                TempData = new TempDataDictionary(new DefaultHttpContext(), new EmptyTempDataProvider())
+            };
+
+            // Act
+            var result = await controller.Allocate(1, 1, 1);
+
+            // Assert
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Match", redirect.ActionName);
+            Assert.Empty(await allocations.GetAllAsync());
+            Assert.Equal(EntryStatus.Resolved, needs.Needs.Single().Status);
+            Assert.True(resources.Resources.Single().IsAvailable);
+            Assert.NotNull(controller.TempData["Error"]);
+        }
+
+        [Fact]
         public async Task Allocate_AvailableResource_AddsAllocationAndAssignsNeed()
         {
             // Arrange

@@ -362,6 +362,12 @@ namespace Prosjekt.Controllers
                 return NotFound();
             }
 
+            if (need.Status == EntryStatus.Resolved)
+            {
+                TempData["Error"] = "Behovet er løst. Gjenåpne det før du tildeler flere ressurser.";
+                return RedirectToAction(nameof(Match), new { id = needId });
+            }
+
             if (!resource.IsAvailable)
             {
                 TempData["Error"] = $"{resource.Name} er ikke tilgjengelig.";

@@ -235,7 +235,11 @@
                                 <td><span class="badge bg-primary">@FormatDistance(m.DistanceMeters)</span></td>
                                 @* Tildel-skjemaet skal ikke åpne «Se mer» *@
                                 <td class="text-nowrap" data-stop-click>
-                                    @if (m.Available > 0)
+                                    @if (ViewBag.NeedStatus == EntryStatus.Resolved)
+                                    {
+                                        <span class="badge bg-secondary">Behovet er løst</span>
+                                    }
+                                    else if (m.Available > 0)
                                     {
                                         <form asp-action="Allocate" method="post" class="d-flex gap-1">
                                             @Html.AntiForgeryToken()
