@@ -507,7 +507,7 @@
                     </div>
                     <div class="col-6">
                         <label class="form-label" for="inputPhoneNumber">Telefonnummer</label>
-                        <input id="inputPhoneNumber" class="form-control" placeholder="F.eks. 98765432" />
+                        <input id="inputPhoneNumber" type="tel" inputmode="tel" class="form-control" placeholder="F.eks. 98765432" />
                     </div>
                 </div>
 
@@ -840,9 +840,13 @@
             if (!name) { alert("Vennligst fyll ut 'Tittel'."); document.getElementById('inputName').focus(); return; }
             if (!description) { alert("Vennligst fyll ut 'Beskrivelse'."); document.getElementById('inputDescription').focus(); return; }
             if (!phoneNumber) { alert("Vennligst fyll ut 'Telefonnummer'."); document.getElementById('inputPhoneNumber').focus(); return; }
+            // Samme regel som [RegularExpression] i ResourceViewModel
+            if (!/^ *\+?( *[0-9]){8,15} *$/.test(phoneNumber)) { alert("Telefonnummeret må være gyldig (8–15 siffer, eventuelt med + foran og mellomrom)."); document.getElementById('inputPhoneNumber').focus(); return; }
             if (!availableFrom) { alert("Vennligst velg 'Tilgjengelig fra'."); document.getElementById('inputAvailableFrom').focus(); return; }
             if (!availableTo) { alert("Vennligst velg 'Tilgjengelig til'."); document.getElementById('inputAvailableTo').focus(); return; }
-            if (!quantity || quantity <= 0) { alert("Vennligst fyll ut et gyldig 'Antall'."); document.getElementById('inputQuantity').focus(); return; }
+            if (availableTo <= availableFrom) { alert("'Tilgjengelig til' må være etter 'Tilgjengelig fra'."); document.getElementById('inputAvailableTo').focus(); return; }
+            // Samme regler som [Range] og [RegularExpression] på Quantity i ResourceViewModel
+            if (!/^\d+$/.test(quantity) || quantity < 1 || quantity > 10000) { alert("Antall må være et helt tall mellom 1 og 10000."); document.getElementById('inputQuantity').focus(); return; }
             let trengerSkilt = ['Car', 'Bus', 'Motorcycle', 'Truck'].includes(vehicleType);
             if (category === "Vehicle" && trengerSkilt && !licensePlate) {
                 alert("vennligst fyll ut 'Skiltnummer'.");

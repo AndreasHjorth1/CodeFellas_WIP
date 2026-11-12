@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Prosjekt.DataAccess;
 using Prosjekt.Models.Entities;
+using Prosjekt.Models.Enums;
 using Prosjekt.Services;
 using Xunit;
 using Microsoft.AspNetCore.Identity;
@@ -57,6 +58,87 @@ namespace Prosjekt.Xunit
             Assert.Equal(6, context.Resources.Count(r => r.UserId == "coordinator"));
             Assert.Equal(6, context.Needs.Count(n => n.UserId == "coordinator"));
             Assert.Equal(6, context.Needs.Count(n => n.UserId == "admin"));
+        }
+
+        [Fact]
+        public async Task SeedAsync_EmptyDatabase_SevenOpenThreeAssignedTwoResolved()
+        {
+            using var context = CreateContext();
+
+            await DataSeeder.SeedAsync(context, "user", "coordinator", "admin");
+
+            Assert.Equal(7, context.Needs.Count(n => n.Status == EntryStatus.New || n.Status == EntryStatus.UnderReview));
+            Assert.Equal(3, context.Needs.Count(n => n.Status == EntryStatus.Assigned));
+            Assert.Equal(2, context.Needs.Count(n => n.Status == EntryStatus.Resolved));
+        }
+
+        [Fact]
+        public async Task SeedAsync_EmptyDatabase_OnlyAssignedNeedsHaveAllocations()
+        {
+            using var context = CreateContext();
+
+            await DataSeeder.SeedAsync(context, "user", "coordinator", "admin");
+
+            var needsWithAllocations = context.Allocations.Select(a => a.NeedId).Distinct().ToList();
+            var assignedNeeds = context.Needs.Where(n => n.Status == EntryStatus.Assigned).Select(n => n.Id).ToList();
+            Assert.Equal(assignedNeeds.OrderBy(id => id), needsWithAllocations.OrderBy(id => id));
+        }
+
+        [Fact]
+        public async Task SeedAsync_EmptyDatabase_AllocationsFitWithinResourceQuantity()
+        {
+            using var context = CreateContext();
+
+            await DataSeeder.SeedAsync(context, "user", "coordinator", "admin");
+
+            foreach (var resource in context.Resources.ToList())
+            {
+                var allocated = context.Allocations.Where(a => a.ResourceId == resource.Id).Sum(a => a.Quantity);
+                Assert.True(allocated <= resource.Quantity, $"{resource.Name} er tildelt mer enn den har");
+            }
+        }
+
+        [Fact]
+        public async Task SeedAsync_EmptyDatabase_ThreeUnreadAndFourReadNotifications()
+        {
+            using var context = CreateContext();
+
+            await DataSeeder.SeedAsync(context, "user", "coordinator", "admin");
+
+            Assert.Equal(3, context.Notifications.Count(n => !n.IsRead));
+            Assert.Equal(4, context.Notifications.Count(n => n.IsRead));
+        }
+
+        [Fact]
+        public async Task SeedAsync_EmptyDatabase_DatesMakeSense()
+        {
+            using var context = CreateContext();
+            var now = DateTime.UtcNow;
+
+            await DataSeeder.SeedAsync(context, "user", "coordinator", "admin");
+
+            Assert.All(context.Resources.ToList(), r =>
+            {
+                Assert.True(r.CreatedAt < now, $"{r.Name} er registrert i fremtiden");
+                Assert.True(r.AvailableFrom < r.AvailableTo, $"{r.Name} slutter før den starter");
+            });
+            Assert.All(context.Needs.ToList(), n =>
+            {
+                Assert.True(n.CreatedAt < now, $"{n.Name} er meldt inn i fremtiden");
+                Assert.True(n.NeededBy > now, $"{n.Name} har allerede gått ut");
+            });
+        }
+
+        [Fact]
+        public async Task SeedAsync_EmptyDatabase_AllTimesAreWholeHours()
+        {
+            using var context = CreateContext();
+
+            await DataSeeder.SeedAsync(context, "user", "coordinator", "admin");
+
+            var times = context.Resources.ToList().SelectMany(r => new[] { r.CreatedAt, r.AvailableTo })
+                .Concat(context.Needs.ToList().SelectMany(n => new[] { n.CreatedAt, n.NeededBy }));
+            Assert.All(times, t => Assert.True(t.Minute == 0 && t.Second == 0, $"{t} er ikke et helt klokkeslett"));
         }
 
         private static ApplicationDbContext CreateContext()

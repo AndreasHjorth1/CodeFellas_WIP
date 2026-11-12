@@ -59,6 +59,121 @@
         box-shadow: inset 3px 0 0 #04245a, inset 0 0 0 9999px #e6ecf5;
     }
 
+    /* Kolonneoverskrifter man kan trykke på for å sortere */
+    .match-sort-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        font-weight: 600;
+        color: inherit;
+        white-space: nowrap;
+    }
+
+    .match-sort-btn i {
+        font-size: 0.75rem;
+        margin-left: 0.2rem;
+        color: #6c757d;
+    }
+
+    th[aria-sort="ascending"] .match-sort-btn i {
+        color: #04245a;
+    }
+
+    /* Luftlinje og kjøreavstand skal se like ut */
+    .match-table .match-distance {
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.4em 0.65em;
+    }
+
+    /* Luft på sidene, så raden med negative marger ikke stikker utenfor skjermen */
+    .match-side {
+        padding: 0 1rem;
+    }
+
+    /* Tettere celler, så tabellen får plass uten sidelengs rulling */
+    .match-table > :not(caption) > * > * {
+        padding: 0.6rem 0.45rem;
+    }
+
+    .match-table td:first-child {
+        overflow-wrap: anywhere;
+    }
+
+    /* Antallsfeltet ligger over «Tildel»-knappen, så kolonnen blir smal */
+    .match-tildel-skjema {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        width: 4.5rem;
+    }
+
+    .match-table .match-antall {
+        width: 100%;
+    }
+
+    /* Mobil: hver ressurs blir et lite kort. Tabellhodet viser bare sorteringsknappene. */
+    @@media (max-width: 575px) {
+        .match-table,
+        .match-table thead,
+        .match-table tbody {
+            display: block;
+            width: 100%;
+        }
+
+        .match-table tbody tr.match-row > td {
+            min-width: 0;
+        }
+
+        .match-table thead tr {
+            display: flex;
+            gap: 1.25rem;
+        }
+
+        .match-table thead th:not([aria-sort]) {
+            display: none;
+        }
+
+        .match-table tbody tr.match-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            align-items: start;
+        }
+
+        .match-table tbody tr.match-row > td {
+            border-bottom-width: 0;
+        }
+
+        .match-table tbody tr.match-row > td:first-child,
+        .match-table tbody tr.match-row > td.match-tildel {
+            grid-column: 1 / -1;
+        }
+
+        .match-table td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 0.2rem;
+        }
+
+        .match-table tbody tr.match-detail-row,
+        .match-table tbody tr.match-detail-row > td {
+            display: block;
+        }
+
+        .match-tildel-skjema {
+            flex-direction: row;
+            width: auto;
+        }
+
+        .match-table .match-antall {
+            width: 4.5rem;
+        }
+    }
+
     .match-table .see-more-btn {
         background: none;
         border: none;
@@ -156,6 +271,8 @@
     }
 </style>
 
+@* Luft på sidene, ellers stikker .row (negative marger) utenfor skjermen og siden kan rulles sidelengs *@
+<div class="match-side">
 <h1 class="mb-1">Passende ressurser</h1>
 @if (TempData["Error"] != null)
 {
@@ -165,11 +282,12 @@
     </div>
 }
 <p class="text-muted mb-3">
-    For behovet <strong>@ViewBag.NeedName</strong> — nærmeste først
+    For behovet <strong>@ViewBag.NeedName</strong> — nærmeste først.
 </p>
 
 <div class="row g-3">
-    <div class="col-lg-6">
+    @* Tabellen trenger halve skjermen fra xl og opp. Under det ligger kartet under tabellen. *@
+    <div class="col-xl-6">
         @if (allocations.Any())
         {
             <div class="border rounded p-3 mb-3 bg-light">
@@ -194,13 +312,24 @@
         }
         else
         {
-            <div class="table-responsive bg-white p-3 shadow-sm border rounded">
+            @* Ingen table-responsive: tabellen er laget for å passe i bredden uten sidelengs rulling *@
+            <div class="bg-white p-3 shadow-sm border rounded">
                 <table class="table table-hover align-middle mb-0 match-table">
                     <thead class="table-light">
                         <tr>
                             <th>Navn</th>
                             <th>Ledig</th>
-                            <th>Avstand</th>
+                            @* Luftlinje passer for helikopter, kjøreavstand for bil. Begge kan sorteres. *@
+                            <th aria-sort="ascending">
+                                <button type="button" class="match-sort-btn" data-sort="luft">
+                                    Luft&shy;linje <i class="fa-solid fa-sort-up" aria-hidden="true"></i>
+                                </button>
+                            </th>
+                            <th aria-sort="none">
+                                <button type="button" class="match-sort-btn" data-sort="kjor">
+                                    Kjøre&shy;avstand <i class="fa-solid fa-sort" aria-hidden="true"></i>
+                                </button>
+                            </th>
                             <th>Tildel</th>
                         </tr>
                     </thead>
@@ -209,6 +338,7 @@
                         {
                             @* Raden og «Se mer» åpner informasjonen i raden under (Bootstrap collapse) *@
                             <tr class="match-row collapsed" data-id="@m.Id"
+                                data-luft="@m.DistanceMeters.ToString(System.Globalization.CultureInfo.InvariantCulture)"
                                 data-bs-toggle="collapse" data-bs-target="#ressursInfo-@m.Id"
                                 aria-expanded="false" aria-controls="ressursInfo-@m.Id">
                                 <td>
@@ -231,22 +361,25 @@
                                         Se mer <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                                     </button>
                                 </td>
-                                <td class="small">@m.Available av @m.Quantity</td>
-                                <td><span class="badge bg-primary">@FormatDistance(m.DistanceMeters)</span></td>
+                                @* data-label vises som overskrift i cellen på mobil, der tabellhodet er skjult *@
+                                <td class="small" data-label="Ledig">@m.Available av @m.Quantity</td>
+                                <td class="text-nowrap" data-label="Luftlinje"><span class="badge bg-primary match-distance">@FormatDistance(m.DistanceMeters)</span></td>
+                                @* Fylles inn av skriptet med svar fra Valhalla *@
+                                <td id="kjor-@m.Id" class="text-nowrap" data-label="Kjøreavstand"><small class="text-muted">Henter …</small></td>
                                 @* Tildel-skjemaet skal ikke åpne «Se mer» *@
-                                <td class="text-nowrap" data-stop-click>
+                                <td class="match-tildel" data-stop-click>
                                     @if (ViewBag.NeedStatus == EntryStatus.Resolved)
                                     {
                                         <span class="badge bg-secondary">Behovet er løst</span>
                                     }
                                     else if (m.Available > 0)
                                     {
-                                        <form asp-action="Allocate" method="post" class="d-flex gap-1">
+                                        <form asp-action="Allocate" method="post" class="match-tildel-skjema">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="needId" value="@ViewBag.NeedId" />
                                             <input type="hidden" name="resourceId" value="@m.Id" />
                                             <input type="number" name="quantity" value="1" min="1" max="@m.Available"
-                                                   class="form-control form-control-sm" style="max-width: 70px;" />
+                                                   class="form-control form-control-sm match-antall" aria-label="Antall å tildele" />
                                             <button type="submit" class="btn btn-sm btn-success">Tildel</button>
                                         </form>
                                     }
@@ -257,7 +390,7 @@
                                 </td>
                             </tr>
                             <tr class="match-detail-row">
-                                <td colspan="4">
+                                <td colspan="5">
                                     <div class="collapse" id="ressursInfo-@m.Id">
                                         <dl class="match-details">
                                             <dt>Kategori</dt>
@@ -270,7 +403,11 @@
                                             <dd>@m.AllocatedToThisNeed stk</dd>
 
                                             <dt>Avstand</dt>
-                                            <dd>@FormatDistance(m.DistanceMeters) fra behovet</dd>
+                                            <dd>@FormatDistance(m.DistanceMeters) fra behovet (luftlinje)</dd>
+
+                                            @* Fylles inn av skriptet når panelet åpnes *@
+                                            <dt>Kjørerute</dt>
+                                            <dd id="rute-@m.Id" aria-live="polite">Henter rute …</dd>
 
                                             <dt>Eier</dt>
                                             <dd>@(string.IsNullOrWhiteSpace(m.OwnerName) ? "Ukjent" : m.OwnerName)</dd>
@@ -291,7 +428,7 @@
         }
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-xl-6">
         <div id="matchKart" class="rounded shadow-sm" style="height: 60vh; min-height: 400px;"></div>
 
         @* Knappene ligger under kartet, så man slipper å bla ned forbi hele listen *@
@@ -331,6 +468,7 @@
         </div>
     </div>
 </div>
+</div>
 
 @section Scripts {
 
@@ -348,8 +486,15 @@
         var kart = L.map('matchKart').setView([needLat, needLng], 11);
 
         L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+
             attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+
         }).addTo(kart);
+
+        /// Kjørerutene kommer fra Valhalla, som bruker veidata fra OpenStreetMap
+        kart.attributionControl.addAttribution(
+            'Ruting: <a href="https://valhalla.github.io/valhalla/">Valhalla</a> / &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        );
 
         /// Behovet selv - rød sirkel i midten
         L.circleMarker([needLat, needLng], {
@@ -363,6 +508,7 @@
         var markorer = {};
         var vanligeIkoner = {};
         var valgteIkoner = {};
+        var luftlinjer = {};
 
         matches.forEach(function (m) {
 
@@ -382,7 +528,7 @@
             );
 
             /// Strek fra behovet til ressursen
-            L.polyline([[needLat, needLng], [m.Coords.Latitude, m.Coords.Longitude]], {
+            luftlinjer[m.Id] = L.polyline([[needLat, needLng], [m.Coords.Latitude, m.Coords.Longitude]], {
                 color: '#198754', weight: 1, opacity: 0.4, dashArray: '4 4'
             }).addTo(kart);
 
@@ -393,7 +539,7 @@
             kart.fitBounds(punkter, { padding: [30, 30] });
         }
 
-        /// Når «Se mer» åpnes for en ressurs, zoomer kartet dit og markøren utheves.
+        /// Når «Se mer» åpnes for en ressurs, utheves markøren og kjøreruten vises.
         /// Når den lukkes igjen, får markøren vanlig stil.
         function markorForPanel(panel) {
             if (!panel.id || !panel.id.startsWith('ressursInfo-')) return null;
@@ -406,7 +552,11 @@
             var id = e.target.id.replace('ressursInfo-', '');
             markor.setIcon(valgteIkoner[id]);
             markor.setZIndexOffset(1000);
-            MapSymbols.focus(resourceMarkers, markor);
+            apnePaneler[id] = true;
+            /// Viser ressursen og behovet med en gang. Når ruten kommer, tilpasses kartet til den.
+            /// (Zoom inn til markøren kolliderte med zoomen til ruten, så den er tatt bort her.)
+            kart.fitBounds([[needLat, needLng], markor.getLatLng()], { padding: [30, 30] });
+            visRute(id);
         });
 
         document.addEventListener('hide.bs.collapse', function (e) {
@@ -415,6 +565,259 @@
             var id = e.target.id.replace('ressursInfo-', '');
             markor.setIcon(vanligeIkoner[id]);
             markor.setZIndexOffset(0);
+            delete apnePaneler[id];
+            skjulRute(id);
         });
+
+        /// Kjørerute langs veien fra Valhalla (offentlig server, ingen nøkkel).
+        /// Ruten hentes først når «Se mer» åpnes, så vi ikke sender mange kall når siden lastes.
+        var VALHALLA_URL = 'https://valhalla1.openstreetmap.de/route';
+        var ruter = {};      /// Ferdige ruter per ressurs-id, så vi slipper å hente samme rute igjen
+        var ruteLag = {};    /// Rutene som vises på kartet nå
+        /// Paneler som er åpne. Vi kan ikke bruke klassen «show», for Bootstrap setter den først
+        /// når animasjonen er ferdig, og Valhalla svarer ofte før det.
+        var apnePaneler = {};
+
+        function visRute(id) {
+            var m = matches.find(function (x) { return String(x.Id) === String(id); });
+            if (!m) return;
+
+            if (ruter[id]) {
+                tegnRute(id, ruter[id]);
+                return;
+            }
+
+            var foresporsel = {
+                locations: [
+                    { lat: m.Coords.Latitude, lon: m.Coords.Longitude },
+                    { lat: needLat, lon: needLng }
+                ],
+                costing: 'auto',
+                units: 'kilometers',
+                directions_type: 'none'
+            };
+
+            /// GET med json-parameter, så nettleseren slipper et ekstra CORS-kall før selve foresporselen
+            fetch(VALHALLA_URL + '?json=' + encodeURIComponent(JSON.stringify(foresporsel)))
+                .then(function (svar) {
+                    if (!svar.ok) throw new Error('Valhalla svarte ' + svar.status);
+                    return svar.json();
+                })
+                .then(function (data) {
+                    var tur = data.trip;
+                    ruter[id] = {
+                        punkter: tur.legs.flatMap(function (leg) { return dekodPolyline(leg.shape, 6); }),
+                        km: tur.summary.length,
+                        sekunder: tur.summary.time
+                    };
+                    /// Brukeren kan ha lukket panelet mens vi ventet
+                    if (apnePaneler[id]) {
+                        tegnRute(id, ruter[id]);
+                    }
+                })
+                .catch(function () {
+                    settRuteTekst(id, 'Fant ingen kjørerute. Viser luftlinje på kartet.');
+                });
+        }
+
+        function tegnRute(id, rute) {
+            skjulRute(id);
+            if (luftlinjer[id]) kart.removeLayer(luftlinjer[id]);
+
+            /// Blå med hvit kant under, så ruten skiller seg fra blått vann og bygninger i Kartverket-kartet
+            ruteLag[id] = L.featureGroup([
+                L.polyline(rute.punkter, { color: '#ffffff', weight: 9, opacity: 1 }),
+                L.polyline(rute.punkter, { color: '#0d6efd', weight: 5, opacity: 1 })
+            ]).addTo(kart);
+
+            kart.fitBounds(ruteLag[id].getBounds(), { padding: [30, 30] });
+            settRuteTekst(id, formaterKm(rute.km) + ' med bil, ca. ' + formaterTid(rute.sekunder));
+        }
+
+        function skjulRute(id) {
+            if (ruteLag[id]) {
+                kart.removeLayer(ruteLag[id]);
+                delete ruteLag[id];
+            }
+            if (luftlinjer[id] && !kart.hasLayer(luftlinjer[id])) {
+                luftlinjer[id].addTo(kart);
+            }
+        }
+
+        function settRuteTekst(id, tekst) {
+            var felt = document.getElementById('rute-' + id);
+            if (felt) felt.textContent = tekst;
+        }
+
+        function formaterKm(km) {
+            return km < 1
+                ? Math.round(km * 1000) + ' m'
+                : km.toFixed(1).replace('.', ',') + ' km';
+        }
+
+        function formaterTid(sekunder) {
+            var minutter = Math.max(1, Math.round(sekunder / 60));
+            if (minutter < 60) return minutter + ' min';
+            var timer = Math.floor(minutter / 60);
+            var rest = minutter % 60;
+            return timer + ' t' + (rest > 0 ? ' ' + rest + ' min' : '');
+        }
+
+        /// --- Kjøreavstand i tabellen ---
+        /// Ett Matrix-kall til Valhalla gir kjøreavstand fra hver ressurs til behovet.
+        /// Retningen er ressurs → behov, samme som ruten i «Se mer», så tallene stemmer overens.
+        var VALHALLA_MATRIX_URL = 'https://valhalla1.openstreetmap.de/sources_to_targets';
+        /// Den offentlige serveren har grense på antall punkter, så vi spør bare for de nærmeste
+        var MAKS_KJOREAVSTANDER = 25;
+
+        function hentMatrise(ressurser) {
+            var foresporsel = {
+                sources: ressurser.map(function (m) {
+                    return { lat: m.Coords.Latitude, lon: m.Coords.Longitude };
+                }),
+                targets: [{ lat: needLat, lon: needLng }],
+                costing: 'auto',
+                units: 'kilometers'
+            };
+            return fetch(VALHALLA_MATRIX_URL + '?json=' + encodeURIComponent(JSON.stringify(foresporsel)))
+                .then(function (svar) {
+                    /// 400 betyr at minst ett punkt ikke har vei. Andre feil betyr at serveren ikke svarte som den skulle.
+                    if (svar.status === 400) throw { ingenVei: true };
+                    if (!svar.ok) throw { ingenVei: false };
+                    return svar.json();
+                })
+                .then(function (data) {
+                    /// Én rad per ressurs, med ett mål (behovet)
+                    return data.sources_to_targets.map(function (rad) { return rad[0]; });
+                });
+        }
+
+        function visKjoreavstand(id, km, sekunder) {
+            var celle = document.getElementById('kjor-' + id);
+            var rad = document.querySelector('tr.match-row[data-id="' + id + '"]');
+            if (!celle || !rad) return;
+
+            if (km == null) {
+                celle.textContent = 'Ingen vei';
+                rad.dataset.kjor = 'ingen';
+                return;
+            }
+            celle.innerHTML = '<span class="badge bg-primary match-distance">' + formaterKm(km) + '</span>'
+                + '<small class="d-block text-muted mt-1">' + formaterTid(sekunder) + '</small>';
+            rad.dataset.kjor = String(km * 1000);
+        }
+
+        function visUkjentKjoreavstand(id) {
+            var celle = document.getElementById('kjor-' + id);
+            if (celle) celle.textContent = '–';
+        }
+
+        function hentKjoreavstander() {
+            /// Listen fra serveren er allerede sortert på luftlinje, så de første er de nærmeste
+            var utvalg = matches.slice(0, MAKS_KJOREAVSTANDER);
+            matches.slice(MAKS_KJOREAVSTANDER).forEach(function (m) { visUkjentKjoreavstand(m.Id); });
+            if (utvalg.length === 0) return;
+
+            hentMatrise(utvalg)
+                .then(function (svar) {
+                    utvalg.forEach(function (m, i) {
+                        visKjoreavstand(m.Id, svar[i].distance, svar[i].time);
+                    });
+                    sorterEtterValgtKolonne();
+                })
+                .catch(function (feil) {
+                    if (!feil || !feil.ingenVei) {
+                        utvalg.forEach(function (m) { visUkjentKjoreavstand(m.Id); });
+                        return;
+                    }
+                    /// Ett punkt uten vei får hele kallet til å feile. Spør da for én og én ressurs,
+                    /// så bare de som faktisk mangler vei får «Ingen vei».
+                    Promise.all(utvalg.map(function (m) {
+                        return hentMatrise([m])
+                            .then(function (svar) { visKjoreavstand(m.Id, svar[0].distance, svar[0].time); })
+                            .catch(function (f) {
+                                if (f && f.ingenVei) visKjoreavstand(m.Id, null, null);
+                                else visUkjentKjoreavstand(m.Id);
+                            });
+                    })).then(sorterEtterValgtKolonne);
+                });
+        }
+
+        /// --- Sortering ---
+        /// Hver ressurs har to rader (hovedraden og «Se mer»-raden), som flyttes sammen.
+        var valgtSortering = 'luft';
+
+        function sorteringsverdi(rad, kolonne) {
+            if (kolonne === 'luft') return Number(rad.dataset.luft);
+            /// Uten kjøreavstand havner ressursen nederst. «Ingen vei» kommer etter dem vi ikke fikk svar på.
+            if (rad.dataset.kjor === 'ingen') return Infinity;
+            if (rad.dataset.kjor === undefined) return Number.MAX_VALUE;
+            return Number(rad.dataset.kjor);
+        }
+
+        function sorterTabell(kolonne) {
+            valgtSortering = kolonne;
+            var tbody = document.querySelector('.match-table tbody');
+            if (!tbody) return;
+
+            var par = Array.from(tbody.querySelectorAll('tr.match-row')).map(function (rad) {
+                return { rad: rad, detaljer: rad.nextElementSibling };
+            });
+            par.sort(function (a, b) {
+                return sorteringsverdi(a.rad, kolonne) - sorteringsverdi(b.rad, kolonne)
+                    || Number(a.rad.dataset.luft) - Number(b.rad.dataset.luft);
+            });
+            par.forEach(function (p) {
+                tbody.appendChild(p.rad);
+                if (p.detaljer) tbody.appendChild(p.detaljer);
+            });
+
+            document.querySelectorAll('.match-sort-btn').forEach(function (knapp) {
+                var valgt = knapp.dataset.sort === kolonne;
+                knapp.closest('th').setAttribute('aria-sort', valgt ? 'ascending' : 'none');
+                knapp.querySelector('i').className = 'fa-solid ' + (valgt ? 'fa-sort-up' : 'fa-sort');
+            });
+        }
+
+        function sorterEtterValgtKolonne() {
+            sorterTabell(valgtSortering);
+        }
+
+        document.querySelectorAll('.match-sort-btn').forEach(function (knapp) {
+            knapp.addEventListener('click', function () {
+                sorterTabell(knapp.dataset.sort);
+            });
+        });
+
+        hentKjoreavstander();
+
+        /// Valhalla sender ruten som en kodet streng (Google polyline med 6 desimaler).
+        /// Denne gjør den om til en liste med [lat, lng]-punkter som Leaflet kan tegne.
+        function dekodPolyline(kodet, presisjon) {
+            var faktor = Math.pow(10, presisjon);
+            var punkter = [];
+            var indeks = 0, lat = 0, lng = 0;
+
+            while (indeks < kodet.length) {
+                var resultat = 0, skift = 0, b;
+                do {
+                    b = kodet.charCodeAt(indeks++) - 63;
+                    resultat |= (b & 0x1f) << skift;
+                    skift += 5;
+                } while (b >= 0x20);
+                lat += (resultat & 1) ? ~(resultat >> 1) : (resultat >> 1);
+
+                resultat = 0; skift = 0;
+                do {
+                    b = kodet.charCodeAt(indeks++) - 63;
+                    resultat |= (b & 0x1f) << skift;
+                    skift += 5;
+                } while (b >= 0x20);
+                lng += (resultat & 1) ? ~(resultat >> 1) : (resultat >> 1);
+
+                punkter.push([lat / faktor, lng / faktor]);
+            }
+            return punkter;
+        }
     </script>
 }
