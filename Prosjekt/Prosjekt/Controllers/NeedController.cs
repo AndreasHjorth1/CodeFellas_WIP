@@ -345,6 +345,7 @@ namespace Prosjekt.Controllers
 
             ViewBag.NeedId = id;
             ViewBag.NeedName = need.Name;
+            ViewBag.NeedStatus = need.Status;
             ViewBag.NeedLat = need.Coords.Latitude;
             ViewBag.NeedLng = need.Coords.Longitude;
 
@@ -447,23 +448,26 @@ namespace Prosjekt.Controllers
                 return NotFound();
             }
 
-            if (EntryStatusFlow.CanMove(need.Status, EntryStatus.Resolved))
+            if (!EntryStatusFlow.CanMove(need.Status, EntryStatus.Resolved))
             {
-                need.Status = EntryStatus.Resolved;
-                await _repo.UpdateAsync(need);
+                TempData["Error"] = "Behovet må ha fått tildelt ressurser før det kan markeres som løst.";
+                return RedirectToAction(nameof(Match), new { id });
+            }
 
-                var allocations = await _allocationRepo.GetByNeedAsync(id);
-                await _allocationRepo.DeleteByNeedAsync(id);
+            need.Status = EntryStatus.Resolved;
+            await _repo.UpdateAsync(need);
 
-                foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
+            var allocations = await _allocationRepo.GetByNeedAsync(id);
+            await _allocationRepo.DeleteByNeedAsync(id);
+
+            foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
+            {
+                await UpdateAvailabilityAsync(resourceId);
+
+                var resource = await _resourceRepo.GetByIdAsync(resourceId);
+                if (resource != null)
                 {
-                    await UpdateAvailabilityAsync(resourceId);
-
-                    var resource = await _resourceRepo.GetByIdAsync(resourceId);
-                    if (resource != null)
-                    {
-                        await NotifyOwnerAsync(resource, $"er levert tilbake. Behovet «{need.Name}» er løst.");
-                    }
+                    await NotifyOwnerAsync(resource, $"er levert tilbake. Behovet «{need.Name}» er løst.");
                 }
             }
 

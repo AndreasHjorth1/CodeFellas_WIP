@@ -1011,15 +1011,41 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 1, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
             var allocations = new FakeAllocationRepository();
             await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 1 });
-            var controller = new NeedController(needs, resources, allocations, new FakeNotificationRepository(), new FakeUserRepository());
+            var controller = new NeedController(needs, resources, allocations, new FakeNotificationRepository(), new FakeUserRepository())
+            {
+                TempData = new TempDataDictionary(new DefaultHttpContext(), new EmptyTempDataProvider())
+            };
 
             // Act
-            await controller.Resolve(1);
+            var result = await controller.Resolve(1);
 
             // Assert
             Assert.Equal(EntryStatus.New, needs.Needs.Single().Status);
             Assert.Single(await allocations.GetByNeedAsync(1));
             Assert.False(resources.Resources.Single().IsAvailable);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Match", redirect.ActionName);
+            Assert.NotNull(controller.TempData["Error"]);
+        }
+
+        [Theory]
+        [InlineData(EntryStatus.New)]
+        [InlineData(EntryStatus.Assigned)]
+        [InlineData(EntryStatus.Resolved)]
+        public async Task Match_SetsNeedStatusForButtons(EntryStatus status)
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = status, Coords = new Coordinates(58.1467, 7.9956) });
+            var controller = new NeedController(needs, new FakeResourceRepository(), new FakeAllocationRepository(),
+                new FakeNotificationRepository(), new FakeUserRepository());
+
+            // Act
+            await controller.Match(1);
+
+            // Assert
+            Assert.Equal(status, (EntryStatus)controller.ViewBag.NeedStatus);
         }
 
         [Fact]

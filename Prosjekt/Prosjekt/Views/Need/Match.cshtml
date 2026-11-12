@@ -305,7 +305,7 @@
                     </button>
                 </form>
             }
-            else
+            else if (ViewBag.NeedStatus == EntryStatus.Assigned)
             {
                 <form asp-action="Resolve" method="post">
                     @Html.AntiForgeryToken()
@@ -314,6 +314,15 @@
                         <i class="fa-solid fa-check" aria-hidden="true"></i> Marker som løst
                     </button>
                 </form>
+            }
+            else
+            {
+                @* Ny eller Vurderes: må få tildelt ressurser før det kan løses *@
+                <button type="button" class="match-btn-primary" disabled
+                        title="Tildel minst én ressurs før behovet kan markeres som løst">
+                    <i class="fa-solid fa-check" aria-hidden="true"></i> Marker som løst
+                </button>
+                <small class="text-muted align-self-center">Tildel minst én ressurs først.</small>
             }
         </div>
     </div>
