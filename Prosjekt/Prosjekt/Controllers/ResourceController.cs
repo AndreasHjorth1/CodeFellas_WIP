@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
+using Prosjekt.Models.Enums;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
 using System.Security.Claims;
@@ -19,12 +20,17 @@ namespace Prosjekt.Controllers
         private readonly IResourceRepository _repo;
         private readonly IAllocationRepository _allocationRepo;
         private readonly IUserRepository _userRepo;
+        private readonly INeedRepository _needRepo;
+        private readonly INotificationRepository _notificationRepo;
 
-        public ResourceController(IResourceRepository repo, IAllocationRepository allocationRepo, IUserRepository userRepo)
+        public ResourceController(IResourceRepository repo, IAllocationRepository allocationRepo, IUserRepository userRepo,
+            INeedRepository needRepo, INotificationRepository notificationRepo)
         {
             _repo = repo;
             _allocationRepo = allocationRepo;
             _userRepo = userRepo;
+            _needRepo = needRepo;
+            _notificationRepo = notificationRepo;
         }
 
         private bool CanSeeAllResources()
@@ -356,9 +362,59 @@ namespace Prosjekt.Controllers
                 return Forbid();
             }
 
+            /// Må hentes før sletting, ellers vet vi ikke hvilke behov ressursen var tildelt
+            var berorteBehov = (await _allocationRepo.GetAllAsync())
+                .Where(a => a.ResourceId == id)
+                .Select(a => a.NeedId)
+                .Distinct()
+                .ToList();
+
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByResourceAsync(id);
+
+            await UpdateAffectedNeedsAsync(berorteBehov, resource.Name);
+
             return RedirectToAction(nameof(Overview));
+        }
+
+        /// <summary>
+        /// Behov som mistet ressursen: står de uten tildelinger, går de tilbake til Vurderes,
+        /// på samme måte som når en koordinator leverer tilbake den siste ressursen.
+        /// Den som meldte behovet får beskjed.
+        /// </summary>
+        private async Task UpdateAffectedNeedsAsync(IEnumerable<int> needIds, string resourceName)
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var remaining = (await _allocationRepo.GetAllAsync()).ToList();
+
+            foreach (var needId in needIds)
+            {
+                var need = await _needRepo.GetByIdAsync(needId);
+                if (need == null)
+                {
+                    continue;
+                }
+
+                var SetToUnderReview = need.Status == EntryStatus.Assigned && !remaining.Any(a => a.NeedId == needId);
+                if (SetToUnderReview)
+                {
+                    need.Status = EntryStatus.UnderReview;
+                    await _needRepo.UpdateAsync(need);
+                }
+
+                if (!string.IsNullOrEmpty(need.UserId) && need.UserId != currentUserId)
+                {
+                    var tekst = SetToUnderReview
+                        ? $"Ressursen «{resourceName}» ble slettet. Behovet «{need.Name}» har ingen ressurser igjen og er satt til Vurderes."
+                        : $"Ressursen «{resourceName}» ble slettet og er fjernet fra behovet «{need.Name}».";
+
+                    await _notificationRepo.AddAsync(new Notification
+                    {
+                        UserId = need.UserId,
+                        Message = tekst
+                    });
+                }
+            }
         }
 
         /// <summary>
