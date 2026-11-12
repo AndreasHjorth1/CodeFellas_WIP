@@ -10,6 +10,9 @@ namespace Prosjekt.Services
     /// </summary>
     public class IdentitySeeder
     {
+        public const string DevelopmentAdminPhone = "98765432";
+        public const string DevelopmentUserPhone = "41234567";
+        public const string DevelopmentCoordinatorPhone = "92345678";
         public const string DevelopmentAdminEmail = "admin@heimevernet.local";
         public const string DevelopmentUserEmail = "user@heimevernet.local";
         public const string DevelopmentCoordinatorEmail = "koordinator@heimevernet.local";
@@ -75,11 +78,14 @@ namespace Prosjekt.Services
 
             if (user is null)
             {
+                var (name, phone) = DevelopmentProfile(email);
+
                 user = new ApplicationUser
                 {
                     UserName = email,
                     Email = email,
-                    FullName = DevelopmentName(email),
+                    FullName = name,
+                    PhoneNumber = phone,
                     EmailConfirmed = true
                 };
 
@@ -97,11 +103,14 @@ namespace Prosjekt.Services
             return user;
         }
 
-        private static string DevelopmentName(string email) => email switch
+        /// <summary>
+        /// Navn og telefonnummer til testbrukerne.
+        /// </summary>
+        private static (string Name, string Phone) DevelopmentProfile(string email) => email switch
         {
-            DevelopmentAdminEmail => "Test Admin",
-            DevelopmentCoordinatorEmail => "Test Koordinator",
-            _ => "Test Bruker"
+            DevelopmentAdminEmail => ("Demo Admin", DevelopmentAdminPhone),
+            DevelopmentCoordinatorEmail => ("Demo Koordinator", DevelopmentCoordinatorPhone),
+            _ => ("Demo Bruker", DevelopmentUserPhone)
         };
 
         private static async Task EnsureSucceededAsync(Task<IdentityResult> operation, string failureMessage)
