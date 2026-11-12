@@ -43,7 +43,7 @@ namespace Prosjekt.Models.ModelView
 
         [Display(Name = "Telefonnummer")]
         [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
-        [Phone(ErrorMessage = "Ugyldig telefonnummer.")]
+        [RegularExpression(@"^ *\+?( *[0-9]){8,15} *$", ErrorMessage = "Telefonnummeret må være gyldig.")]
         public string PhoneNumber { get; init; } = string.Empty;
 
         [Display(Name = "Beskrivelse")]
@@ -51,7 +51,8 @@ namespace Prosjekt.Models.ModelView
         public string Description { get; init; } = string.Empty;
 
         [Display(Name = "Antall")]
-        [Range(1, 10000, ErrorMessage = "Antall må være minst 1.")]
+        [Range(1, 10000, ErrorMessage = "Antall må være mellom 1 og 10000.")]
+        [RegularExpression(@"^\d+$", ErrorMessage = "Antall må være et helt tall.")]
         public int Quantity { get; init; } = 1;
 
         /// <summary>
