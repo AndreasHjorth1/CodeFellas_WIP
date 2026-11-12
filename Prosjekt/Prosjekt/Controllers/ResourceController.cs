@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Prosjekt.DataAccess.Repositories;
 using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
+using Prosjekt.Models.Enums;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Utils;
 using System.Security.Claims;
@@ -19,12 +20,17 @@ namespace Prosjekt.Controllers
         private readonly IResourceRepository _repo;
         private readonly IAllocationRepository _allocationRepo;
         private readonly IUserRepository _userRepo;
+        private readonly INeedRepository _needRepo;
+        private readonly INotificationRepository _notificationRepo;
 
-        public ResourceController(IResourceRepository repo, IAllocationRepository allocationRepo, IUserRepository userRepo)
+        public ResourceController(IResourceRepository repo, IAllocationRepository allocationRepo, IUserRepository userRepo,
+            INeedRepository needRepo, INotificationRepository notificationRepo)
         {
             _repo = repo;
             _allocationRepo = allocationRepo;
             _userRepo = userRepo;
+            _needRepo = needRepo;
+            _notificationRepo = notificationRepo;
         }
 
         private bool CanSeeAllResources()
@@ -205,20 +211,8 @@ namespace Prosjekt.Controllers
             }
 
             string description = resource.Description ?? "";
-            string licensePlate = "";
-
-            const string regTag = "[Reg.nr:";
-            int regStart = description.IndexOf(regTag, StringComparison.Ordinal);
-            if (regStart >= 0)
-            {
-                int valueStart = regStart + regTag.Length;
-                int regEnd = description.IndexOf(']', valueStart);
-                if (regEnd > valueStart)
-                {
-                    licensePlate = description.Substring(valueStart, regEnd - valueStart).Trim();
-                    description = description.Remove(regStart, regEnd - regStart + 1).Trim();
-                }
-            }
+            string licensePlate = ExtractTag(ref description, "[Reg.nr:");
+            string competenceTag = ExtractTag(ref description, "[Yrke:");
 
             var category = ParseCategory(resource.Category);
             var subCategory = resource.SubCategory?.Trim();
@@ -230,6 +224,7 @@ namespace Prosjekt.Controllers
                 Description = description,
                 PhoneNumber = resource.PhoneNumber,
                 Quantity = resource.Quantity,
+                Allocated = await GetAllocatedAsync(resource.Id),
                 Availability = resource.IsAvailable,
                 Latitude = resource.Coords.Latitude,
                 Longitude = resource.Coords.Longitude,
@@ -242,10 +237,47 @@ namespace Prosjekt.Controllers
                 ToolType = category == ResourceViewModel.ResourceType.Tool ? subCategory : null,
                 MaterialType = category == ResourceViewModel.ResourceType.Materials ? subCategory : null,
                 ProvisionType = category == ResourceViewModel.ResourceType.Provision ? subCategory : null,
-                Size = category == ResourceViewModel.ResourceType.Clothing ? subCategory : null
+                Size = category == ResourceViewModel.ResourceType.Clothing ? subCategory : null,
+                CompetenceType = category == ResourceViewModel.ResourceType.Competence
+                    ? (string.IsNullOrEmpty(subCategory) ? competenceTag : subCategory)
+                    : null
             };
 
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Hvor mange av ressursen som er tildelt behov nå.
+        /// </summary>
+        private async Task<int> GetAllocatedAsync(int resourceId)
+        {
+            return (await _allocationRepo.GetAllAsync())
+                .Where(a => a.ResourceId == resourceId)
+                .Sum(a => a.Quantity);
+        }
+
+        /// <summary>
+        /// Henter verdien i en merkelapp som «[Reg.nr: AB 12345]» og fjerner merkelappen fra beskrivelsen.
+        /// Gir tom tekst hvis merkelappen ikke finnes.
+        /// </summary>
+        private static string ExtractTag(ref string description, string tag)
+        {
+            int start = description.IndexOf(tag, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                return "";
+            }
+
+            int valueStart = start + tag.Length;
+            int end = description.IndexOf(']', valueStart);
+            if (end <= valueStart)
+            {
+                return "";
+            }
+
+            var value = description.Substring(valueStart, end - valueStart).Trim();
+            description = description.Remove(start, end - start + 1).Trim();
+            return value;
         }
 
         [HttpPost]
@@ -288,11 +320,21 @@ namespace Prosjekt.Controllers
                 return Forbid();
             }
 
+            /// Antallet kan ikke bli lavere enn det som allerede er tildelt behov
+            var allocated = await GetAllocatedAsync(id);
+            if (model.Quantity < allocated)
+            {
+                ModelState.AddModelError(nameof(model.Quantity),
+                    $"{allocated} er tildelt behov. Antallet kan ikke være lavere før de er levert tilbake.");
+                return View(model with { Allocated = allocated });
+            }
+
             resourceEntity.Name = model.Name;
             resourceEntity.Description = GetFullDescription(model);
             resourceEntity.PhoneNumber = model.PhoneNumber;
             resourceEntity.Quantity = model.Quantity;
-            resourceEntity.IsAvailable = model.Availability;
+            /// Er alt tildelt, er ressursen ikke ledig, uansett hva som er krysset av
+            resourceEntity.IsAvailable = model.Availability && model.Quantity - allocated > 0;
             resourceEntity.Category = model.Category.ToString();
             resourceEntity.SubCategory = GetSubCategory(model);
             resourceEntity.Coords = coords;
@@ -320,9 +362,59 @@ namespace Prosjekt.Controllers
                 return Forbid();
             }
 
+            /// Må hentes før sletting, ellers vet vi ikke hvilke behov ressursen var tildelt
+            var berorteBehov = (await _allocationRepo.GetAllAsync())
+                .Where(a => a.ResourceId == id)
+                .Select(a => a.NeedId)
+                .Distinct()
+                .ToList();
+
             await _repo.DeleteAsync(id);
             await _allocationRepo.DeleteByResourceAsync(id);
+
+            await UpdateAffectedNeedsAsync(berorteBehov, resource.Name);
+
             return RedirectToAction(nameof(Overview));
+        }
+
+        /// <summary>
+        /// Behov som mistet ressursen: står de uten tildelinger, går de tilbake til Vurderes,
+        /// på samme måte som når en koordinator leverer tilbake den siste ressursen.
+        /// Den som meldte behovet får beskjed.
+        /// </summary>
+        private async Task UpdateAffectedNeedsAsync(IEnumerable<int> needIds, string resourceName)
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var remaining = (await _allocationRepo.GetAllAsync()).ToList();
+
+            foreach (var needId in needIds)
+            {
+                var need = await _needRepo.GetByIdAsync(needId);
+                if (need == null)
+                {
+                    continue;
+                }
+
+                var SetToUnderReview = need.Status == EntryStatus.Assigned && !remaining.Any(a => a.NeedId == needId);
+                if (SetToUnderReview)
+                {
+                    need.Status = EntryStatus.UnderReview;
+                    await _needRepo.UpdateAsync(need);
+                }
+
+                if (!string.IsNullOrEmpty(need.UserId) && need.UserId != currentUserId)
+                {
+                    var tekst = SetToUnderReview
+                        ? $"Ressursen «{resourceName}» ble slettet. Behovet «{need.Name}» har ingen ressurser igjen og er satt til Vurderes."
+                        : $"Ressursen «{resourceName}» ble slettet og er fjernet fra behovet «{need.Name}».";
+
+                    await _notificationRepo.AddAsync(new Notification
+                    {
+                        UserId = need.UserId,
+                        Message = tekst
+                    });
+                }
+            }
         }
 
         /// <summary>

@@ -310,6 +310,7 @@
                         <option value="Materials">Materialer</option>
                         <option value="Clothing">Klær</option>
                         <option value="Tool">Verktøy</option>
+                        <option value="Competence">Kompetanse</option>
                         <option value="Other">Annet</option>
                     </select>
                     <div id="ressursSymbolPreview" class="category-hint" aria-live="polite"></div>
@@ -331,6 +332,22 @@
                         <label class="form-label" for="inputLicensePlate">Skiltnummer</label>
                         <input id="inputLicensePlate" asp-for="LicensePlate" class="form-control" placeholder="F.eks. EL 12345" />
                     </div>
+                </div>
+
+                <!-- Underkategori: Kompetanse -->
+                <div id="seksjonKompetanse" class="kategori-seksjon mb-3" style="display:none;">
+                    <label class="form-label" for="inputCompetenceType">Yrke eller erfaringsområde</label>
+                    <select id="inputCompetenceType" asp-for="CompetenceType" class="form-select">
+                        <option value="Health">Helse og omsorg</option>
+                        <option value="Construction">Bygg og anlegg</option>
+                        <option value="Transport">Transport og sjåfør</option>
+                        <option value="Electrical">Elektro</option>
+                        <option value="Catering">Matlaging og storkjøkken</option>
+                        <option value="SearchAndRescue">Søk og redning</option>
+                        <option value="Communication">Samband og IT</option>
+                        <option value="Other">Annet</option>
+                    </select>
+                    <div class="form-text">Beskriv erfaringen i Beskrivelse-feltet.</div>
                 </div>
 
                 <!-- Underkategori: Verktøy -->
@@ -375,7 +392,12 @@
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <label class="form-label" asp-for="Quantity">Antall</label>
-                        <input asp-for="Quantity" type="number" min="1" class="form-control" required />
+                        <input asp-for="Quantity" type="number" min="@Math.Max(1, Model.Allocated)" class="form-control" required />
+                        <input asp-for="Allocated" type="hidden" />
+                        @if (Model.Allocated > 0)
+                        {
+                            <div class="form-text">@Model.Allocated er tildelt behov</div>
+                        }
                     </div>
                     <div class="col-6">
                         <label class="form-label" asp-for="PhoneNumber">Telefonnummer</label>
@@ -426,7 +448,8 @@
             inputToolType: @Json.Serialize(Model.ToolType),
             inputMaterialType: @Json.Serialize(Model.MaterialType),
             inputProvisionType: @Json.Serialize(Model.ProvisionType),
-            inputSize: @Json.Serialize(Model.Size)
+            inputSize: @Json.Serialize(Model.Size),
+            inputCompetenceType: @Json.Serialize(Model.CompetenceType)
         };
 
         /// Hjelpetekst under kategorivalget, samme som ved registrering
@@ -436,6 +459,7 @@
             Materials: 'Oppgi materialtype og mengde.',
             Clothing: 'Oppgi størrelse og antall.',
             Tool: 'Oppgi verktøytype og antall.',
+            Competence: 'Velg yrke og beskriv erfaringen i beskrivelsesfeltet.',
             Other: 'Beskriv ressursen i beskrivelsesfeltet.'
         };
 
@@ -468,7 +492,8 @@
                 Provision: 'seksjonProvisjon',
                 Materials: 'seksjonMaterialer',
                 Clothing: 'seksjonKlær',
-                Tool: 'seksjonVerktøy'
+                Tool: 'seksjonVerktøy',
+                Competence: 'seksjonKompetanse'
             };
 
             document.querySelectorAll('.kategori-seksjon').forEach(function (s) {
