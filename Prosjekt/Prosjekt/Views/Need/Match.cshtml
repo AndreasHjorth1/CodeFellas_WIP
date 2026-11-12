@@ -368,7 +368,11 @@
                                 <td id="kjor-@m.Id" class="text-nowrap" data-label="Kjøreavstand"><small class="text-muted">Henter …</small></td>
                                 @* Tildel-skjemaet skal ikke åpne «Se mer» *@
                                 <td class="match-tildel" data-stop-click>
-                                    @if (m.Available > 0)
+                                    @if (ViewBag.NeedStatus == EntryStatus.Resolved)
+                                    {
+                                        <span class="badge bg-secondary">Behovet er løst</span>
+                                    }
+                                    else if (m.Available > 0)
                                     {
                                         <form asp-action="Allocate" method="post" class="match-tildel-skjema">
                                             @Html.AntiForgeryToken()
@@ -442,7 +446,7 @@
                     </button>
                 </form>
             }
-            else
+            else if (ViewBag.NeedStatus == EntryStatus.Assigned)
             {
                 <form asp-action="Resolve" method="post">
                     @Html.AntiForgeryToken()
@@ -451,6 +455,15 @@
                         <i class="fa-solid fa-check" aria-hidden="true"></i> Marker som løst
                     </button>
                 </form>
+            }
+            else
+            {
+                @* Ny eller Vurderes: må få tildelt ressurser før det kan løses *@
+                <button type="button" class="match-btn-primary" disabled
+                        title="Tildel minst én ressurs før behovet kan markeres som løst">
+                    <i class="fa-solid fa-check" aria-hidden="true"></i> Marker som løst
+                </button>
+                <small class="text-muted align-self-center">Tildel minst én ressurs først.</small>
             }
         </div>
     </div>

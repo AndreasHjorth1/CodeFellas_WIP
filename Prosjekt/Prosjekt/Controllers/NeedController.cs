@@ -195,6 +195,20 @@ namespace Prosjekt.Controllers
                 return View(model);
             }
 
+            /// <summary>
+            /// Tildelt betyr at behovet har ressurser. Skal det tilbake til Vurderes,
+            /// må ressursene leveres tilbake først, så ingen tildeling forsvinner ubemerket.
+            /// </summary>
+            if (existingNeed.Status == EntryStatus.Assigned && model.Status == EntryStatus.UnderReview
+                && (await _allocationRepo.GetByNeedAsync(id)).Any())
+            {
+                ModelState.AddModelError(nameof(model.Status),
+                    "Behovet har tildelte ressurser. Lever dem tilbake under «Finn ressurser» før du setter det til Vurderes.");
+                return View(model);
+            }
+
+            var blirLost = existingNeed.Status != EntryStatus.Resolved && model.Status == EntryStatus.Resolved;
+
             existingNeed.Name = model.Name;
             existingNeed.Description = model.Description;
             existingNeed.PhoneNumber = model.Phone;
@@ -208,6 +222,12 @@ namespace Prosjekt.Controllers
             existingNeed.PerimeterMeters = model.PerimeterMeters;
 
             await _repo.UpdateAsync(existingNeed);
+
+            /// Samme som «Marker som løst»: ressursene leveres tilbake og eierne får beskjed
+            if (blirLost)
+            {
+                await ReleaseAllocationsAsync(id, $"er levert tilbake. Behovet «{existingNeed.Name}» er løst.");
+            }
 
             return RedirectToAction(nameof(Overview));
         }
@@ -345,6 +365,7 @@ namespace Prosjekt.Controllers
 
             ViewBag.NeedId = id;
             ViewBag.NeedName = need.Name;
+            ViewBag.NeedStatus = need.Status;
             ViewBag.NeedLat = need.Coords.Latitude;
             ViewBag.NeedLng = need.Coords.Longitude;
 
@@ -359,6 +380,12 @@ namespace Prosjekt.Controllers
             if (need == null || resource == null)
             {
                 return NotFound();
+            }
+
+            if (need.Status == EntryStatus.Resolved)
+            {
+                TempData["Error"] = "Behovet er løst. Gjenåpne det før du tildeler flere ressurser.";
+                return RedirectToAction(nameof(Match), new { id = needId });
             }
 
             if (!resource.IsAvailable)
@@ -447,25 +474,16 @@ namespace Prosjekt.Controllers
                 return NotFound();
             }
 
-            if (EntryStatusFlow.CanMove(need.Status, EntryStatus.Resolved))
+            if (!EntryStatusFlow.CanMove(need.Status, EntryStatus.Resolved))
             {
-                need.Status = EntryStatus.Resolved;
-                await _repo.UpdateAsync(need);
-
-                var allocations = await _allocationRepo.GetByNeedAsync(id);
-                await _allocationRepo.DeleteByNeedAsync(id);
-
-                foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
-                {
-                    await UpdateAvailabilityAsync(resourceId);
-
-                    var resource = await _resourceRepo.GetByIdAsync(resourceId);
-                    if (resource != null)
-                    {
-                        await NotifyOwnerAsync(resource, $"er levert tilbake. Behovet «{need.Name}» er løst.");
-                    }
-                }
+                TempData["Error"] = "Behovet må ha fått tildelt ressurser før det kan markeres som løst.";
+                return RedirectToAction(nameof(Match), new { id });
             }
+
+            need.Status = EntryStatus.Resolved;
+            await _repo.UpdateAsync(need);
+
+            await ReleaseAllocationsAsync(id, $"er levert tilbake. Behovet «{need.Name}» er løst.");
 
             return RedirectToAction(nameof(Overview));
         }
@@ -514,6 +532,26 @@ namespace Prosjekt.Controllers
             Enum.TryParse<ImportanceLevel>(priority, out var prio) && Enum.IsDefined(prio) && prio != ImportanceLevel.Undefined
                 ? prio
                 : ImportanceLevel.Planned;
+
+        /// <summary>
+        /// Sletter alle tildelingene til behovet, gjør ressursene ledige igjen og varsler eierne.
+        /// </summary>
+        private async Task ReleaseAllocationsAsync(int needId, string tekst)
+        {
+            var allocations = await _allocationRepo.GetByNeedAsync(needId);
+            await _allocationRepo.DeleteByNeedAsync(needId);
+
+            foreach (var resourceId in allocations.Select(a => a.ResourceId).Distinct())
+            {
+                await UpdateAvailabilityAsync(resourceId);
+
+                var resource = await _resourceRepo.GetByIdAsync(resourceId);
+                if (resource != null)
+                {
+                    await NotifyOwnerAsync(resource, tekst);
+                }
+            }
+        }
 
         /// <summary>
         /// holder IsAvailable i takt med tildelingene.

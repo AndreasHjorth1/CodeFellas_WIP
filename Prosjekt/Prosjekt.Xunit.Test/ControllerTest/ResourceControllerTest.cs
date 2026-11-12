@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Prosjekt.Controllers;
 using Prosjekt.Models.Authorization;
 using Prosjekt.Models.Entities;
+using Prosjekt.Models.Enums;
 using Prosjekt.Models.ModelView;
 using Prosjekt.Xunit.Test.Fakes;
 using System.Collections.Generic;
@@ -24,7 +25,9 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         private static ResourceController CreateController(FakeResourceRepository repo, string userId =
-        "user-1", bool isAdmin = false, bool isCoordinator = false, FakeUserRepository? users = null)
+        "user-1", bool isAdmin = false, bool isCoordinator = false, FakeUserRepository? users = null,
+        FakeAllocationRepository? allocations = null, FakeNeedRepository? needs = null,
+        FakeNotificationRepository? notifications = null)
         {
             var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, userId) };
             if (isAdmin)
@@ -42,7 +45,8 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             };
             httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
 
-            return new ResourceController(repo, new FakeAllocationRepository(), users ?? new FakeUserRepository())
+            return new ResourceController(repo, allocations ?? new FakeAllocationRepository(), users ?? new FakeUserRepository(),
+                needs ?? new FakeNeedRepository(), notifications ?? new FakeNotificationRepository())
             {
                 ControllerContext = new ControllerContext { HttpContext = httpContext }
             };
@@ -186,7 +190,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
 
             // Act
             var result = controller.Index();
@@ -202,7 +206,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
             controller.ModelState.AddModelError("Latitude", "Required");
 
             var model = new ResourceCreatorViewModel
@@ -227,7 +231,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
 
             var model = new ResourceCreatorViewModel
             {
@@ -251,7 +255,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
 
             var model = new ResourceCreatorViewModel
             {
@@ -356,7 +360,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
 
             // Act
             var result = await controller.Edit(99);
@@ -389,7 +393,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
             var model = new ResourceViewModel { Id = 2, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956 };
 
             // Act
@@ -404,7 +408,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
             var model = new ResourceViewModel { Id = 1, Name = "Aggregat" };
 
             // Act
@@ -421,7 +425,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         {
             // Arrange
             var repo = new FakeResourceRepository();
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
             var model = new ResourceViewModel { Id = 99, Name = "Aggregat", Latitude = 58.1467, Longitude = 7.9956, AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0), AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0) };
 
             // Act
@@ -465,6 +469,72 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
+        public async Task Edit_Post_QuantityBelowAllocated_ReturnsViewWithErrorAndKeepsQuantity()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 2 });
+            var controller = CreateController(repo, isAdmin: true, allocations: allocations);
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Quantity = 1,
+                Availability = true,
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            var view = Assert.IsType<ViewResult>(result);
+            Assert.Equal(2, Assert.IsType<ResourceViewModel>(view.Model).Allocated);
+            Assert.True(controller.ModelState.ContainsKey(nameof(ResourceViewModel.Quantity)));
+            var resource = Assert.Single(repo.Resources);
+            Assert.Equal(2, resource.Quantity);
+            Assert.False(resource.IsAvailable);
+        }
+
+        [Theory]
+        [InlineData(2, false)] // Alt er tildelt: ikke ledig selv om det er krysset av
+        [InlineData(3, true)]  // Én er ledig
+        public async Task Edit_Post_WithAllocations_AvailabilityFollowsWhatIsLeft(int quantity, bool expectedAvailable)
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 2, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 2 });
+            var controller = CreateController(repo, isAdmin: true, allocations: allocations);
+            var model = new ResourceViewModel
+            {
+                Id = 1,
+                Name = "Aggregat",
+                Quantity = quantity,
+                Availability = true,
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            var resource = Assert.Single(repo.Resources);
+            Assert.Equal(quantity, resource.Quantity);
+            Assert.Equal(expectedAvailable, resource.IsAvailable);
+        }
+
+        [Fact]
         public async Task Delete_RemovesResourceAndRedirectsToOverview()
         {
             // Arrange
@@ -479,6 +549,53 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             var redirect = Assert.IsType<RedirectToActionResult>(result);
             Assert.Equal("Overview", redirect.ActionName);
             Assert.Empty(repo.Resources);
+        }
+
+        [Fact]
+        public async Task Delete_LastAllocatedResource_SetsNeedToUnderReviewAndNotifiesReporter()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", UserId = "user-1", Coords = new Coordinates(58.1467, 7.9956) });
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 10, Name = "Strøm", Status = EntryStatus.Assigned, UserId = "koordinator-1", Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 10, ResourceId = 1, Quantity = 1 });
+            var notifications = new FakeNotificationRepository();
+            var controller = CreateController(repo, allocations: allocations, needs: needs, notifications: notifications);
+
+            // Act
+            await controller.Delete(1);
+
+            // Assert
+            Assert.Empty(await allocations.GetAllAsync());
+            Assert.Equal(EntryStatus.UnderReview, needs.Needs.Single().Status);
+            var varsel = Assert.Single(notifications.Notifications);
+            Assert.Equal("koordinator-1", varsel.UserId);
+        }
+
+        [Fact]
+        public async Task Delete_ResourceWhenNeedHasOtherAllocations_KeepsNeedAssigned()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource { Id = 1, Name = "Aggregat", UserId = "user-1", Coords = new Coordinates(58.1467, 7.9956) });
+            repo.Resources.Add(new Resource { Id = 2, Name = "Kabel", UserId = "user-2", Coords = new Coordinates(58.1467, 7.9956) });
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 10, Name = "Strøm", Status = EntryStatus.Assigned, UserId = "koordinator-1", Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 10, ResourceId = 1, Quantity = 1 });
+            await allocations.AddAsync(new Allocation { NeedId = 10, ResourceId = 2, Quantity = 1 });
+            var notifications = new FakeNotificationRepository();
+            var controller = CreateController(repo, allocations: allocations, needs: needs, notifications: notifications);
+
+            // Act
+            await controller.Delete(1);
+
+            // Assert
+            Assert.Single(await allocations.GetAllAsync());
+            Assert.Equal(EntryStatus.Assigned, needs.Needs.Single().Status);
+            Assert.Single(notifications.Notifications);
         }
 
         [Fact]
@@ -614,6 +731,63 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
+        public async Task Edit_Get_Competence_ExtractsYrkeAndSetsCompetenceType()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Sykepleier",
+                Description = "Ti års erfaring [Yrke: Health]",
+                Category = "Competence",
+                SubCategory = "Health",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isAdmin: true);
+
+            // Act
+            var result = await controller.Edit(1);
+
+            // Assert
+            var model = Assert.IsType<ResourceViewModel>(Assert.IsType<ViewResult>(result).Model);
+            Assert.Equal("Ti års erfaring", model.Description);
+            Assert.Equal("Health", model.CompetenceType);
+            Assert.Equal(ResourceViewModel.ResourceType.Competence, model.Category);
+        }
+
+        [Fact]
+        public async Task Edit_Competence_GetThenPost_KeepsSubCategoryAndSingleYrkeTag()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Sykepleier",
+                Description = "Ti års erfaring [Yrke: Health]",
+                Category = "Competence",
+                SubCategory = "Health",
+                Quantity = 1,
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isAdmin: true);
+
+            // Act: lagre skjemaet uendret
+            var model = Assert.IsType<ResourceViewModel>(Assert.IsType<ViewResult>(await controller.Edit(1)).Model);
+            await controller.Edit(1, model with
+            {
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
+            });
+
+            // Assert
+            var saved = Assert.Single(repo.Resources);
+            Assert.Equal("Health", saved.SubCategory);
+            Assert.Equal("Ti års erfaring [Yrke: Health]", saved.Description);
+        }
+
+        [Fact]
         public async Task Edit_Get_ClothingWithSize_MapsToViewModel()
         {
             // Arrange
@@ -651,7 +825,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Aggregat",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
             var model = new ResourceViewModel
             {
                 Id = 1,
@@ -681,7 +855,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
                 Name = "Aggregat",
                 Coords = new Coordinates(58.1467, 7.9956)
             });
-            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository());
+            var controller = new ResourceController(repo, new FakeAllocationRepository(), new FakeUserRepository(), new FakeNeedRepository(), new FakeNotificationRepository());
             controller.ModelState.AddModelError("PhoneNumber", "Required");
             var model = new ResourceViewModel
             {
