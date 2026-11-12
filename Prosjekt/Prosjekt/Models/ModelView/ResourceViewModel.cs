@@ -43,7 +43,7 @@ namespace Prosjekt.Models.ModelView
 
         [Display(Name = "Telefonnummer")]
         [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
-        [RegularExpression(@"^\+?[0-9]{8,15}$", ErrorMessage = "Telefonnummeret må være gyldig.")]
+        [RegularExpression(@"^ *\+?( *[0-9]){8,15} *$", ErrorMessage = "Telefonnummeret må være gyldig.")]
         public string PhoneNumber { get; init; } = string.Empty;
 
         [Display(Name = "Beskrivelse")]

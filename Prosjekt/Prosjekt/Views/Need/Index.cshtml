@@ -939,8 +939,8 @@
                 return false;
             }
             // Samme regel som [RegularExpression] i NeedViewModel
-            if (!/^\+?[0-9]{8,15}$/.test(document.getElementById('inputPhone').value.trim())) {
-                alert("Telefonnummeret må være gyldig (8–15 siffer, eventuelt med + foran).");
+            if (!/^ *\+?( *[0-9]){8,15} *$/.test(document.getElementById('inputPhone').value.trim())) {
+                alert("Telefonnummeret må være gyldig (8–15 siffer, eventuelt med + foran og mellomrom).");
                 document.getElementById('inputPhone').focus();
                 return false;
             }

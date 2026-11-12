@@ -15,7 +15,7 @@ namespace Prosjekt.Models.ModelView.Account
         public string Email { get; init; } = string.Empty;
 
         [Required(ErrorMessage = "Telefonnummer må fylles ut.")]
-        [RegularExpression(@"^\+?[0-9]{8,15}$", ErrorMessage = "Telefonnummeret må være gyldig.")]
+        [RegularExpression(@"^ *\+?( *[0-9]){8,15} *$", ErrorMessage = "Telefonnummeret må være gyldig.")]
         [Display(Name = "Telefonnummer")]
         public string PhoneNumber { get; set; } = string.Empty;
 
