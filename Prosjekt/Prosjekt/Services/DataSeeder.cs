@@ -25,8 +25,8 @@ namespace Prosjekt.Services
 
         private static List<Resource> CreateResources(string userId, string coordinatorId)
         {
-            const string userPhone = "41234567";
-            const string coordinatorPhone = "92345678";
+            const string userPhone = IdentitySeeder.DevelopmentUserPhone;
+            const string coordinatorPhone = IdentitySeeder.DevelopmentCoordinatorPhone;
 
             /// <summary>
             /// Testbrukeren har 14 ressurser, koordinatoren har 6 ressurser. Alle er plassert rundt Kristiansand.
@@ -59,8 +59,8 @@ namespace Prosjekt.Services
 
         private static List<Need> CreateNeeds(string coordinatorId, string adminId)
         {
-            const string coordinatorPhone = "92345678";
-            const string adminPhone = "98765432";
+            const string coordinatorPhone = IdentitySeeder.DevelopmentCoordinatorPhone;
+            const string adminPhone = IdentitySeeder.DevelopmentAdminPhone;
 
             return new List<Need>
               {
