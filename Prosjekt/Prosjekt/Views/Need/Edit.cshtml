@@ -386,7 +386,8 @@
 
                 <div class="mb-3">
                     <label class="form-label" asp-for="Phone">Kontaktinformasjon</label>
-                    <input asp-for="Phone" class="form-control" placeholder="+47" required />
+                    <input asp-for="Phone" type="tel" inputmode="tel" class="form-control" placeholder="F.eks. 98765432" required />
+                    <span asp-validation-for="Phone" class="text-danger small"></span>
                 </div>
 
                 <div class="side-divider"></div>
@@ -418,11 +419,13 @@
                 <div class="mb-3">
                     <label class="form-label" asp-for="Name">Tittel</label>
                     <input asp-for="Name" class="form-control" required />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label" asp-for="Description">Beskrivelse</label>
                     <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
                 </div>
 
                 <div class="side-divider"></div>

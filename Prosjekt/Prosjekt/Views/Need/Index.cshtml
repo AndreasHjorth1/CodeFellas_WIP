@@ -505,7 +505,7 @@
 
                 <div class="mb-3">
                     <label class="form-label" for="inputPhone">Kontaktinformasjon</label>
-                    <input id="inputPhone" class="form-control" placeholder="+47" value="@(Model?.NeedList?.FirstOrDefault()?.Phone)" />
+                    <input id="inputPhone" type="tel" inputmode="tel" class="form-control" placeholder="F.eks. 98765432" value="@(Model?.NeedList?.FirstOrDefault()?.Phone)" />
                 </div>
 
                 <div class="side-divider"></div>
@@ -935,6 +935,12 @@
             }
             if (!document.getElementById('inputPhone').value.trim()) {
                 alert("Vennligst fyll ut 'Kontaktinformasjon'.");
+                document.getElementById('inputPhone').focus();
+                return false;
+            }
+            // Samme regel som [RegularExpression] i NeedViewModel
+            if (!/^\+?[0-9]{8,15}$/.test(document.getElementById('inputPhone').value.trim())) {
+                alert("Telefonnummeret må være gyldig (8–15 siffer, eventuelt med + foran).");
                 document.getElementById('inputPhone').focus();
                 return false;
             }

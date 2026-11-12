@@ -300,6 +300,7 @@
                 <div class="mb-3">
                     <label class="form-label" asp-for="Name">Tittel</label>
                     <input asp-for="Name" class="form-control" required />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
@@ -393,6 +394,7 @@
                     <div class="col-6">
                         <label class="form-label" asp-for="Quantity">Antall</label>
                         <input asp-for="Quantity" type="number" min="@Math.Max(1, Model.Allocated)" class="form-control" required />
+                        <span asp-validation-for="Quantity" class="text-danger small"></span>
                         <input asp-for="Allocated" type="hidden" />
                         @if (Model.Allocated > 0)
                         {
@@ -401,7 +403,8 @@
                     </div>
                     <div class="col-6">
                         <label class="form-label" asp-for="PhoneNumber">Telefonnummer</label>
-                        <input asp-for="PhoneNumber" class="form-control" required />
+                        <input asp-for="PhoneNumber" type="tel" inputmode="tel" class="form-control" required />
+                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                     </div>
                 </div>
 
@@ -413,16 +416,19 @@
                 <div class="mb-3">
                     <label class="form-label" asp-for="AvailableFrom">Tilgjengelig fra</label>
                     <input asp-for="AvailableFrom" type="datetime-local" class="form-control" required />
+                    <span asp-validation-for="AvailableFrom" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label" asp-for="AvailableTo">Tilgjengelig til</label>
                     <input asp-for="AvailableTo" type="datetime-local" class="form-control" required />
+                    <span asp-validation-for="AvailableTo" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label" asp-for="Description">Beskrivelse</label>
                     <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
                 </div>
 
                 <input asp-for="Latitude" id="Latitude" type="hidden" />

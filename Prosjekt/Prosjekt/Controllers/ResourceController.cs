@@ -106,6 +106,12 @@ namespace Prosjekt.Controllers
                 return View("Index", model);
             }
 
+            if (resourcesToCreate.Any(r => r.AvailableTo <= r.AvailableFrom))
+            {
+                ModelState.AddModelError("", "Tilgjengelig til må være etter tilgjengelig fra.");
+                return View("Index", model);
+            }
+
             var createdResources = new List<ResourceViewModel>();
 
             foreach (var baseResource in resourcesToCreate)
@@ -306,6 +312,12 @@ namespace Prosjekt.Controllers
             if (!model.AvailableFrom.HasValue || !model.AvailableTo.HasValue)
             {
                 ModelState.AddModelError("", "Ressursen må ha tilgjengelig fra og til.");
+                return View(model);
+            }
+
+            if (model.AvailableTo <= model.AvailableFrom)
+            {
+                ModelState.AddModelError(nameof(model.AvailableTo), "Tilgjengelig til må være etter tilgjengelig fra.");
                 return View(model);
             }
 
