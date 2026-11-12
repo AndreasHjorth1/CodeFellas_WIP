@@ -266,7 +266,11 @@
                                             <dd>@m.AllocatedToThisNeed stk</dd>
 
                                             <dt>Avstand</dt>
-                                            <dd>@FormatDistance(m.DistanceMeters) fra behovet</dd>
+                                            <dd>@FormatDistance(m.DistanceMeters) fra behovet (luftlinje)</dd>
+
+                                            @* Fylles inn av skriptet når panelet åpnes *@
+                                            <dt>Kjørerute</dt>
+                                            <dd id="rute-@m.Id" aria-live="polite">Henter rute …</dd>
 
                                             <dt>Eier</dt>
                                             <dd>@(string.IsNullOrWhiteSpace(m.OwnerName) ? "Ukjent" : m.OwnerName)</dd>
@@ -335,8 +339,15 @@
         var kart = L.map('matchKart').setView([needLat, needLng], 11);
 
         L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
+
             attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+
         }).addTo(kart);
+
+        /// Kjørerutene kommer fra Valhalla, som bruker veidata fra OpenStreetMap
+        kart.attributionControl.addAttribution(
+            'Ruting: <a href="https://valhalla.github.io/valhalla/">Valhalla</a> / &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        );
 
         /// Behovet selv - rød sirkel i midten
         L.circleMarker([needLat, needLng], {
@@ -350,6 +361,7 @@
         var markorer = {};
         var vanligeIkoner = {};
         var valgteIkoner = {};
+        var luftlinjer = {};
 
         matches.forEach(function (m) {
 
@@ -369,7 +381,7 @@
             );
 
             /// Strek fra behovet til ressursen
-            L.polyline([[needLat, needLng], [m.Coords.Latitude, m.Coords.Longitude]], {
+            luftlinjer[m.Id] = L.polyline([[needLat, needLng], [m.Coords.Latitude, m.Coords.Longitude]], {
                 color: '#198754', weight: 1, opacity: 0.4, dashArray: '4 4'
             }).addTo(kart);
 
@@ -380,7 +392,7 @@
             kart.fitBounds(punkter, { padding: [30, 30] });
         }
 
-        /// Når «Se mer» åpnes for en ressurs, zoomer kartet dit og markøren utheves.
+        /// Når «Se mer» åpnes for en ressurs, utheves markøren og kjøreruten vises.
         /// Når den lukkes igjen, får markøren vanlig stil.
         function markorForPanel(panel) {
             if (!panel.id || !panel.id.startsWith('ressursInfo-')) return null;
@@ -393,7 +405,11 @@
             var id = e.target.id.replace('ressursInfo-', '');
             markor.setIcon(valgteIkoner[id]);
             markor.setZIndexOffset(1000);
-            MapSymbols.focus(resourceMarkers, markor);
+            apnePaneler[id] = true;
+            /// Viser ressursen og behovet med en gang. Når ruten kommer, tilpasses kartet til den.
+            /// (Zoom inn til markøren kolliderte med zoomen til ruten, så den er tatt bort her.)
+            kart.fitBounds([[needLat, needLng], markor.getLatLng()], { padding: [30, 30] });
+            visRute(id);
         });
 
         document.addEventListener('hide.bs.collapse', function (e) {
@@ -402,6 +418,131 @@
             var id = e.target.id.replace('ressursInfo-', '');
             markor.setIcon(vanligeIkoner[id]);
             markor.setZIndexOffset(0);
+            delete apnePaneler[id];
+            skjulRute(id);
         });
+
+        /// Kjørerute langs veien fra Valhalla (offentlig server, ingen nøkkel).
+        /// Ruten hentes først når «Se mer» åpnes, så vi ikke sender mange kall når siden lastes.
+        var VALHALLA_URL = 'https://valhalla1.openstreetmap.de/route';
+        var ruter = {};      /// Ferdige ruter per ressurs-id, så vi slipper å hente samme rute igjen
+        var ruteLag = {};    /// Rutene som vises på kartet nå
+        /// Paneler som er åpne. Vi kan ikke bruke klassen «show», for Bootstrap setter den først
+        /// når animasjonen er ferdig, og Valhalla svarer ofte før det.
+        var apnePaneler = {};
+
+        function visRute(id) {
+            var m = matches.find(function (x) { return String(x.Id) === String(id); });
+            if (!m) return;
+
+            if (ruter[id]) {
+                tegnRute(id, ruter[id]);
+                return;
+            }
+
+            var foresporsel = {
+                locations: [
+                    { lat: m.Coords.Latitude, lon: m.Coords.Longitude },
+                    { lat: needLat, lon: needLng }
+                ],
+                costing: 'auto',
+                units: 'kilometers',
+                directions_type: 'none'
+            };
+
+            /// GET med json-parameter, så nettleseren slipper et ekstra CORS-kall før selve foresporselen
+            fetch(VALHALLA_URL + '?json=' + encodeURIComponent(JSON.stringify(foresporsel)))
+                .then(function (svar) {
+                    if (!svar.ok) throw new Error('Valhalla svarte ' + svar.status);
+                    return svar.json();
+                })
+                .then(function (data) {
+                    var tur = data.trip;
+                    ruter[id] = {
+                        punkter: tur.legs.flatMap(function (leg) { return dekodPolyline(leg.shape, 6); }),
+                        km: tur.summary.length,
+                        sekunder: tur.summary.time
+                    };
+                    /// Brukeren kan ha lukket panelet mens vi ventet
+                    if (apnePaneler[id]) {
+                        tegnRute(id, ruter[id]);
+                    }
+                })
+                .catch(function () {
+                    settRuteTekst(id, 'Fant ingen kjørerute. Viser luftlinje på kartet.');
+                });
+        }
+
+        function tegnRute(id, rute) {
+            skjulRute(id);
+            if (luftlinjer[id]) kart.removeLayer(luftlinjer[id]);
+
+            /// Blå med hvit kant under, så ruten skiller seg fra blått vann og bygninger i Kartverket-kartet
+            ruteLag[id] = L.featureGroup([
+                L.polyline(rute.punkter, { color: '#ffffff', weight: 9, opacity: 1 }),
+                L.polyline(rute.punkter, { color: '#0d6efd', weight: 5, opacity: 1 })
+            ]).addTo(kart);
+
+            kart.fitBounds(ruteLag[id].getBounds(), { padding: [30, 30] });
+            settRuteTekst(id, formaterKm(rute.km) + ' med bil, ca. ' + formaterTid(rute.sekunder));
+        }
+
+        function skjulRute(id) {
+            if (ruteLag[id]) {
+                kart.removeLayer(ruteLag[id]);
+                delete ruteLag[id];
+            }
+            if (luftlinjer[id] && !kart.hasLayer(luftlinjer[id])) {
+                luftlinjer[id].addTo(kart);
+            }
+        }
+
+        function settRuteTekst(id, tekst) {
+            var felt = document.getElementById('rute-' + id);
+            if (felt) felt.textContent = tekst;
+        }
+
+        function formaterKm(km) {
+            return km < 1
+                ? Math.round(km * 1000) + ' m'
+                : km.toFixed(1).replace('.', ',') + ' km';
+        }
+
+        function formaterTid(sekunder) {
+            var minutter = Math.max(1, Math.round(sekunder / 60));
+            if (minutter < 60) return minutter + ' min';
+            var timer = Math.floor(minutter / 60);
+            var rest = minutter % 60;
+            return timer + ' t' + (rest > 0 ? ' ' + rest + ' min' : '');
+        }
+
+        /// Valhalla sender ruten som en kodet streng (Google polyline med 6 desimaler).
+        /// Denne gjør den om til en liste med [lat, lng]-punkter som Leaflet kan tegne.
+        function dekodPolyline(kodet, presisjon) {
+            var faktor = Math.pow(10, presisjon);
+            var punkter = [];
+            var indeks = 0, lat = 0, lng = 0;
+
+            while (indeks < kodet.length) {
+                var resultat = 0, skift = 0, b;
+                do {
+                    b = kodet.charCodeAt(indeks++) - 63;
+                    resultat |= (b & 0x1f) << skift;
+                    skift += 5;
+                } while (b >= 0x20);
+                lat += (resultat & 1) ? ~(resultat >> 1) : (resultat >> 1);
+
+                resultat = 0; skift = 0;
+                do {
+                    b = kodet.charCodeAt(indeks++) - 63;
+                    resultat |= (b & 0x1f) << skift;
+                    skift += 5;
+                } while (b >= 0x20);
+                lng += (resultat & 1) ? ~(resultat >> 1) : (resultat >> 1);
+
+                punkter.push([lat / faktor, lng / faktor]);
+            }
+            return punkter;
+        }
     </script>
 }

@@ -13,6 +13,7 @@ namespace Prosjekt.Services
         /// Hvor nettleseren får hente innhold fra. Nye eksterne adresser må legges til her.
         /// ogc.dsb.no: kartet over offentlige tilfluktsrom på Kriseinformasjon-siden henter data
         /// (connect-src) og reservekartlaget som bilde (img-src) derfra.
+        /// valhalla1.openstreetmap.de: Match-siden henter kjørerute langs veien fra ressurs til behov (connect-src).
         /// Inline-skript kjører bare med riktig nonce. Stiler beholder 'unsafe-inline', fordi nonce ikke dekker style-attributter.
         /// </summary>
         public static string ContentSecurityPolicy(string nonce) =>
@@ -21,7 +22,7 @@ namespace Prosjekt.Services
             "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
             "img-src 'self' data: https://*.tile.openstreetmap.org https://cache.kartverket.no https://server.arcgisonline.com https://cdnjs.cloudflare.com https://ogc.dsb.no; " +
             "font-src 'self' https://cdnjs.cloudflare.com; " +
-            "connect-src 'self' https://nominatim.openstreetmap.org https://ogc.dsb.no; " +
+            "connect-src 'self' https://nominatim.openstreetmap.org https://ogc.dsb.no https://valhalla1.openstreetmap.de; " +
             "object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
         /// <summary>
