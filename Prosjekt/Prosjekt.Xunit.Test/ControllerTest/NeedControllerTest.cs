@@ -533,6 +533,70 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
+        public async Task Edit_Post_AssignedToResolved_ReturnsResourcesAndNotifiesOwner()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.Assigned, Coords = new Coordinates(58.1467, 7.9956) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 1, IsAvailable = false, UserId = "eier-1", Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 1 });
+            var notifications = new FakeNotificationRepository();
+            var controller = new NeedController(needs, resources, allocations, notifications, new FakeUserRepository());
+            var model = new NeedViewModel
+            {
+                Id = 1,
+                Name = "Vann",
+                Status = EntryStatus.Resolved,
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal(EntryStatus.Resolved, needs.Needs.Single().Status);
+            Assert.Empty(await allocations.GetAllAsync());
+            Assert.True(resources.Resources.Single().IsAvailable);
+            Assert.Contains(notifications.Notifications, n => n.UserId == "eier-1");
+        }
+
+        [Fact]
+        public async Task Edit_Post_AssignedToUnderReviewWithAllocations_ReturnsViewWithErrorAndKeepsAllocations()
+        {
+            // Arrange
+            var needs = new FakeNeedRepository();
+            needs.Needs.Add(new Need { Id = 1, Name = "Vann", Status = EntryStatus.Assigned, Coords = new Coordinates(58.1467, 7.9956) });
+            var resources = new FakeResourceRepository();
+            resources.Resources.Add(new Resource { Id = 1, Name = "Aggregat", Quantity = 1, IsAvailable = false, Coords = new Coordinates(58.1467, 7.9956) });
+            var allocations = new FakeAllocationRepository();
+            await allocations.AddAsync(new Allocation { NeedId = 1, ResourceId = 1, Quantity = 1 });
+            var controller = new NeedController(needs, resources, allocations, new FakeNotificationRepository(), new FakeUserRepository());
+            var model = new NeedViewModel
+            {
+                Id = 1,
+                Name = "Vann",
+                Status = EntryStatus.UnderReview,
+                Latitude = 58.1467,
+                Longitude = 7.9956,
+                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
+            };
+
+            // Act
+            var result = await controller.Edit(1, model);
+
+            // Assert
+            Assert.IsType<ViewResult>(result);
+            Assert.True(controller.ModelState.ContainsKey(nameof(NeedViewModel.Status)));
+            Assert.Equal(EntryStatus.Assigned, needs.Needs.Single().Status);
+            Assert.Single(await allocations.GetAllAsync());
+        }
+
+        [Fact]
         public async Task Edit_Post_OneStatusStepBack_UpdatesStatusAndRedirects()
         {
             // Arrange
