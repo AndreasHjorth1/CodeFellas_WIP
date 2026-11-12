@@ -104,13 +104,13 @@ namespace Prosjekt.Services
         }
 
         /// <summary>
-        /// Navn og telefonnummer til testbrukerne. Navnene er oppdiktet.
+        /// Navn og telefonnummer til testbrukerne.
         /// </summary>
         private static (string Name, string Phone) DevelopmentProfile(string email) => email switch
         {
-            DevelopmentAdminEmail => ("Ingrid Haugland", DevelopmentAdminPhone),
-            DevelopmentCoordinatorEmail => ("Martin Olsen", DevelopmentCoordinatorPhone),
-            _ => ("Sara Lie", DevelopmentUserPhone)
+            DevelopmentAdminEmail => ("Demo Admin", DevelopmentAdminPhone),
+            DevelopmentCoordinatorEmail => ("Demo Koordinator", DevelopmentCoordinatorPhone),
+            _ => ("Demo Bruker", DevelopmentUserPhone)
         };
 
         private static async Task EnsureSucceededAsync(Task<IdentityResult> operation, string failureMessage)
