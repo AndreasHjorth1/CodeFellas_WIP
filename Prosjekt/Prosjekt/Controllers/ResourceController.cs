@@ -205,20 +205,8 @@ namespace Prosjekt.Controllers
             }
 
             string description = resource.Description ?? "";
-            string licensePlate = "";
-
-            const string regTag = "[Reg.nr:";
-            int regStart = description.IndexOf(regTag, StringComparison.Ordinal);
-            if (regStart >= 0)
-            {
-                int valueStart = regStart + regTag.Length;
-                int regEnd = description.IndexOf(']', valueStart);
-                if (regEnd > valueStart)
-                {
-                    licensePlate = description.Substring(valueStart, regEnd - valueStart).Trim();
-                    description = description.Remove(regStart, regEnd - regStart + 1).Trim();
-                }
-            }
+            string licensePlate = ExtractTag(ref description, "[Reg.nr:");
+            string competenceTag = ExtractTag(ref description, "[Yrke:");
 
             var category = ParseCategory(resource.Category);
             var subCategory = resource.SubCategory?.Trim();
@@ -242,10 +230,37 @@ namespace Prosjekt.Controllers
                 ToolType = category == ResourceViewModel.ResourceType.Tool ? subCategory : null,
                 MaterialType = category == ResourceViewModel.ResourceType.Materials ? subCategory : null,
                 ProvisionType = category == ResourceViewModel.ResourceType.Provision ? subCategory : null,
-                Size = category == ResourceViewModel.ResourceType.Clothing ? subCategory : null
+                Size = category == ResourceViewModel.ResourceType.Clothing ? subCategory : null,
+                CompetenceType = category == ResourceViewModel.ResourceType.Competence
+                    ? (string.IsNullOrEmpty(subCategory) ? competenceTag : subCategory)
+                    : null
             };
 
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Henter verdien i en merkelapp som «[Reg.nr: AB 12345]» og fjerner merkelappen fra beskrivelsen.
+        /// Gir tom tekst hvis merkelappen ikke finnes.
+        /// </summary>
+        private static string ExtractTag(ref string description, string tag)
+        {
+            int start = description.IndexOf(tag, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                return "";
+            }
+
+            int valueStart = start + tag.Length;
+            int end = description.IndexOf(']', valueStart);
+            if (end <= valueStart)
+            {
+                return "";
+            }
+
+            var value = description.Substring(valueStart, end - valueStart).Trim();
+            description = description.Remove(start, end - start + 1).Trim();
+            return value;
         }
 
         [HttpPost]

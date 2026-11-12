@@ -614,6 +614,63 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
+        public async Task Edit_Get_Competence_ExtractsYrkeAndSetsCompetenceType()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Sykepleier",
+                Description = "Ti års erfaring [Yrke: Health]",
+                Category = "Competence",
+                SubCategory = "Health",
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isAdmin: true);
+
+            // Act
+            var result = await controller.Edit(1);
+
+            // Assert
+            var model = Assert.IsType<ResourceViewModel>(Assert.IsType<ViewResult>(result).Model);
+            Assert.Equal("Ti års erfaring", model.Description);
+            Assert.Equal("Health", model.CompetenceType);
+            Assert.Equal(ResourceViewModel.ResourceType.Competence, model.Category);
+        }
+
+        [Fact]
+        public async Task Edit_Competence_GetThenPost_KeepsSubCategoryAndSingleYrkeTag()
+        {
+            // Arrange
+            var repo = new FakeResourceRepository();
+            repo.Resources.Add(new Resource
+            {
+                Id = 1,
+                Name = "Sykepleier",
+                Description = "Ti års erfaring [Yrke: Health]",
+                Category = "Competence",
+                SubCategory = "Health",
+                Quantity = 1,
+                Coords = new Coordinates(58.1467, 7.9956)
+            });
+            var controller = CreateController(repo, isAdmin: true);
+
+            // Act: lagre skjemaet uendret
+            var model = Assert.IsType<ResourceViewModel>(Assert.IsType<ViewResult>(await controller.Edit(1)).Model);
+            await controller.Edit(1, model with
+            {
+                AvailableFrom = new DateTime(2026, 12, 1, 8, 0, 0),
+                AvailableTo = new DateTime(2026, 12, 3, 16, 0, 0)
+            });
+
+            // Assert
+            var saved = Assert.Single(repo.Resources);
+            Assert.Equal("Health", saved.SubCategory);
+            Assert.Equal("Ti års erfaring [Yrke: Health]", saved.Description);
+        }
+
+        [Fact]
         public async Task Edit_Get_ClothingWithSize_MapsToViewModel()
         {
             // Arrange
