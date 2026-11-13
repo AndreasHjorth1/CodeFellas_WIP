@@ -740,7 +740,7 @@
                         const svar = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${element.lat}&lon=${element.lng}`);
                         const data = svar.ok ? await svar.json() : null;
                         const adresse = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet';
-                        element.marker.setPopupContent(element.toppInnhold + `<hr class="my-1"/><small>📍 <b>Adresse:</b> ${escapeHtml(adresse)}</small>`);
+                        element.marker.setPopupContent(element.toppInnhold + `<hr class="my-1"/><small><b>Adresse:</b> ${escapeHtml(adresse)}</small>`);
 
                         /// Kortet viser bare gate og nummer, eller første del av adressen
                         const a = data && data.address;
@@ -748,7 +748,7 @@
                         const felt = document.querySelector(`[data-adresse-for="${element.r.id}"]`);
                         if (felt && data) felt.textContent = kort;
                     } catch {
-                        element.marker.setPopupContent(element.toppInnhold + '<hr class="my-1"/><small>📍 <b>Adresse:</b> Ikke tilgjengelig</small>');
+                        element.marker.setPopupContent(element.toppInnhold + '<hr class="my-1"/><small><b>Adresse:</b> Ikke tilgjengelig</small>');
                     }
                     await new Promise(ferdig => setTimeout(ferdig, 1100));
                 }
