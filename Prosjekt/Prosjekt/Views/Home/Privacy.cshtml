@@ -1,42 +1,612 @@
 ﻿@{
     ViewData["Title"] = "Personvern";
 }
-<div class="container py-4">
-<h1>@ViewData["Title"]</h1>
 
-<p>Her kan du lese hvilke opplysninger vi lagrer om deg, hvorfor, og hvilke rettigheter du har.</p>
+<style>
+    /* Fjerner layoutens marger så det blå båndet går helt ut, som på Kriseinformasjon */
+    main {
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
 
-<h4>Hvem er ansvarlig</h4>
-<p>Løsningen er laget av gruppen CodeFellas som et studentprosjekt i emnene IS-200, IS-201 og IS-202 ved Universitetet i Agder. Det er vi som er ansvarlige for opplysningene som lagres.</p>
+    .privacy-page {
+        background-color: #eff3f6;
+        color: #0f2a4f;
+        padding-bottom: 4rem;
+    }
 
-<h4>Hva vi lagrer</h4>
-<ul>
-    <li><strong>Brukerkonto:</strong> e-postadressen din og passordet ditt. Passordet lagres hashet, så ingen kan se det.</li>
-    <li><strong>Behov og ressurser:</strong> det du fyller inn når du registrerer noe, som navn, beskrivelse, telefonnummer, plassering på kartet og datoer.</li>
-</ul>
+    .privacy-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
 
-<h4>Hvorfor vi lagrer det</h4>
-<p>
-    Opplysningene brukes bare til å koble behov og ressurser sammen i en krisesituasjon. Telefonnummeret er der så man kan ta kontakt med den som har registrert noe. Grunnlaget er at du selv velger å lage
-    bruker og registrere informasjon (samtykke).
-</p>
+    .privacy-page a {
+        color: #2d4f86;
+        text-decoration: underline;
+    }
 
-<h4>Hvor lenge vi lagrer det</h4>
-<p>Opplysningene lagres til de blir slettet, enten av deg eller av en administrator.</p>
+    .privacy-page a:hover {
+        color: #0f2a4f;
+    }
 
-<h4>Hvem vi deler med</h4>
-<p>
-    Vi deler ikke opplysningene dine med andre. Kartet hentes fra OpenStreetMap, Kartverket og ArcGIS, og adressesøk går via Nominatim. Når du bruker kartet sender nettleseren din forespørsler til disse, så
-    de kan se IP-adressen din. ArcGIS drives av Esri i USA, så da kan data gå ut av EØS.
-</p>
+    /* 1. Blått bånd med tittel og kort oppsummering */
+    .privacy-hero {
+        background-color: #04245a;
+        color: #ffffff;
+        padding: 2.75rem 0 2.25rem;
+    }
 
-<h4>Informasjonskapsler (cookies)</h4>
-<p>Vi bruker bare cookies som trengs for at siden skal fungere, en for innlogging og en for sikkerhet i skjemaene. Ingen sporing eller reklame.</p>
+    .privacy-hero h1 {
+        color: #ffffff;
+        font-size: 2.4rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.5rem;
+    }
 
-<h4>Dine rettigheter</h4>
-<p>
-    Du har rett til å få se hva vi har lagret om deg, få rettet feil, få slettet opplysningene dine og trekke tilbake samtykket ditt. Ta kontakt med en administrator hvis du vil bruke noen av disse
-    rettighetene.
-</p>
-<p>Mener du at vi behandler opplysningene dine feil kan du klage til <a href="https://www.datatilsynet.no" target="_blank" rel="noopener">Datatilsynet</a>.</p>
+    .privacy-hero .intro {
+        color: #d6deeb;
+        font-size: 1.05rem;
+        line-height: 1.5;
+        max-width: 42rem;
+        margin: 0 0 1.75rem;
+    }
+
+    .privacy-hero h2 {
+        color: #ffffff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin: 0 0 0.75rem;
+    }
+
+    .summary-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .summary-list li {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+        background-color: #ffffff;
+        border-radius: 4px;
+        border-top: 4px solid #8a9bb3;
+        padding: 0.9rem 1rem 1rem;
+        color: #0f2a4f;
+    }
+
+    .summary-list i {
+        margin-top: 0.2rem;
+        color: #04245a;
+        width: 1.1rem;
+        text-align: center;
+    }
+
+    .summary-list strong {
+        display: block;
+        font-size: 1rem;
+        line-height: 1.3;
+    }
+
+    .summary-list span {
+        color: #5f6f86;
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
+
+    .privacy-hero .updated {
+        color: #b9c6da;
+        font-size: 0.85rem;
+        margin: 1.1rem 0 0;
+    }
+
+    /* 2. Innholdsliste til venstre, kortene til høyre */
+    .privacy-layout {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr);
+        gap: 1.5rem;
+        margin-top: 2rem;
+        align-items: start;
+    }
+
+    .privacy-toc {
+        position: sticky;
+        top: 1rem;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 6px;
+        padding: 1rem 0.75rem;
+    }
+
+    .privacy-toc h2 {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #5f6f86;
+        margin: 0 0 0.5rem 0.5rem;
+    }
+
+    .privacy-toc ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        counter-reset: kapittel;
+    }
+
+    .privacy-toc li {
+        counter-increment: kapittel;
+    }
+
+    .privacy-page .privacy-toc a {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.35rem 0.5rem;
+        border-radius: 4px;
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        text-decoration: none;
+    }
+
+    .privacy-toc a::before {
+        content: counter(kapittel) ".";
+        color: #8a9bb3;
+        min-width: 1.2rem;
+    }
+
+    .privacy-page .privacy-toc a:hover {
+        background-color: #eef1f5;
+        color: #04245a;
+    }
+
+    .privacy-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .privacy-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 6px;
+        padding: 1.5rem 1.6rem 1.6rem;
+        scroll-margin-top: 1rem;
+    }
+
+    .privacy-card h2 {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #0f2a4f;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin: 0 0 0.75rem;
+    }
+
+    .privacy-card h2 i {
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 50%;
+        background-color: #04245a;
+        color: #ffffff;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .privacy-card h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 1.1rem 0 0.35rem;
+    }
+
+    .privacy-card p,
+    .privacy-card li {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .privacy-card p:last-child,
+    .privacy-card ul:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Rader med overskrift til venstre og forklaring til høyre */
+    .data-list {
+        margin: 0;
+        border-top: 1px solid #eef1f5;
+    }
+
+    .data-list > div {
+        display: grid;
+        grid-template-columns: 11rem minmax(0, 1fr);
+        gap: 1rem;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid #eef1f5;
+    }
+
+    .data-list dt {
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .data-list dd {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .data-list dd small {
+        display: block;
+        color: #5f6f86;
+        font-size: 0.85rem;
+        margin-top: 0.2rem;
+    }
+
+    /* Tre kolonner for rollene */
+    .role-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .role-grid > div {
+        background-color: #eff3f6;
+        border-radius: 4px;
+        padding: 0.9rem 1rem;
+    }
+
+    .role-grid strong {
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .role-grid p {
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .note {
+        display: flex;
+        gap: 0.6rem;
+        align-items: flex-start;
+        background-color: #fdf6e3;
+        border: 1px solid #f0e2b6;
+        border-radius: 4px;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 1rem 0 0;
+    }
+
+    .note i {
+        margin-top: 0.2rem;
+        color: #8a6d1d;
+    }
+
+    /* Grønn boks nederst, samme som på Kriseinformasjon */
+    .contact-card {
+        background-color: #e3f1ea;
+        border-color: #cfe6da;
+    }
+
+    @@media (max-width: 900px) {
+        .summary-list,
+        .role-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .privacy-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .privacy-toc {
+            position: static;
+        }
+
+        .data-list > div {
+            grid-template-columns: 1fr;
+            gap: 0.2rem;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .privacy-hero h1 {
+            font-size: 2rem;
+        }
+
+        .privacy-card {
+            padding: 1.25rem 1.1rem 1.35rem;
+        }
+    }
+
+    @@media print {
+        .privacy-hero {
+            background: none;
+            color: #000;
+        }
+
+        .privacy-hero h1,
+        .privacy-hero h2,
+        .privacy-hero .intro {
+            color: #000;
+        }
+
+        .privacy-toc {
+            display: none;
+        }
+
+        .privacy-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="privacy-page">
+
+    <!-- 1. Tittel og kort oppsummering -->
+    <section class="privacy-hero" aria-labelledby="kortFortaltTittel">
+        <div class="privacy-inner">
+            <h1>@ViewData["Title"]</h1>
+            <p class="intro">Her står det hvilke opplysninger løsningen lagrer om deg, hva de brukes til, hvem som kan se dem og hvilke rettigheter du har.</p>
+
+            <h2 id="kortFortaltTittel">Kort fortalt</h2>
+            <ul class="summary-list">
+                <li>
+                    <i class="fa-solid fa-user" aria-hidden="true"></i>
+                    <div><strong>Bare det som trengs</strong><span>Navn, e-post, telefon og det du selv registrerer.</span></div>
+                </li>
+                <li>
+                    <i class="fa-solid fa-cookie-bite" aria-hidden="true"></i>
+                    <div><strong>Ingen sporing</strong><span>Ingen analyseverktøy eller reklame. Bare nødvendige informasjonskapsler.</span></div>
+                </li>
+                <li>
+                    <i class="fa-solid fa-handshake" aria-hidden="true"></i>
+                    <div><strong>Ingen salg eller deling</strong><span>Opplysningene brukes bare til å koble ressurser og behov.</span></div>
+                </li>
+            </ul>
+            <p class="updated">Sist oppdatert november 2026</p>
+        </div>
+    </section>
+
+    <div class="privacy-inner">
+        <div class="privacy-layout">
+
+            <!-- Innholdsliste -->
+            <nav class="privacy-toc" aria-labelledby="innholdTittel">
+                <h2 id="innholdTittel">Innhold</h2>
+                <ol>
+                    <li><a href="#ansvarlig">Hvem er ansvarlig</a></li>
+                    <li><a href="#opplysninger">Hva vi lagrer</a></li>
+                    <li><a href="#formal">Formål og grunnlag</a></li>
+                    <li><a href="#tilgang">Hvem som ser hva</a></li>
+                    <li><a href="#lagring">Lagring og sletting</a></li>
+                    <li><a href="#cookies">Informasjonskapsler</a></li>
+                    <li><a href="#tredjeparter">Kart og andre tjenester</a></li>
+                    <li><a href="#sikkerhet">Sikkerhet</a></li>
+                    <li><a href="#rettigheter">Dine rettigheter</a></li>
+                </ol>
+            </nav>
+
+            <div class="privacy-sections">
+
+                <!-- 1. Behandlingsansvarlig -->
+                <section class="privacy-card" id="ansvarlig" aria-labelledby="ansvarligTittel">
+                    <h2 id="ansvarligTittel"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Hvem er ansvarlig</h2>
+                    <p>
+                        Løsningen er laget av gruppen CodeFellas som et studentprosjekt i emnene IS-200, IS-201 og IS-202 ved Universitetet i Agder,
+                        i samarbeid med Heimevernet og Kartverket. CodeFellas er behandlingsansvarlig for opplysningene som lagres i løsningen.
+                    </p>
+                    <p>Har du spørsmål om personvern, kan du kontakte en administrator i løsningen eller gruppen via Universitetet i Agder.</p>
+                </section>
+
+                <!-- 2. Hvilke opplysninger -->
+                <section class="privacy-card" id="opplysninger" aria-labelledby="opplysningerTittel">
+                    <h2 id="opplysningerTittel"><i class="fa-solid fa-database" aria-hidden="true"></i> Hva vi lagrer</h2>
+                    <dl class="data-list">
+                        <div>
+                            <dt>Brukerkonto</dt>
+                            <dd>
+                                Fullt navn, e-postadresse, telefonnummer, passord og hvilken rolle du har.
+                                <small>Passordet lagres bare som en hash, så det kan ikke leses av noen, heller ikke av oss. Vi teller også mislykkede innlogginger for å kunne låse kontoen midlertidig.</small>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Ressurser</dt>
+                            <dd>
+                                Det du fyller inn når du registrerer en ressurs: navn, beskrivelse, kategori, antall, telefonnummer, når den er tilgjengelig og hvor den står på kartet.
+                                <small>Posisjonen kan vise hvor du bor eller holder til, så tenk over hvor du setter punktet.</small>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Behov</dt>
+                            <dd>
+                                Behov registreres av administratorer og koordinatorer: navn, beskrivelse, kategori, prioritet, frist, kontakttelefon og posisjon eller område på kartet.
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Tildelinger og varsler</dt>
+                            <dd>
+                                Hvilke ressurser som er koblet til hvilke behov, og varslene du får når en av ressursene dine blir tildelt eller frigitt.
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Endringslogg</dt>
+                            <dd>
+                                Når et behov opprettes, endres eller slettes, lagres hvem som gjorde det, når det skjedde, og gammel og ny verdi for feltet som ble endret.
+                            </dd>
+                        </div>
+                    </dl>
+                    <p class="mt-3">Vi ber ikke om sensitive opplysninger som helse, religion eller politisk syn. Ikke skriv slikt i beskrivelsesfeltene.</p>
+                </section>
+
+                <!-- 3. Formål og rettslig grunnlag -->
+                <section class="privacy-card" id="formal" aria-labelledby="formalTittel">
+                    <h2 id="formalTittel"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> Formål og grunnlag</h2>
+                    <p>
+                        Opplysningene brukes til å gi kriseledelsen oversikt over hvilke ressurser som finnes, og til å koble dem med behov som oppstår.
+                        Telefonnummeret er der for at kriseledelsen skal kunne ta kontakt med deg om en ressurs.
+                    </p>
+                    <h3>Rettslig grunnlag etter personvernforordningen (GDPR)</h3>
+                    <ul>
+                        <li><strong>Brukerkontoen</strong> trengs for å levere tjenesten du har meldt deg på (artikkel 6 nr. 1 bokstav b).</li>
+                        <li><strong>Ressursene du registrerer</strong> deler du frivillig, og det bygger på samtykke (artikkel 6 nr. 1 bokstav a). Du trekker samtykket ved å slette ressursen.</li>
+                        <li><strong>Endringsloggen og låsing etter mange feil innlogginger</strong> bygger på vår berettigede interesse i å holde løsningen sikker og kunne se hvem som har endret hva (artikkel 6 nr. 1 bokstav f).</li>
+                    </ul>
+                </section>
+
+                <!-- 4. Tilgang -->
+                <section class="privacy-card" id="tilgang" aria-labelledby="tilgangTittel">
+                    <h2 id="tilgangTittel"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Hvem som ser hva</h2>
+                    <p>Hva du får se avhenger av rollen din.</p>
+                    <div class="role-grid">
+                        <div>
+                            <strong>Bruker</strong>
+                            <p>Ser og endrer bare sine egne ressurser og varsler. Ser behovene på kartet, men ikke telefonnummeret til dem.</p>
+                        </div>
+                        <div>
+                            <strong>Koordinator</strong>
+                            <p>Ser alle ressurser og behov med telefonnummer, kan tildele ressurser, lese endringsloggen og eksportere data.</p>
+                        </div>
+                        <div>
+                            <strong>Administrator</strong>
+                            <p>Har samme tilgang som koordinator, og kan i tillegg opprette brukere og slette alle ressurser.</p>
+                        </div>
+                    </div>
+                    <p class="mt-3">
+                        Koordinatorer og administratorer kan laste ned ressurser og behov som CSV- eller GeoJSON-fil, med telefonnummer og posisjon.
+                        Det er for at data skal kunne brukes i andre kartverktøy under en krise. Vi gir ikke opplysningene videre til andre.
+                    </p>
+                </section>
+
+                <!-- 5. Lagring og sletting -->
+                <section class="privacy-card" id="lagring" aria-labelledby="lagringTittel">
+                    <h2 id="lagringTittel"><i class="fa-solid fa-box-archive" aria-hidden="true"></i> Lagring og sletting</h2>
+                    <p>Alt lagres i en database som driftes av løsningen selv. Det slettes ikke noe automatisk, så opplysningene ligger der til de blir slettet:</p>
+                    <ul>
+                        <li>Du kan selv slette ressursene dine. Da forsvinner også tildelingene til dem.</li>
+                        <li>Telefonnummeret ditt kan du endre under Min profil.</li>
+                        <li>Vil du ha slettet hele kontoen, må du be en administrator om det.</li>
+                        <li>Endringsloggen blir liggende også etter at et behov er slettet, fordi den skal vise hva som har skjedd.</li>
+                    </ul>
+                </section>
+
+                <!-- 6. Informasjonskapsler -->
+                <section class="privacy-card" id="cookies" aria-labelledby="cookiesTittel">
+                    <h2 id="cookiesTittel"><i class="fa-solid fa-cookie-bite" aria-hidden="true"></i> Informasjonskapsler</h2>
+                    <p>Løsningen bruker bare informasjonskapsler som trengs for at den skal virke. Derfor spør vi ikke om samtykke til dem.</p>
+                    <dl class="data-list">
+                        <div>
+                            <dt>Innlogging</dt>
+                            <dd>
+                                Holder deg innlogget mens du bruker løsningen.
+                                <small>Slettes når du lukker nettleseren eller logger ut. Krysser du av for «Husk meg», varer den i inntil 14 dager.</small>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Skjemasikkerhet</dt>
+                            <dd>
+                                Hindrer at andre nettsider sender inn skjemaer i ditt navn (antiforgery).
+                                <small>Slettes når du lukker nettleseren.</small>
+                            </dd>
+                        </div>
+                    </dl>
+                    <p class="mt-3">Vi bruker ikke analyseverktøy, sporing eller reklame. Avkrysningene i sjekklisten på Kriseinformasjon lagres ikke.</p>
+                </section>
+
+                <!-- 7. Tredjeparter -->
+                <section class="privacy-card" id="tredjeparter" aria-labelledby="tredjeparterTittel">
+                    <h2 id="tredjeparterTittel"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Kart og andre tjenester</h2>
+                    <p>
+                        Noen deler av siden hentes rett fra andre tjenester. Da sender nettleseren din en forespørsel direkte til dem, og de ser IP-adressen din
+                        og hvilken nettleser du bruker. Det vi lagrer i databasen blir ikke sendt til dem.
+                    </p>
+                    <dl class="data-list">
+                        <div>
+                            <dt>Kartverket</dt>
+                            <dd>Kartbakgrunnen som vises som standard.</dd>
+                        </div>
+                        <div>
+                            <dt>OpenStreetMap</dt>
+                            <dd>Kartbakgrunn hvis du velger det i kartet.</dd>
+                        </div>
+                        <div>
+                            <dt>Esri (ArcGIS)</dt>
+                            <dd>
+                                Flyfoto hvis du velger det i kartet.
+                                <small>Esri holder til i USA, så forespørselen kan gå ut av EØS.</small>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Nominatim</dt>
+                            <dd>
+                                Adressesøk, og å finne adressen til et punkt du setter på kartet. Teksten du søker på, eller koordinatene til punktet, sendes til OpenStreetMap sin tjeneste.
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Valhalla</dt>
+                            <dd>
+                                Når en koordinator ser etter ressurser til et behov, beregnes kjøreruten via valhalla1.openstreetmap.de. Da sendes koordinatene til ressursen og behovet dit, men ikke navn eller telefonnummer.
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>DSB</dt>
+                            <dd>Kartet over offentlige tilfluktsrom på Kriseinformasjon hentes fra DSB.</dd>
+                        </div>
+                        <div>
+                            <dt>Cloudflare (cdnjs)</dt>
+                            <dd>Kartbiblioteket og ikonene på siden lastes ned derfra.</dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <!-- 8. Sikkerhet -->
+                <section class="privacy-card" id="sikkerhet" aria-labelledby="sikkerhetTittel">
+                    <h2 id="sikkerhetTittel"><i class="fa-solid fa-lock" aria-hidden="true"></i> Sikkerhet</h2>
+                    <ul>
+                        <li>Passord lagres som hash, og kontoen låses en stund etter ti feil forsøk på å logge inn.</li>
+                        <li>Alle sider med ressurser, behov og brukere krever innlogging, og tilgangen styres av rollen din.</li>
+                        <li>Alle skjemaer er beskyttet mot innsending fra andre nettsider.</li>
+                        <li>Nettleseren får bare lov til å laste innhold fra tjenestene som er nevnt over.</li>
+                        <li>Endringer på behov logges, så vi kan se hvem som har gjort hva.</li>
+                    </ul>
+                    <p class="note">
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        <span>Dette er et studentprosjekt. Lenker for å tilbakestille passord sendes ikke på e-post ennå, men skrives til serverens logg. Ikke bruk et passord du bruker andre steder.</span>
+                    </p>
+                </section>
+
+                <!-- 9. Rettigheter -->
+                <section class="privacy-card contact-card" id="rettigheter" aria-labelledby="rettigheterTittel">
+                    <h2 id="rettigheterTittel"><i class="fa-solid fa-id-card" aria-hidden="true"></i> Dine rettigheter</h2>
+                    <p>Du har rett til å:</p>
+                    <ul>
+                        <li>få vite hvilke opplysninger vi har om deg, og få en kopi av dem (innsyn)</li>
+                        <li>få rettet opplysninger som er feil</li>
+                        <li>få slettet opplysningene dine</li>
+                        <li>trekke tilbake samtykket ditt, og protestere mot at vi bruker opplysningene</li>
+                        <li>få utlevert opplysningene du selv har lagt inn, slik at du kan ta dem med deg (dataportabilitet)</li>
+                    </ul>
+                    <p>
+                        Mye kan du gjøre selv under Min profil og på ressursene dine. For resten kan du kontakte en administrator. Vi svarer så raskt vi kan, og senest innen en måned.
+                    </p>
+                    <p>
+                        Mener du at vi behandler opplysningene dine i strid med regelverket, kan du klage til
+                        <a href="https://www.datatilsynet.no" target="_blank" rel="noopener">Datatilsynet</a>.
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
 </div>
