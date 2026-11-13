@@ -19,6 +19,7 @@
             "Clothing" => "clothing",
             "Provision" => "provision",
             "Materials" => "materials",
+            "Competence" => "competence",
             _ => "other"
         }) + (harLedige ? "" : "-unavailable") + ".svg";
     /// Viser avstand i meter under 1 km, ellers kilometer
@@ -353,7 +354,7 @@
     <strong>@m.Name</strong>
 </div>
                                     <small class="text-secondary">@m.Description</small><br />
-                                    <small class="text-muted">📞 @m.PhoneNumber</small>
+                                    <small class="text-muted">Tlf: @m.PhoneNumber</small>
                                     @if (m.AllocatedToThisNeed > 0)
                                     {
                                         <br /><span class="badge bg-success">@m.AllocatedToThisNeed tildelt dette behovet</span>
@@ -528,7 +529,7 @@
                 alt: m.Name
             }).addTo(resourceMarkers).bindPopup(
           
-                `<b>${escapeHtml(m.Name)}</b><br/>Antall: ${m.Quantity}<br/>📞 ${escapeHtml(m.PhoneNumber)}`
+                `<b>${escapeHtml(m.Name)}</b><br/>Antall: ${m.Quantity}<br/>Tlf: ${escapeHtml(m.PhoneNumber)}`
             );
 
             /// Strek fra behovet til ressursen

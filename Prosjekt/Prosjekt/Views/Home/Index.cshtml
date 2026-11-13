@@ -1606,9 +1606,9 @@
 
                             marker.bindPopup(`
                                 <div style="font-size: 0.9rem;">
-                                    <strong style="color: #0d6efd;">📦 RESSURS</strong><br/>
+                                    <strong style="color: #0d6efd;">RESSURS</strong><br/>
                                     <b>${escapeHtml(res.name || res.Name || 'Uten navn')}</b> (${res.quantity || res.Quantity || 1} stk)<br/>
-                                    📞 Tlf: ${escapeHtml(res.phoneNumber || res.PhoneNumber || 'Ikke oppgitt')}<br/>
+                                    Tlf: ${escapeHtml(res.phoneNumber || res.PhoneNumber || 'Ikke oppgitt')}<br/>
                                     Status: ${status}
                                 </div>
                             `);
@@ -1653,11 +1653,11 @@
                         /// Teksten som skal vises når du trykker på enten området eller markøren
                         var popupInnhold = `
                             <div style="font-size: 0.9rem;">
-                                <strong style="color: #dc3545;">🆘 BEHOV</strong><br/>
+                                <strong style="color: #dc3545;">BEHOV</strong><br/>
                                 <b>${escapeHtml(need.name || need.Name || 'Uten navn')}</b><br/>
                                 ${(need.description || need.Description) ? escapeHtml(need.description || need.Description) + '<br/>' : ''}
                                 ${areaSquareMeters ? '<b>Areal:</b> ca. ' + formaterAreal(areaSquareMeters) + '<br/>' : ''}
-                                ${(need.phone || need.Phone) ? '📞 Tlf: ' + escapeHtml(need.phone || need.Phone) : ''}
+                                ${(need.phone || need.Phone) ? 'Tlf: ' + escapeHtml(need.phone || need.Phone) : ''}
                             </div>
                         `;
 
