@@ -757,11 +757,12 @@
                 lng = r.Longitude
             }));
 
-            kart = L.map('adminRessursKart', { zoomControl: false }).setView([58.163, 8.003], 12);
+            kart = L.map('adminRessursKart', { zoomControl: false, minZoom: 3, maxBounds: [[-90, -180], [90, 180]], maxBoundsViscosity: 1.0 }).setView([58.163, 8.003], 12);
             L.control.zoom({ position: 'topright', zoomInTitle: 'Zoom inn', zoomOutTitle: 'Zoom ut' }).addTo(kart);
 
             L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
-                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+                noWrap: true
             }).addTo(kart);
 
             var bounds = [];
