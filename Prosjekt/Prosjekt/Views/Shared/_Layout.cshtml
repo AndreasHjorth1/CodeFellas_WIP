@@ -6,7 +6,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Totalforsvaret</title>
+    <title>@ViewData["Title"] - Beredt</title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="~/lib/leaflet/leaflet.css" />
@@ -289,7 +289,7 @@
                     <div class="public-nav-links">
                         <a class="public-nav-link brand @(IsCurrentHome("FrontPage") ? "active" : "")"
                            asp-controller="Home" asp-action="FrontPage">
-                            Totalforsvaret
+                            Beredt
                         </a>
                         <a class="public-nav-link d-none d-md-inline @(IsCurrentHome("CrisisInformation") ? "active" : "")"
                            asp-controller="Home" asp-action="CrisisInformation">
@@ -316,7 +316,7 @@
                     <div class="public-nav-links">
                         <a class="public-nav-link brand"
                            asp-controller="Resource" asp-action="Overview">
-                            Totalforsvaret
+                            Beredt
                         </a>
                         <a class="public-nav-link d-none d-md-inline @(IsCurrent("Resource", "Overview") ? "active" : "")"
                            asp-controller="Resource" asp-action="Overview">
@@ -370,7 +370,7 @@
                     <div class="public-nav-links">
                         <a class="public-nav-link brand"
                            asp-controller="Home" asp-action="Index">
-                            Totalforsvaret
+                            Beredt
                         </a>
                         @* Oversikten har både «Trenger handling», filter og kart, så det er ingen egen Kart-side *@
                         <a class="public-nav-link d-none d-md-inline @(IsCurrent("Home", "Index") ? "active" : "")"
