@@ -424,7 +424,7 @@
                 </div>
 
                 <!-- Underkategori: Kjøretøy -->
-                <div id="seksjonKjøretøy" class="kategori-seksjon">
+                <div id="seksjonKjøretøy" class="kategori-seksjon" style="display:none;">
                     <div class="mb-3">
                         <label class="form-label" for="inputVehicleType">Kjøretøytype</label>
                         <select id="inputVehicleType" class="form-select">
@@ -443,7 +443,7 @@
                 </div>
 
                                 <!-- Underkategori: Kompetanse -->
-                <div id="seksjonKompetanse" class="kategori-seksjon">
+                <div id="seksjonKompetanse" class="kategori-seksjon" style="display:none;">
                     <div class="mb-3">
                         <label class="form-label" for="inputCompetenceType">Yrke eller erfaringsområde</label>
                         <select id="inputCompetenceType" class="form-select">
@@ -805,6 +805,7 @@
         document.getElementById('kategoriVelger')?.addEventListener('change', oppdaterAntallsfelt);
         document.getElementById('inputQuantity').addEventListener('input', sjekkAntall);
         oppdaterAntallsfelt();
+        oppdaterSkjemavisning();
 
         function oppdaterRessursSymbol() {
             const select = document.getElementById('kategoriVelger');
