@@ -101,16 +101,20 @@
         overflow-wrap: anywhere;
     }
 
-    /* Antallsfeltet ligger over «Tildel»-knappen, så kolonnen blir smal */
+    /* Antallsfeltet og «Tildel»-knappen ligger på én linje */
     .match-tildel-skjema {
         display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        width: 4.5rem;
+        align-items: center;
+        gap: 0.35rem;
     }
 
     .match-table .match-antall {
-        width: 100%;
+        width: 4rem;
+    }
+
+    /* Kjøretiden står ved siden av det blå merket, så merkene i begge avstandskolonnene ligger på linje */
+    .match-table .match-tid {
+        margin-left: 0.25rem;
     }
 
     /* Mobil: hver ressurs blir et lite kort. Tabellhodet viser bare sorteringsknappene. */
@@ -703,7 +707,7 @@
                 return;
             }
             celle.innerHTML = '<span class="badge bg-primary match-distance">' + formaterKm(km) + '</span>'
-                + '<small class="d-block text-muted mt-1">' + formaterTid(sekunder) + '</small>';
+                + ' <small class="text-muted match-tid">' + formaterTid(sekunder) + '</small>';
             rad.dataset.kjor = String(km * 1000);
         }
 
