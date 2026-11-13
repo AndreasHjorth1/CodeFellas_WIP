@@ -45,6 +45,7 @@
         margin: 0 auto;
     }
 
+    /* Grønn boks øverst */
     .receipt-success {
         display: flex;
         align-items: center;
@@ -81,6 +82,7 @@
         margin: 0.25rem 0 0;
     }
 
+    /* Kortene under */
     .receipt-card {
         border: 1px solid #dde3ea;
         border-radius: 4px;
@@ -95,7 +97,7 @@
         margin: 0 0 0.6rem;
     }
 
-    /* Felles opplysninger for alle behovene */
+    /* Opplysninger som gjelder alt som ble registrert */
     .receipt-facts {
         display: grid;
         grid-template-columns: auto 1fr;
@@ -112,9 +114,11 @@
     .receipt-facts dd {
         margin: 0;
         color: #0f2a4f;
+        overflow-wrap: anywhere;
     }
 
-    .imp-badge {
+    /* Merker for viktighet (behov) og status (ressurs) */
+    .receipt-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
@@ -124,17 +128,28 @@
         border-radius: 2px;
     }
 
-    .imp-badge.acute {
+    .receipt-badge.acute {
         background-color: #c8102e;
         color: #ffffff;
     }
 
-    .imp-badge.planned {
+    .receipt-badge.planned {
         background-color: #fdf3d6;
         color: #7a5b00;
     }
 
-    .need-list-item {
+    .receipt-badge.available {
+        background-color: #e3f1ea;
+        color: #16855a;
+    }
+
+    .receipt-badge.unavailable {
+        background-color: #eef1f5;
+        color: #5f6f86;
+    }
+
+    /* Listen over det som ble registrert. Et trykk viser det på kartet. */
+    .receipt-item {
         display: flex;
         align-items: center;
         gap: 0.75rem;
@@ -146,32 +161,38 @@
         cursor: pointer;
     }
 
-    .need-list-item:hover {
+    .receipt-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .receipt-item:hover {
         border-color: #c9c3b4;
     }
 
-    .need-list-item img {
+    .receipt-item img {
         width: 28px;
         height: 28px;
     }
 
-    .need-list-item .item-text {
+    .receipt-item .item-text {
         flex: 1;
         min-width: 0;
     }
 
-    .need-list-item .item-name {
+    .receipt-item .item-name {
         color: #0f2a4f;
         font-size: 0.9rem;
         font-weight: 700;
     }
 
-    .need-list-item .item-meta {
+    .receipt-item .item-meta {
         color: #5f6f86;
         font-size: 0.75rem;
+        overflow-wrap: anywhere;
     }
 
-    #kvitteringBehovKart {
+    /* Kartet */
+    .receipt-map {
         width: 100%;
         height: 260px;
         border-radius: 3px;
@@ -183,7 +204,19 @@
         margin: 0.5rem 0 0;
     }
 
-    .need-popup dl {
+    /* Navnelapp under en enkelt ny ressurs eller et enkelt nytt behov */
+    .leaflet-tooltip.receipt-label {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 3px;
+        color: #0f2a4f;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    }
+
+    .receipt-popup dl {
         display: grid;
         grid-template-columns: auto 1fr;
         gap: 0.15rem 0.6rem;
@@ -191,16 +224,17 @@
         font-size: 0.8rem;
     }
 
-    .need-popup dt {
+    .receipt-popup dt {
         color: #5f6f86;
         font-weight: 600;
     }
 
-    .need-popup dd {
+    .receipt-popup dd {
         margin: 0;
         color: #0f2a4f;
     }
 
+    /* Knappene nederst */
     .receipt-buttons {
         display: flex;
         flex-wrap: wrap;
@@ -253,7 +287,7 @@
             <dl class="receipt-facts">
                 <dt>Viktighet</dt>
                 <dd>
-                    <span class="imp-badge @(Model.Importance == ImportanceLevel.Acute ? "acute" : "planned")">
+                    <span class="receipt-badge @(Model.Importance == ImportanceLevel.Acute ? "acute" : "planned")">
                         <i class="fa-solid @(Model.Importance == ImportanceLevel.Acute ? "fa-triangle-exclamation" : "fa-clock")" aria-hidden="true"></i>
                         @OversettImportance(Model.Importance)
                     </span>
@@ -277,7 +311,7 @@
             @for (var i = 0; i < antall; i++)
             {
                 var need = Model.NeedList[i];
-                <div class="need-list-item" data-need-type="@need.Type" data-on-click="fokuserPaKart" data-arg="@i">
+                <div class="receipt-item" data-need-type="@need.Type" data-on-click="fokuserPaKart" data-arg="@i">
                     <div class="item-text">
                         <div class="item-name">@need.Name</div>
                         <div class="item-meta">@OversettNeedType(need.Type)@(string.IsNullOrWhiteSpace(need.Description) ? "" : $" · {need.Description}")</div>
@@ -288,7 +322,7 @@
 
         <div class="receipt-card">
             <h2>På kartet</h2>
-            <div id="kvitteringBehovKart"></div>
+            <div id="kvitteringBehovKart" class="receipt-map"></div>
             <p class="map-note">Trykk på et symbol eller et behov i listen for å se all informasjon.</p>
         </div>
 
@@ -356,7 +390,7 @@
                     ['Adresse', adresse]
                 ].filter(rad => rad[1] !== null && rad[1] !== undefined && rad[1] !== '');
 
-                return '<div class="need-popup"><b>' + escapeHtml(b.navn) + '</b><dl>' +
+                return '<div class="receipt-popup"><b>' + escapeHtml(b.navn) + '</b><dl>' +
                     rader.map(rad => '<dt>' + rad[0] + '</dt><dd>' + escapeHtml(rad[1]) + '</dd>').join('') +
                     '</dl></div>';
             }
@@ -370,6 +404,10 @@
                     zIndexOffset: 1000
                 }).addTo(needMarkers);
                 marker.bindPopup(popupInnhold(b, 'Henter adresse...'), { maxWidth: 280 });
+                /// Ett behov får navnelapp, som på kvitteringen for ressurser
+                if (behov.length === 1) {
+                    marker.bindTooltip(escapeHtml(b.navn), { permanent: true, direction: 'bottom', offset: [0, 22], className: 'receipt-label' });
+                }
                 receiptMarkers.push(marker);
             });
 

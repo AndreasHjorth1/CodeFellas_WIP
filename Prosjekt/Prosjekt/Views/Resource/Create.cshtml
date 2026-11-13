@@ -6,11 +6,18 @@
 @model List<ResourceViewModel>
 
 @{
-    var enRessurs = Model.Count == 1;
+    var antall = Model.Count;
+    var enRessurs = antall == 1;
     ViewData["Title"] = enRessurs ? "Ressurs registrert" : "Ressurser registrert";
 
     /// Alle ressursene i ett skjema deler samme posisjon, så den første holder for kartet
     var forste = Model.FirstOrDefault();
+
+    /// Telefon og tidsrom vises under «Felles» bare når de er like for alle. Ellers står de på hver ressurs.
+    var telefoner = Model.Select(r => r.PhoneNumber).Distinct().ToList();
+    var fellesTelefon = telefoner.Count == 1 ? telefoner[0] : null;
+    var perioder = Model.Select(Periode).Distinct().ToList();
+    var fellesPeriode = perioder.Count == 1 ? perioder[0] : null;
 }
 
 @functions {
@@ -24,6 +31,22 @@
         ResourceViewModel.ResourceType.Materials => "Materialer",
         _ => "Annet"
     };
+
+    string Tidspunkt(DateTime? t) => t?.ToString("dd.MM.yyyy 'kl.' HH:mm") ?? "";
+
+    /// «12.11.2026 kl. 08:00 – 14.11.2026 kl. 18:00»
+    string Periode(ResourceViewModel r) => $"{Tidspunkt(r.AvailableFrom)} – {Tidspunkt(r.AvailableTo)}";
+
+    /// Teksten under navnet i listen: kategori, antall og det som ikke står under «Felles»
+    string Detaljer(ResourceViewModel r, string? fellesTelefon, string? fellesPeriode)
+    {
+        var deler = new List<string> { OversettKategori(r.Category), $"{r.Quantity} stk" };
+        if (fellesPeriode == null) deler.Add(Periode(r));
+        if (fellesTelefon == null && !string.IsNullOrWhiteSpace(r.PhoneNumber)) deler.Add($"tlf. {r.PhoneNumber}");
+        if (!string.IsNullOrWhiteSpace(r.LicensePlate)) deler.Add(r.LicensePlate);
+        if (!string.IsNullOrWhiteSpace(r.Description)) deler.Add(r.Description);
+        return string.Join(" · ", deler);
+    }
 }
 
 <style>
@@ -37,6 +60,7 @@
         margin: 0 auto;
     }
 
+    /* Grønn boks øverst */
     .receipt-success {
         display: flex;
         align-items: center;
@@ -73,6 +97,7 @@
         margin: 0.25rem 0 0;
     }
 
+    /* Kortene under */
     .receipt-card {
         border: 1px solid #dde3ea;
         border-radius: 4px;
@@ -87,7 +112,102 @@
         margin: 0 0 0.6rem;
     }
 
-    #kvitteringRessursKart {
+    /* Opplysninger som gjelder alt som ble registrert */
+    .receipt-facts {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.3rem 1rem;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .receipt-facts dt {
+        color: #5f6f86;
+        font-weight: 600;
+    }
+
+    .receipt-facts dd {
+        margin: 0;
+        color: #0f2a4f;
+        overflow-wrap: anywhere;
+    }
+
+    /* Merker for viktighet (behov) og status (ressurs) */
+    .receipt-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 2px;
+    }
+
+    .receipt-badge.acute {
+        background-color: #c8102e;
+        color: #ffffff;
+    }
+
+    .receipt-badge.planned {
+        background-color: #fdf3d6;
+        color: #7a5b00;
+    }
+
+    .receipt-badge.available {
+        background-color: #e3f1ea;
+        color: #16855a;
+    }
+
+    .receipt-badge.unavailable {
+        background-color: #eef1f5;
+        color: #5f6f86;
+    }
+
+    /* Listen over det som ble registrert. Et trykk viser det på kartet. */
+    .receipt-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background-color: #f4f2ec;
+        border: 1px solid #e2ded3;
+        border-radius: 3px;
+        padding: 0.6rem 0.75rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+    }
+
+    .receipt-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .receipt-item:hover {
+        border-color: #c9c3b4;
+    }
+
+    .receipt-item img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .receipt-item .item-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .receipt-item .item-name {
+        color: #0f2a4f;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .receipt-item .item-meta {
+        color: #5f6f86;
+        font-size: 0.75rem;
+        overflow-wrap: anywhere;
+    }
+
+    /* Kartet */
+    .receipt-map {
         width: 100%;
         height: 260px;
         border-radius: 3px;
@@ -99,8 +219,8 @@
         margin: 0.5rem 0 0;
     }
 
-    /* Navnelapp under den nye ressursen */
-    .leaflet-tooltip.resource-label {
+    /* Navnelapp under en enkelt ny ressurs eller et enkelt nytt behov */
+    .leaflet-tooltip.receipt-label {
         background-color: #ffffff;
         border: 1px solid #dde3ea;
         border-radius: 3px;
@@ -111,7 +231,7 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
 
-    .resource-popup dl {
+    .receipt-popup dl {
         display: grid;
         grid-template-columns: auto 1fr;
         gap: 0.15rem 0.6rem;
@@ -119,16 +239,17 @@
         font-size: 0.8rem;
     }
 
-    .resource-popup dt {
+    .receipt-popup dt {
         color: #5f6f86;
         font-weight: 600;
     }
 
-    .resource-popup dd {
+    .receipt-popup dd {
         margin: 0;
         color: #0f2a4f;
     }
 
+    /* Knappene nederst */
     .receipt-buttons {
         display: flex;
         flex-wrap: wrap;
@@ -171,15 +292,61 @@
         <div class="receipt-success" role="status">
             <span class="success-icon" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
             <div>
-                <h1>@(enRessurs ? "Ressursen er registrert" : $"{Model.Count} ressurser er registrert")</h1>
+                <h1>@(enRessurs ? "Ressursen er registrert" : $"{antall} ressurser er registrert")</h1>
                 <p>@(enRessurs ? "Den er nå synlig for kommunen på kartet." : "De er nå synlige for kommunen på kartet.")</p>
             </div>
         </div>
 
         <div class="receipt-card">
-            <h2>@(enRessurs ? "Din ressurs:" : "Dine ressurser:")</h2>
-            <div id="kvitteringRessursKart"></div>
-            <p class="map-note">Trykk på et symbol for å se all informasjon om ressursen.</p>
+            <h2>Felles for @(enRessurs ? "ressursen" : "alle ressursene")</h2>
+            <dl class="receipt-facts">
+                @if (enRessurs && forste != null)
+                {
+                    <dt>Status</dt>
+                    <dd>
+                        <span class="receipt-badge @(forste.Availability ? "available" : "unavailable")">
+                            <i class="fa-solid @(forste.Availability ? "fa-circle-check" : "fa-circle-minus")" aria-hidden="true"></i>
+                            @(forste.Availability ? "Tilgjengelig" : "Ikke tilgjengelig")
+                        </span>
+                    </dd>
+                }
+                @if (fellesPeriode != null)
+                {
+                    <dt>Tidsrom</dt>
+                    <dd>@fellesPeriode</dd>
+                }
+                @if (fellesTelefon != null)
+                {
+                    <dt>Kontakt</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(fellesTelefon) ? "Ikke oppgitt" : fellesTelefon)</dd>
+                }
+                <dt>Adresse</dt>
+                <dd id="kvitteringAdresse">Henter adresse...</dd>
+            </dl>
+        </div>
+
+        <div class="receipt-card">
+            <h2>@(enRessurs ? "Ressursen:" : "Ressursene:")</h2>
+            @for (var i = 0; i < antall; i++)
+            {
+                var r = Model[i];
+                <div class="receipt-item" data-resource-type="@r.Category" data-available="@r.Availability" data-on-click="fokuserPaKart" data-arg="@i">
+                    <div class="item-text">
+                        <div class="item-name">@r.Name</div>
+                        <div class="item-meta">@Detaljer(r, fellesTelefon, fellesPeriode)</div>
+                    </div>
+                    @if (!enRessurs && !r.Availability)
+                    {
+                        <span class="receipt-badge unavailable">Ikke tilgjengelig</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="receipt-card">
+            <h2>På kartet</h2>
+            <div id="kvitteringRessursKart" class="receipt-map"></div>
+            <p class="map-note">Trykk på et symbol eller en ressurs i listen for å se all informasjon.</p>
         </div>
 
         <div class="receipt-buttons">
@@ -194,6 +361,13 @@
     <script src="~/js/map-symbols.js" data-resources-url="@Url.Content("~/images/resources/")" data-needs-url="@Url.Content("~/images/needs/")" asp-append-version="true"></script>
 
     <script nonce="@Context.CspNonce()">
+        var ressursMarkorer;
+        var nyeMarkorer = [];
+
+        function fokuserPaKart(index) {
+            MapSymbols.focus(ressursMarkorer, nyeMarkorer[index]);
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
             /// Konverterer tall trygt til punktum som desimaltegn
             var lat = @(forste?.Latitude is double la ? la.ToString(CultureInfo.InvariantCulture) : "null");
@@ -214,9 +388,15 @@
                 skiltnummer = r.LicensePlate
             }));
 
+            /// Symbolet foran hver ressurs i listen
+            document.querySelectorAll('[data-resource-type]').forEach(function (rad) {
+                rad.insertAdjacentHTML('afterbegin', MapSymbols.image(MapSymbols.resourceUrl(rad.dataset.resourceType, MapSymbols.isAvailable(rad.dataset.available))));
+            });
+
             if (lat === null || lng === null || nyeRessurser.length === 0) {
                 document.getElementById('kvitteringRessursKart').outerHTML =
                     '<p class="text-muted">Ingen gyldig posisjon å vise på kart.</p>';
+                document.getElementById('kvitteringAdresse').textContent = 'Ikke tilgjengelig';
                 return;
             }
 
@@ -225,9 +405,6 @@
                 attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
                 noWrap: true
             }).addTo(kart);
-
-            var adresseTekst = 'Henter adresse...';
-            var nyeMarkorer = [];
 
             /// Full informasjon om ressursen i popupen. Feltene som mangler, hoppes over.
             function popupInnhold(r, adresse) {
@@ -243,38 +420,35 @@
                     ['Adresse', adresse]
                 ].filter(rad => rad[1] !== null && rad[1] !== undefined && rad[1] !== '');
 
-                return '<div class="resource-popup"><b>' + escapeHtml(r.navn) + '</b><dl>' +
+                return '<div class="receipt-popup"><b>' + escapeHtml(r.navn) + '</b><dl>' +
                     rader.map(rad => '<dt>' + rad[0] + '</dt><dd>' + escapeHtml(rad[1]) + '</dd>').join('') +
                     '</dl></div>';
             }
 
-            /// Én ressurs får navnelapp. Flere på samme punkt samles og spres ut når man trykker.
-            var nyGruppe = nyeRessurser.length > 1
-                ? L.markerClusterGroup({ spiderfyOnMaxZoom: true, showCoverageOnHover: false })
-                : L.layerGroup();
-
+            /// Flere ressurser på samme punkt samles og spres ut når man trykker. Én ressurs får navnelapp.
+            ressursMarkorer = MapSymbols.createCluster(kart);
             nyeRessurser.forEach(function (r) {
                 var marker = L.marker([lat, lng], {
                     icon: MapSymbols.resourceIcon(r.category, r.tilgjengelig),
                     title: r.navn,
                     alt: r.kategori + ': ' + r.navn,
                     zIndexOffset: 1000
-                });
-                marker.bindPopup(popupInnhold(r, adresseTekst), { maxWidth: 280 });
+                }).addTo(ressursMarkorer);
+                marker.bindPopup(popupInnhold(r, 'Henter adresse...'), { maxWidth: 280 });
                 if (nyeRessurser.length === 1) {
-                    marker.bindTooltip(escapeHtml(r.navn), { permanent: true, direction: 'bottom', offset: [0, 22], className: 'resource-label' });
+                    marker.bindTooltip(escapeHtml(r.navn), { permanent: true, direction: 'bottom', offset: [0, 22], className: 'receipt-label' });
                 }
                 nyeMarkorer.push(marker);
-                nyGruppe.addLayer(marker);
             });
-            kart.addLayer(nyGruppe);
 
             /// Adressen er den samme for alle de nye, så den hentes bare én gang
+            var adresseTekst = 'Ikke tilgjengelig';
             fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
                 .then(response => response.ok ? response.json() : null)
                 .then(data => { adresseTekst = (data && data.display_name) ? data.display_name : 'Adresse ikke funnet'; })
-                .catch(function () { adresseTekst = 'Ikke tilgjengelig'; })
+                .catch(function () { /* Beholder «Ikke tilgjengelig» */ })
                 .finally(function () {
+                    document.getElementById('kvitteringAdresse').textContent = adresseTekst;
                     nyeMarkorer.forEach(function (m, i) { m.setPopupContent(popupInnhold(nyeRessurser[i], adresseTekst)); });
                 });
 
