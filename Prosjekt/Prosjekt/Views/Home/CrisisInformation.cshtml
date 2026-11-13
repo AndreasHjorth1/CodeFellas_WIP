@@ -549,10 +549,11 @@
             const statusTekst = document.getElementById("tilfluktsromStatus");
 
             // Lager kartet med hele Norge i bildet, og Kartverkets topografiske kart som bakgrunn.
-            // Grensene og noWrap gjør at verden bare vises én gang, så man ikke kan dra seg inn i kopier av kartet.
+            // Kartet holdes rundt Norge, der Kartverket har kart og tilfluktsrommene ligger.
+            // Grensene og noWrap gjør også at man ikke kan dra seg inn i kopier av verden.
             const kart = L.map("tilfluktsromKart", {
-                minZoom: 3,
-                maxBounds: [[-90, -180], [90, 180]],
+                minZoom: 4,
+                maxBounds: [[54, -5], [74, 40]],
                 maxBoundsViscosity: 1.0
             }).setView([64.5, 12], 4);
             L.tileLayer("https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png", {
