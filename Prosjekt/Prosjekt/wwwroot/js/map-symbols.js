@@ -2,7 +2,7 @@
     'use strict';
     const config = document.currentScript.dataset;
     /// Plassen i listen er enum-verdien, så rekkefølgen må stemme med ResourceType og NeedType i C#
-    const resourceTypes = ['Other','Provision','Clothing','Tool','Vehicle','Materials'];
+    const resourceTypes = ['Other','Provision','Clothing','Tool','Vehicle','Materials','Competence'];
     const needTypes = ['Other','Food','Medicine','Transport','PowerGenerator','SnowRemoval','SandGravel','Machinery','Evacuation','Communication','Personnel'];
     const resourceFiles = {Provision:'provision',Clothing:'clothing',Tool:'tool',Vehicle:'vehicle',Materials:'materials',Competence:'other',Other:'other'};
     const needFiles = {Food:'food',Medicine:'medicine',Transport:'transport',PowerGenerator:'power',SnowRemoval:'snow',SandGravel:'gravel',Machinery:'machinery',Evacuation:'evacuation',Communication:'communication',Personnel:'personnel',Other:'other'};
