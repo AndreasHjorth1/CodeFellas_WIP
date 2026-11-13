@@ -494,9 +494,10 @@
         window.addEventListener('resize', tilpassKarthoyde);
 
         /// 1. Kartet. Zoom og min posisjon ligger nede til venstre.
-        var map = L.map('map', { zoomControl: false }).setView(startPunkt, harPosisjon ? 14 : 13);
+        var map = L.map('map', { zoomControl: false, minZoom: 3, maxBounds: [[-90, -180], [90, 180]], maxBoundsViscosity: 1.0 }).setView(startPunkt, harPosisjon ? 14 : 13);
         L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
-            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+            noWrap: true
         }).addTo(map);
 
         var MinPosisjon = L.Control.extend({

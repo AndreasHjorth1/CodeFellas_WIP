@@ -101,16 +101,20 @@
         overflow-wrap: anywhere;
     }
 
-    /* Antallsfeltet ligger over «Tildel»-knappen, så kolonnen blir smal */
+    /* Antallsfeltet og «Tildel»-knappen ligger på én linje */
     .match-tildel-skjema {
         display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        width: 4.5rem;
+        align-items: center;
+        gap: 0.35rem;
     }
 
     .match-table .match-antall {
-        width: 100%;
+        width: 4rem;
+    }
+
+    /* Kjøretiden står ved siden av det blå merket, så merkene i begge avstandskolonnene ligger på linje */
+    .match-table .match-tid {
+        margin-left: 0.25rem;
     }
 
     /* Mobil: hver ressurs blir et lite kort. Tabellhodet viser bare sorteringsknappene. */
@@ -483,12 +487,12 @@
         var needLng = @ViewBag.NeedLng;
         var matches = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
 
-        var kart = L.map('matchKart').setView([needLat, needLng], 11);
+        var kart = L.map('matchKart', { minZoom: 3, maxBounds: [[-90, -180], [90, 180]], maxBoundsViscosity: 1.0 }).setView([needLat, needLng], 11);
 
         L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
 
-            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
-
+            attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+            noWrap: true
         }).addTo(kart);
 
         /// Kjørerutene kommer fra Valhalla, som bruker veidata fra OpenStreetMap
@@ -703,7 +707,7 @@
                 return;
             }
             celle.innerHTML = '<span class="badge bg-primary match-distance">' + formaterKm(km) + '</span>'
-                + '<small class="d-block text-muted mt-1">' + formaterTid(sekunder) + '</small>';
+                + ' <small class="text-muted match-tid">' + formaterTid(sekunder) + '</small>';
             rad.dataset.kjor = String(km * 1000);
         }
 
