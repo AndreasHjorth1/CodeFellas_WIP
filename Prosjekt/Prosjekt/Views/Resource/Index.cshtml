@@ -4,7 +4,12 @@
 @using Prosjekt.Models.ModelView
 @model ResourceCreatorViewModel
 
-@{ ViewData["Title"] = "Registrer ressurs"; }
+@{
+    ViewData["Title"] = "Registrer ressurs";
+
+    /// Forsiden lenker hit med ?kategori=Tool osv., så riktig kategori er valgt når skjemaet åpnes
+    var valgtKategori = Context.Request.Query["kategori"].ToString();
+}
 
 <style>
     .register-map-wrapper {
@@ -412,13 +417,13 @@
                 <div class="mb-3">
                     <label class="form-label" for="kategoriVelger">Kategori</label>
                     <select id="kategoriVelger" class="form-select" data-on-change="oppdaterSkjemavisning">
-                        <option value="Vehicle">Transport og kjøretøy</option>
-                        <option value="Provision">Provisjon</option>
-                        <option value="Materials">Materialer</option>
-                        <option value="Clothing">Klær</option>
-                        <option value="Tool">Verktøy</option>
-                        <option value="Competence">Kompetanse</option>
-                        <option value="Other">Annet</option>
+                        <option value="Vehicle" selected="@(valgtKategori == "Vehicle")">Transport og kjøretøy</option>
+                        <option value="Provision" selected="@(valgtKategori == "Provision")">Provisjon</option>
+                        <option value="Materials" selected="@(valgtKategori == "Materials")">Materialer</option>
+                        <option value="Clothing" selected="@(valgtKategori == "Clothing")">Klær</option>
+                        <option value="Tool" selected="@(valgtKategori == "Tool")">Verktøy</option>
+                        <option value="Competence" selected="@(valgtKategori == "Competence")">Kompetanse</option>
+                        <option value="Other" selected="@(valgtKategori == "Other")">Annet</option>
                     </select>
                     <div id="ressursSymbolPreview" class="category-hint" aria-live="polite"></div>
                 </div>
