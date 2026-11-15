@@ -202,6 +202,132 @@
                 padding: 0.5rem 1.75rem;
             }
 
+            /* Hvit knapp for «Registrer» når man ikke er innlogget */
+            .public-navbar .btn-public.solid {
+                background-color: #ffffff;
+                border-color: #ffffff;
+                color: #04245a;
+                font-weight: 600;
+            }
+
+            .public-navbar .btn-public.solid:hover {
+                background-color: #e9eef5;
+                color: #04245a;
+            }
+
+            /* Rød strek foran «Beredt» */
+            .brand-mark {
+                display: inline-block;
+                width: 3px;
+                height: 1.1em;
+                background-color: #e0607e;
+                margin-right: 0.55rem;
+                vertical-align: -0.15em;
+            }
+
+            .public-navbar .public-menu-toggle {
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.7);
+                border-radius: 2px;
+                color: #ffffff;
+                padding: 0.45rem 0.7rem;
+            }
+
+            /* Bunntekst når man ikke er innlogget */
+            .public-footer {
+                background-color: #04245a;
+                color: #d6deeb;
+                border-top: 3px solid #2d4f86;
+                padding: 3rem 0 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .public-footer-inner {
+                max-width: 1100px;
+                margin: 0 auto;
+                padding: 0 1.5rem;
+            }
+
+            .public-footer-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+                gap: 2rem;
+            }
+
+            .public-footer .footer-brand {
+                color: #ffffff;
+                font-size: 1.15rem;
+                font-weight: 700;
+                margin: 0.4rem 0 0.75rem;
+            }
+
+            .public-footer .footer-about {
+                max-width: 20rem;
+                margin: 0;
+                line-height: 1.55;
+            }
+
+            .public-footer h2 {
+                color: #ffffff;
+                font-size: 0.95rem;
+                font-weight: 700;
+                margin: 0 0 0.75rem;
+            }
+
+            .public-footer nav a {
+                display: block;
+                color: #d6deeb;
+                text-decoration: none;
+                margin-bottom: 0.5rem;
+            }
+
+            .public-footer nav a strong {
+                color: #ffffff;
+                font-weight: 600;
+            }
+
+            .public-footer a:hover {
+                color: #ffffff;
+                text-decoration: underline;
+            }
+
+            .public-footer-bottom {
+                border-top: 1px solid rgba(255, 255, 255, 0.15);
+                margin-top: 2rem;
+                padding-top: 1.25rem;
+            }
+
+            .public-footer-bottom a {
+                color: #d6deeb;
+                text-decoration: none;
+            }
+
+            @@media (max-width: 767.98px) {
+                .public-footer-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+
+                .public-footer-grid > div:first-child {
+                    grid-column: 1 / -1;
+                }
+            }
+
+            /* Smal mobil: knappene i toppmenyen får plass ved siden av «Beredt» */
+            @@media (max-width: 400px) {
+                .public-navbar .public-nav-inner {
+                    padding: 0 1rem;
+                }
+
+                .public-navbar .public-nav-buttons {
+                    gap: 0.4rem;
+                }
+
+                .public-navbar .btn-public {
+                    padding: 0.45rem 0.7rem;
+                    font-size: 0.85rem;
+                }
+            }
+
             /* Navn og initialer oppe til høyre når man er innlogget som bruker */
             .public-navbar .user-menu-toggle {
                 display: flex;
@@ -266,6 +392,9 @@
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
         bool IsCurrent(string controller, string action) => currentController == controller && currentAction == action;
 
+        /// Forsiden, brukt i lenkene til avsnittene der (#slik-fungerer-det osv.) i menyen og bunnteksten
+        var forside = Url.Action("FrontPage", "Home");
+
         /// Navnet til den innloggede brukeren hentes fra databasen
         var currentUser = await UserManager.GetUserAsync(User);
         var displayName = currentUser?.FullName ?? string.Empty;
@@ -281,25 +410,31 @@
     {
         bool IsCurrentHome(string action) => IsCurrent("Home", action);
 
-        <!-- Navbar når man ikke er innlogget -->
+        <!-- Navbar når man ikke er innlogget. Lenkene går til avsnittene på forsiden. -->
         <header class="sticky-top">
             <nav class="public-navbar">
                 <div class="public-nav-inner">
 
                     <div class="public-nav-links">
-                        <a class="public-nav-link brand @(IsCurrentHome("FrontPage") ? "active" : "")"
-                           asp-controller="Home" asp-action="FrontPage">
-                            Beredt
+                        <a class="public-nav-link brand" asp-controller="Home" asp-action="FrontPage">
+                            <span class="brand-mark" aria-hidden="true"></span>Beredt
                         </a>
-                        <a class="public-nav-link d-none d-md-inline @(IsCurrentHome("CrisisInformation") ? "active" : "")"
+                        <a class="public-nav-link d-none d-lg-inline" href="@forside#slik-fungerer-det">Slik fungerer det</a>
+                        <a class="public-nav-link d-none d-lg-inline" href="@forside#bidra">Hva du kan bidra med</a>
+                        <a class="public-nav-link d-none d-lg-inline @(IsCurrentHome("CrisisInformation") ? "active" : "")"
                            asp-controller="Home" asp-action="CrisisInformation">
                             Kriseinformasjon
                         </a>
+                        <a class="public-nav-link d-none d-lg-inline" href="@forside#sporsmal">Spørsmål og svar</a>
                     </div>
 
                     <div class="public-nav-buttons">
-                        <a class="btn-public" asp-controller="Account" asp-action="Register">Registrer</a>
-                        <a class="btn-public wide" asp-controller="Account" asp-action="Login">Logg inn</a>
+                        <a class="btn-public" asp-controller="Account" asp-action="Login">Logg inn</a>
+                        <a class="btn-public solid" asp-controller="Account" asp-action="Register">Registrer</a>
+                        <button class="public-menu-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu"
+                                aria-controls="offcanvasMenu" aria-label="Åpne meny">
+                            <i class="fa-solid fa-bars" aria-hidden="true"></i>
+                        </button>
                     </div>
 
                 </div>
@@ -444,6 +579,42 @@
         </main>
     </div>
 
+    @if (User.Identity == null || !User.Identity.IsAuthenticated)
+    {
+        <!-- Bunntekst når man ikke er innlogget -->
+        <footer class="public-footer">
+            <div class="public-footer-inner">
+                <div class="public-footer-grid">
+                    <div>
+                        <span class="brand-mark" aria-hidden="true"></span>
+                        <p class="footer-brand">Beredt</p>
+                        <p class="footer-about">Beredt samler det innbyggere, gårdsbruk, bedrifter og frivillige kan låne ut i en krise.</p>
+                    </div>
+                    <nav aria-label="Tjenesten">
+                        <h2>Tjenesten</h2>
+                        <a href="@forside#slik-fungerer-det">Slik fungerer det</a>
+                        <a href="@forside#bidra">Hva du kan bidra med</a>
+                        <a href="@forside#sporsmal">Spørsmål og svar</a>
+                    </nav>
+                    <nav aria-label="Konto">
+                        <h2>Konto</h2>
+                        <a asp-controller="Account" asp-action="Login">Logg inn</a>
+                        <a asp-controller="Account" asp-action="Register">Registrer deg</a>
+                    </nav>
+                    <nav aria-label="Ved akutt fare">
+                        <h2>Ved akutt fare</h2>
+                        <a href="tel:110">Brann <strong>110</strong></a>
+                        <a href="tel:112">Politi <strong>112</strong></a>
+                        <a href="tel:113">Ambulanse <strong>113</strong></a>
+                    </nav>
+                </div>
+                <div class="public-footer-bottom">
+                    <a asp-controller="Home" asp-action="Privacy">Personvern</a>
+                </div>
+            </div>
+        </footer>
+    }
+
 
     <!-- BOOTSTRAP OFFCANVAS MENY -->
     <div class="offcanvas offcanvas-start"
@@ -549,11 +720,23 @@
                 }
                 else
                 {
-                    <!-- IKKE INNLOGGET -->
+                    <!-- IKKE INNLOGGET: samme lenker som i toppmenyen, som er skjult på små skjermer -->
 
                     <div class="list-group-item bg-transparent text-muted fw-bold border-0 pt-3 menu-header-text">
                         Generelt
                     </div>
+
+                    <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" href="@forside#slik-fungerer-det" data-bs-dismiss="offcanvas">
+                        Slik fungerer det
+                    </a>
+
+                    <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" href="@forside#bidra" data-bs-dismiss="offcanvas">
+                        Hva du kan bidra med
+                    </a>
+
+                    <a class="list-group-item list-group-item-action bg-transparent py-3 border-0" href="@forside#sporsmal" data-bs-dismiss="offcanvas">
+                        Spørsmål og svar
+                    </a>
 
                     <a class="list-group-item list-group-item-action bg-transparent py-3 border-0"
                        asp-controller="Home" asp-action="Privacy">

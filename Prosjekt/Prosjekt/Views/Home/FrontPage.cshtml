@@ -1,560 +1,751 @@
-﻿@model IEnumerable<Prosjekt.Models.ModelView.NeedViewModel>
+﻿@{
+    ViewData["Title"] = "Registrer det du kan låne ut i en krise";
 
-@{
-    ViewData["Title"] = "Hjem - Nasjonal ressursportal";
+    /// Kategoriene er de samme som i registreringsskjemaet (ResourceType). Verdien sendes videre som ?kategori=...
+    var kategorier = new[]
+    {
+        (Verdi: "Vehicle", Navn: "Kjøretøy", Eksempler: "Traktor, varebil, båt", Ikon: "fa-truck"),
+        (Verdi: "Tool", Navn: "Verktøy", Eksempler: "Aggregat, motorsag, pumpe", Ikon: "fa-screwdriver-wrench"),
+        (Verdi: "Materials", Navn: "Materialer", Eksempler: "Sand, grus, plank", Ikon: "fa-trowel-bricks"),
+        (Verdi: "Provision", Navn: "Mat og forsyninger", Eksempler: "Vann, mat, førstehjelp", Ikon: "fa-box-open"),
+        (Verdi: "Clothing", Navn: "Klær", Eksempler: "Varme klær, ulltepper", Ikon: "fa-shirt"),
+        (Verdi: "Competence", Navn: "Kompetanse", Eksempler: "Helse, bygg, frivillig innsats", Ikon: "fa-user-group"),
+        (Verdi: "Other", Navn: "Annet", Eksempler: "Lokaler, drone, annet utstyr", Ikon: "fa-ellipsis")
+    };
 }
 
 <style>
-    /* 1. GENERELLE STILVALG OG FARGER */
-    body {
-        background-color: #f4efe8; /* Varm beige/grå farge fra skissen */
-        color: #1a3048; /* Mørk marineblå */
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* Siden går helt ut i kantene, og hver seksjon har sin egen bakgrunn */
+    main {
+        background-color: #ffffff !important;
     }
 
-    /* Dekorative rød overskriftlinjer */
-    .section-tag {
+    .fp {
+        color: #0f2a4f;
+    }
+
+    .fp-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    .fp section {
+        scroll-margin-top: 4.5rem;
+    }
+
+    .fp h1,
+    .fp h2,
+    .fp h3 {
+        color: #04245a;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+
+    .fp h2 {
+        font-size: 2rem;
+        margin: 0 0 0.5rem;
+    }
+
+    .fp .lead-text {
+        color: #3d4f69;
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+
+    /* Knapper */
+    .fp-btn {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        font-size: 0.7rem;
+        justify-content: center;
+        gap: 0.6rem;
+        border-radius: 2px;
+        font-size: 0.95rem;
         font-weight: 700;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: #1a3048;
-        margin-bottom: 1.25rem;
+        padding: 0.8rem 1.4rem;
+        text-decoration: none;
+        border: 1px solid transparent;
     }
 
-        .section-tag::before {
-            content: "";
-            display: inline-block;
-            width: 22px;
-            height: 1px;
-            background-color: #d9534f;
-        }
-
-    /* Typografi - Balansert proporsjonert */
-    .serif-title {
-        font-family: "Playfair Display", "Georgia", serif;
-        font-weight: 400;
-        letter-spacing: -0.5px;
-        color: #1a3048;
-    }
-
-    .serif-italic {
-        font-family: "Playfair Display", "Georgia", serif;
-        font-style: italic;
-        font-weight: 400;
-        color: #6c757d;
-    }
-
-    .display-huge {
-        font-size: 3.6rem;
-        line-height: 1.08;
-    }
-
-    .text-muted-custom {
-        color: #5a6572;
-    }
-
-    /* 2. RUTENETT-LINJER (BORDERS) */
-    .grid-border-bottom {
-        border-bottom: 1px solid #e0d8cc;
-    }
-
-    .grid-border-top {
-        border-top: 1px solid #e0d8cc;
-    }
-
-    .grid-border-right {
-        border-right: 1px solid #e0d8cc;
-    }
-
-    /* 3. KNAPPER */
-    .btn-navy {
-        background-color: #0f2b48;
+    .fp-btn-navy {
+        background-color: #04245a;
+        border-color: #04245a;
         color: #ffffff;
-        border-radius: 0px;
-        padding: 0.85rem 1.75rem;
+    }
+
+    .fp-btn-navy:hover {
+        background-color: #0f3a80;
+        color: #ffffff;
+    }
+
+    .fp-btn-white {
+        background-color: #ffffff;
+        border-color: #ffffff;
+        color: #04245a;
+    }
+
+    .fp-btn-white:hover {
+        background-color: #e9eef5;
+        color: #04245a;
+    }
+
+    /* 1. Toppen: tittel til venstre, registreringskort til høyre.
+       Bakgrunnen stopper midt i snarveiene, så de ser ut til å ligge over kanten. */
+    .fp-hero {
+        background: linear-gradient(to bottom, #eef2f6 calc(100% - 2.6rem), #ffffff calc(100% - 2.6rem));
+        padding-top: 3.5rem;
+    }
+
+    .fp-hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 3rem;
+        align-items: center;
+    }
+
+    .fp-hero h1 {
+        font-size: 3rem;
+        line-height: 1.08;
+        margin: 0 0 1rem;
+    }
+
+    .fp-register-card {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-top: 3px solid #04245a;
+        border-radius: 2px;
+        padding: 1.5rem;
+    }
+
+    .fp-register-card h2 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .fp-register-card label {
+        display: block;
+        font-size: 0.9rem;
         font-weight: 600;
-        font-size: 0.725rem;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        border: none;
-        transition: background-color 0.2s;
+        margin-bottom: 0.4rem;
     }
 
-        .btn-navy:hover {
-            background-color: #1d4670;
-            color: #ffffff;
-        }
+    .fp-register-card select {
+        border-radius: 2px;
+        margin-bottom: 1rem;
+    }
 
-    /* 4. KART OG TEGNFORKLARING */
-    #homeMap {
+    .fp-register-card .fp-btn {
         width: 100%;
-        min-height: 500px;
-        height: 100%;
-        background-color: #e5e5e5;
     }
 
-    .map-legend-bar {
-        background-color: #f4efe8;
-        padding: 0.85rem;
+    .fp-register-card p {
+        color: #5f6f86;
+        font-size: 0.85rem;
+        margin: 0.85rem 0 0;
+    }
+
+    .fp-register-card p a {
+        color: #04245a;
+    }
+
+    /* Snarveier under toppen */
+    .fp-shortcuts {
+        list-style: none;
+        margin: 2.5rem 0 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .fp-shortcuts a {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: space-evenly;
         align-items: center;
         gap: 0.85rem;
-    }
-
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 0.65rem;
+        height: 100%;
+        min-height: 5.2rem;
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 2px;
+        padding: 0.9rem 1rem;
+        color: #04245a;
         font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        color: #5a6572;
+        font-size: 0.95rem;
+        text-decoration: none;
     }
 
-    .shape-diamond {
-        width: 10px;
-        height: 10px;
-        transform: rotate(45deg);
+    .fp-shortcuts a:hover {
+        border-color: #9aa9be;
     }
 
-    .shape-square {
-        width: 10px;
-        height: 10px;
-    }
-
-    .shape-circle {
-        width: 10px;
-        height: 10px;
+    .fp-shortcuts .icon {
+        flex: 0 0 2.2rem;
+        width: 2.2rem;
+        height: 2.2rem;
         border-radius: 50%;
-    }
-
-    .custom-leaflet-icon {
-        border: 1px solid #fff;
-        box-shadow: 0 0 3px rgba(0,0,0,0.3);
-    }
-
-    /* 5. FAQ / SPØRSMÅL OG SVAR */
-    .faq-btn {
-        background: transparent;
-        border: none;
-        width: 100%;
-        text-align: left;
-        padding: 1.5rem 0;
+        background-color: #eef2f6;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        font-family: "Playfair Display", "Georgia", serif;
-        font-size: 1.3rem;
-        color: #1a3048;
+        justify-content: center;
+        font-size: 0.9rem;
     }
 
-        .faq-btn .faq-num {
-            font-family: sans-serif;
-            font-size: 0.725rem;
-            font-weight: bold;
-            color: #1a3048;
-            width: 38px;
-        }
+    .fp-shortcuts .icon.red {
+        background-color: #fbe9ec;
+        color: #c8102e;
+    }
 
-    .faq-icon {
-        font-family: sans-serif;
+    .fp-shortcuts .chevron {
+        margin-left: auto;
+        font-size: 0.8rem;
+    }
+
+    /* 2. Blå seksjon med illustrasjon */
+    .fp-together {
+        background-color: #04245a;
+        color: #ffffff;
+        padding: 4rem 0;
+        margin-top: 2.5rem;
+    }
+
+    .fp-together-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 3rem;
+        align-items: center;
+    }
+
+    .fp-together h2 {
+        color: #ffffff;
+    }
+
+    .fp-together p {
+        color: #d6deeb;
+        line-height: 1.6;
+    }
+
+    .fp-checks {
+        list-style: none;
+        margin: 1.5rem 0 1.75rem;
+        padding: 0;
+    }
+
+    .fp-checks li {
+        display: flex;
+        gap: 0.85rem;
+        align-items: baseline;
+        padding: 0.7rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
         font-size: 0.95rem;
-        font-weight: normal;
-        background-color: #1a3048;
-        color: white;
-        width: 22px;
-        height: 22px;
+    }
+
+    .fp-checks li:last-child {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .fp-checks i {
+        color: #9fd3b8;
+    }
+
+    .fp-illustration {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 2px;
+    }
+
+    /* 3. Slik fungerer det */
+    .fp-steps {
+        background-color: #eef2f6;
+        padding: 4rem 0;
+    }
+
+    .fp-steps-grid {
+        list-style: none;
+        margin: 1.5rem 0 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .fp-steps-grid li {
+        background-color: #ffffff;
+        border: 1px solid #dde3ea;
+        border-radius: 2px;
+        padding: 1.25rem 1.25rem 1.5rem;
+    }
+
+    .fp-steps-grid .num {
+        width: 1.9rem;
+        height: 1.9rem;
+        border-radius: 50%;
+        background-color: #04245a;
+        color: #ffffff;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .fp-steps-grid li:last-child .num {
+        background-color: #c8102e;
+    }
+
+    .fp-steps-grid h3 {
+        font-size: 1.05rem;
+        margin: 0 0 0.35rem;
+    }
+
+    .fp-steps-grid p {
+        color: #5f6f86;
+        font-size: 0.92rem;
+        margin: 0;
+    }
+
+    /* 4. Hva kan du bidra med? */
+    .fp-categories {
+        padding: 4rem 0;
+    }
+
+    .fp-category-grid {
+        list-style: none;
+        margin: 1.5rem 0 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        column-gap: 1rem;
+        border-top: 1px solid #dde3ea;
+    }
+
+    .fp-category-grid li {
+        border-bottom: 1px solid #dde3ea;
+    }
+
+    .fp-category-grid a {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.9rem 0.25rem;
+        color: #04245a;
+        text-decoration: none;
+    }
+
+    .fp-category-grid a:hover {
+        background-color: #f6f8fb;
+    }
+
+    .fp-category-grid .cat-icon {
+        width: 1.3rem;
+        text-align: center;
+    }
+
+    .fp-category-grid strong {
+        display: block;
+        font-size: 0.95rem;
+    }
+
+    .fp-category-grid span {
+        display: block;
+        color: #5f6f86;
+        font-size: 0.8rem;
+    }
+
+    .fp-category-grid .chevron {
+        margin-left: auto;
+        font-size: 0.8rem;
+    }
+
+    /* 5. Rødt bånd om egenberedskap */
+    .fp-prepared {
+        background-color: #c8102e;
+        color: #ffffff;
+        padding: 2.25rem 0;
+    }
+
+    .fp-prepared-inner {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+
+    .fp-prepared .warn {
+        flex: 0 0 2.6rem;
+        width: 2.6rem;
+        height: 2.6rem;
+        border-radius: 50%;
+        background-color: #ffffff;
+        color: #c8102e;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    .faq-content {
-        padding-left: 38px;
-        padding-bottom: 1.5rem;
-        color: #5a6572;
-        font-size: 0.925rem;
-        line-height: 1.55;
+    .fp-prepared h2 {
+        color: #ffffff;
+        font-size: 1.15rem;
+        margin: 0 0 0.25rem;
     }
 
-    .col-border-right {
-        border-right: 1px solid #e0d8cc;
+    .fp-prepared p {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .fp-prepared .fp-btn {
+        margin-left: auto;
+        color: #c8102e;
+        white-space: nowrap;
+    }
+
+    /* 6. Spørsmål og svar */
+    .fp-faq {
+        background-color: #eef2f6;
+        padding: 4rem 0;
+    }
+
+    .fp-faq-inner {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    .fp-faq-list {
+        margin-top: 1.5rem;
+        border-top: 1px solid #d3dbe5;
+    }
+
+    .fp-faq-item {
+        border-bottom: 1px solid #d3dbe5;
+    }
+
+    .fp-faq-item button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        width: 100%;
+        background: transparent;
+        border: 0;
+        padding: 1.1rem 0.5rem;
+        color: #04245a;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .fp-faq-item button i {
+        transition: transform 0.2s ease;
+    }
+
+    .fp-faq-item button[aria-expanded="true"] i {
+        transform: rotate(180deg);
+    }
+
+    .fp-faq-item .answer {
+        padding: 0 0.5rem 1.1rem;
+        color: #3d4f69;
+        line-height: 1.6;
+    }
+
+    .fp-faq-item .answer a {
+        color: #04245a;
     }
 
     @@media (max-width: 991.98px) {
-        .col-border-right {
-            border-right: none;
+        .fp-hero-grid,
+        .fp-together-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
         }
 
-        .display-huge {
-            font-size: 2.6rem;
+        .fp-shortcuts,
+        .fp-category-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .fp-steps-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .fp-hero {
+            padding-top: 2.25rem;
+        }
+
+        .fp-hero h1 {
+            font-size: 2.2rem;
+        }
+
+        .fp h2 {
+            font-size: 1.6rem;
+        }
+
+        .fp-shortcuts,
+        .fp-category-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .fp-prepared-inner {
+            flex-wrap: wrap;
+        }
+
+        .fp-prepared .fp-btn {
+            margin-left: 0;
+            width: 100%;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .fp-faq-item button i {
+            transition: none;
         }
     }
 </style>
 
-<!-- ========================================== -->
-<!-- 1. HERO & KART-SEKSJON                     -->
-<!-- ========================================== -->
-<section class="grid-border-bottom">
-    <div class="container-fluid p-0">
-        <div class="row g-0">
+<div class="fp">
 
-            <!-- Venstre side: Tekst & Tittel -->
-            <div class="col-lg-6 col-border-right d-flex flex-column" style="padding: 4.5rem 3.5rem;">
-                <div class="section-tag">Nasjonal ressursportal for sivil beredskap</div>
+    <!-- 1. Tittel, registreringskort og snarveier -->
+    <section class="fp-hero" aria-labelledby="forsideTittel">
+        <div class="fp-inner">
+            <div class="fp-hero-grid">
+                <div>
+                    <h1 id="forsideTittel">Registrer det du kan låne ut i en krise</h1>
+                    <p class="lead-text">
+                        Et aggregat, en traktor, en båt eller tid som frivillig. Når du registrerer det i Beredt, vet beredskapen at det finnes,
+                        og kan kontakte deg når noen trenger det.
+                    </p>
+                </div>
 
-                <h1 class="display-huge serif-title mb-3">
-                    Når krisen <br />
-                    kommer, teller <br />
-                    <span class="serif-italic">hver traktor.</span>
-                </h1>
+                <form class="fp-register-card" method="get" asp-controller="Resource" asp-action="Index">
+                    <h2>Hva vil du registrere?</h2>
+                    <label for="forsideKategori">Velg kategori</label>
+                    <select id="forsideKategori" name="kategori" class="form-select">
+                        @foreach (var k in kategorier)
+                        {
+                            <option value="@k.Verdi">@k.Navn, for eksempel @(k.Eksempler.Split(',')[0].ToLower())</option>
+                        }
+                    </select>
+                    <button type="submit" class="fp-btn fp-btn-navy">
+                        Start registrering <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </button>
+                    <p>Du blir bedt om å logge inn. Har du ikke bruker? <a asp-controller="Account" asp-action="Register">Registrer deg</a></p>
+                </form>
+            </div>
 
-                <p class="fs-6 text-muted-custom mb-4" style="max-width: 450px; line-height: 1.65;">
-                    Totalforsvaret samler det folk og bedrifter kan stille med –
-                    traktorer, aggregater, verktøy, vann og mat – på ett felles kart.
-                    Da ser kommunen og Heimevernet raskt hva som finnes, og
-                    hvem som står nærmest.
-                </p>
-
-                <div class="mt-auto pt-3">
-                    <a asp-controller="Resource" asp-action="Index" class="btn btn-navy d-inline-flex align-items-center gap-3">
-                        Registrer en ressurs <span>&rarr;</span>
+            <ul class="fp-shortcuts">
+                <li>
+                    <a asp-controller="Resource" asp-action="Index">
+                        <span class="icon"><i class="fa-solid fa-plus" aria-hidden="true"></i></span>
+                        Registrer ressurs
+                        <i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i>
                     </a>
-                </div>
-            </div>
-
-            <!-- Høyre side: Kart med tegnforklaring -->
-            <div class="col-lg-6 d-flex flex-column position-relative">
-
-                <div class="position-absolute w-100 d-flex justify-content-between p-3" style="z-index: 400; pointer-events: none; font-size: 0.65rem; font-weight: bold; letter-spacing: 2px; color: #5a6572; text-transform: uppercase;">
-                    <span>Utsnitt — Agder, Sør-Norge</span>
-                    <span>1 : 250 000</span>
-                </div>
-
-                <!-- Kartbeholder -->
-                <div id="homeMap" class="flex-grow-1"></div>
-
-                <!-- Kart-tegnforklaring -->
-                <div class="map-legend-bar grid-border-top">
-                    <div class="legend-item">
-                        <span class="shape-diamond" style="background-color: #dc3545;"></span> Akutt behov
-                    </div>
-                    <div class="legend-item">
-                        <span class="shape-diamond" style="background-color: #d4a373;"></span> Planlagt behov
-                    </div>
-                    <div class="legend-item">
-                        <span class="shape-square" style="background-color: #427c62;"></span> Ledig ressurs
-                    </div>
-                    <div class="legend-item">
-                        <span class="shape-square" style="background-color: #a8a8a8;"></span> Utilgjengelig
-                    </div>
-                </div>
-            </div>
-
+                </li>
+                <li>
+                    <a href="#bidra">
+                        <span class="icon"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></span>
+                        Hva kan du bidra med?
+                        <i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Home" asp-action="CrisisInformation">
+                        <span class="icon red"><i class="fa-solid fa-info" aria-hidden="true"></i></span>
+                        Kriseinformasjon
+                        <i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="#sporsmal">
+                        <span class="icon"><i class="fa-solid fa-question" aria-hidden="true"></i></span>
+                        Spørsmål og svar
+                        <i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i>
+                    </a>
+                </li>
+            </ul>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- ========================================== -->
-<!-- 2. HVORFOR (CITAT / HOVEDBUDSKAP)          -->
-<!-- ========================================== -->
-<section class="grid-border-bottom">
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
-                <div class="section-tag" style="margin:0;">Hvorfor</div>
-            </div>
-            <div class="col-lg-9 p-4 p-md-5 d-flex align-items-center">
-                <h2 class="fs-2 serif-title mb-0" style="line-height: 1.4; max-width: 880px;">
-                    Beredskap er mer enn uniformer og øvelser. Det er naboen med aggregat, bonden med traktor
-                    <span class="serif-italic" style="color: #6c757d;">
-                        og snekkeren med et lager fullt av materialer.
-                        Totalforsvaret gjør den kapasiteten synlig – før den trengs.
-                    </span>
-                </h2>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ========================================== -->
-<!-- 3. SLIK FUNGERER DET (3 STEG)              -->
-<!-- ========================================== -->
-<section class="grid-border-bottom">
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-
-            <!-- Venstre tittelkolonne -->
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
-                <div class="section-tag">Slik fungerer det</div>
-                <h2 class="fs-2 serif-title mt-3">Tre steg fra<br>garasjen til<br>innsatsen.</h2>
-            </div>
-
-            <!-- Steg 1-3 liste -->
-            <div class="col-lg-9 d-flex flex-column">
-
-                <!-- Steg 1 -->
-                <div class="p-4 p-md-5 grid-border-bottom d-flex flex-wrap align-items-start gap-4">
-                    <span class="fw-bold text-navy" style="font-size: 0.75rem; color: #1a3048; width: 30px;">01</span>
-                    <h3 class="fs-4 serif-title mb-0" style="width: 230px;">Du registrerer</h3>
-                    <p class="text-muted-custom small mb-0 flex-grow-1" style="max-width: 420px; line-height: 1.55;">
-                        Fortell hva du har, hvor det står og når det kan brukes. Plasser det med ett trykk på kartet.
-                    </p>
-                    <span class="text-uppercase fw-bold ms-auto" style="font-size: 0.625rem; letter-spacing: 1.5px; color: #9a948a;">Ressurstilbyder</span>
-                </div>
-
-                <!-- Steg 2 -->
-                <div class="p-4 p-md-5 grid-border-bottom d-flex flex-wrap align-items-start gap-4">
-                    <span class="fw-bold text-navy" style="font-size: 0.75rem; color: #1a3048; width: 30px;">02</span>
-                    <h3 class="fs-4 serif-title mb-0" style="width: 230px;">Behovet meldes</h3>
-                    <p class="text-muted-custom small mb-0 flex-grow-1" style="max-width: 420px; line-height: 1.55;">
-                        Kommuner og offentlige aktører melder inn hva som mangler. Hvert behov vurderes før noe settes i gang.
-                    </p>
-                    <span class="text-uppercase fw-bold ms-auto" style="font-size: 0.625rem; letter-spacing: 1.5px; color: #9a948a;">Offentlig aktør</span>
-                </div>
-
-                <!-- Steg 3 -->
-                <div class="p-4 p-md-5 d-flex flex-wrap align-items-start gap-4">
-                    <span class="fw-bold text-navy" style="font-size: 0.75rem; color: #1a3048; width: 30px;">03</span>
-                    <h3 class="fs-4 serif-title mb-0" style="width: 230px;">Hjelpen kobles</h3>
-                    <p class="text-muted-custom small mb-0 flex-grow-1" style="max-width: 420px; line-height: 1.55;">
-                        Passer ressursen din et behov, blir du ringt opp. Når oppdraget er løst, står den som ledig igjen.
-                    </p>
-                    <span class="text-uppercase fw-bold ms-auto" style="font-size: 0.625rem; letter-spacing: 1.5px; color: #9a948a;">Tildelt &rarr; Løst</span>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ========================================== -->
-<!-- 4. MER ENN DU TROR (8 KORT/RUTER)          -->
-<!-- ========================================== -->
-<section class="grid-border-bottom">
-    <div class="container-fluid p-0">
-
-        <!-- Seksjonsoverskrift -->
-        <div class="row g-0 grid-border-bottom">
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
-                <div class="section-tag">Hva kan du stille med?</div>
-                <h2 class="fs-2 serif-title mt-2 mb-0">Mer enn<br><span class="serif-italic">du tror.</span></h2>
-            </div>
-            <div class="col-lg-6 col-border-right p-4 p-md-5 d-flex align-items-center">
-                <p class="text-muted-custom mb-0 small" style="max-width: 500px; line-height: 1.65;">
-                    Det er ikke bare traktorer og aggregater som trengs i en krise. Det kan være alt fra en haug med grus du har liggende i innkjørselen din til klærene du ikke bruker lengre.
+    <!-- 2. Sammen står vi sterkere -->
+    <section class="fp-together" aria-labelledby="sammenTittel">
+        <div class="fp-inner fp-together-grid">
+            <div>
+                <h2 id="sammenTittel">Sammen står vi sterkere</h2>
+                <p>
+                    Tenk deg at strømmen går en kald vinternatt, og sykehjemmet der du bor står uten varme. Kanskje er det aggregatet
+                    i garasjen din som kan hjelpe. Men står det ikke på listen, vet ingen at det finnes.
                 </p>
-            </div>
-            <div class="col-lg-3"></div>
-        </div>
-    </div>
-</section>
-
-<!-- ========================================== -->
-<!-- 5. SPØRSMÅL OG SVAR (FAQ)                  -->
-<!-- ========================================== -->
-<section class="grid-border-bottom">
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <div class="col-lg-3 col-border-right p-4 p-md-5">
-                <div class="section-tag">Spørsmål og svar</div>
-                <h2 class="fs-2 serif-title mt-2 mb-3">Lurer du<br>på noe?</h2>
-                <p class="text-muted-custom small mb-0" style="max-width: 250px;">
-                    Finner du ikke svaret her, kan du skrive til oss under «Kontakt oss» nederst på siden.
-                </p>
-            </div>
-
-            <div class="col-lg-9">
-
-                <div class="grid-border-bottom px-4 px-md-5">
-                    <button class="faq-btn" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                        <span class="d-flex align-items-center"><span class="faq-num">01</span> Hvem kan registrere ressurser?</span>
-                        <span class="faq-icon">-</span>
-                    </button>
-                    <div id="faq1" class="collapse show faq-content">
-                        Privatpersoner, gårdsbruk, bedrifter og frivillige organisasjoner. Kommuner og andre offentlige aktører får konto fra en administrator.
-                    </div>
-                </div>
-
-                <div class="grid-border-bottom px-4 px-md-5">
-                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                        <span class="d-flex align-items-center"><span class="faq-num">02</span> Forplikter jeg meg til noe når jeg registrerer?</span>
-                        <span class="faq-icon">+</span>
-                    </button>
-                    <div id="faq2" class="collapse faq-content">
-                        Nei, du står fritt til å takke nei eller frigi ressurser dersom du selv trenger dem når en krise inntreffer.
-                    </div>
-                </div>
-
-                <div class="grid-border-bottom px-4 px-md-5">
-                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                        <span class="d-flex align-items-center"><span class="faq-num">03</span> Hvem kan se informasjonen min?</span>
-                        <span class="faq-icon">+</span>
-                    </button>
-                    <div id="faq3" class="collapse faq-content">
-                        Kun verifiserte beredskapsaktører i kommunen og offentlige myndigheter har tilgang til detaljert kontaktinformasjon.
-                    </div>
-                </div>
-
-                <div class="grid-border-bottom px-4 px-md-5">
-                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                        <span class="d-flex align-items-center"><span class="faq-num">04</span> Hva skjer hvis jeg mister nettet?</span>
-                        <span class="faq-icon">+</span>
-                    </button>
-                    <div id="faq4" class="collapse faq-content">
-                        Kommunens kriseledelse laster jevnlig ned lokalt kartunderlag slik at data er tilgjengelig også offline.
-                    </div>
-                </div>
-
-                <div class="grid-border-bottom px-4 px-md-5">
-                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                        <span class="d-flex align-items-center"><span class="faq-num">05</span> Kan jeg endre eller slette det jeg har registrert?</span>
-                        <span class="faq-icon">+</span>
-                    </button>
-                    <div id="faq5" class="collapse faq-content">
-                        Ja, du har full kontroll og kan oppdatere eller fjerne dine registrerte ressurser når som helst.
-                    </div>
-                </div>
-
-                <div class="px-4 px-md-5">
-                    <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
-                        <span class="d-flex align-items-center"><span class="faq-num">06</span> Er dette en nødtjeneste?</span>
-                        <span class="faq-icon">+</span>
-                    </button>
-                    <div id="faq6" class="collapse faq-content">
-                        Nei, dette er en koordineringsportal for beredskap og sivile ressurser. Ved akutt livsfare skal du alltid ringe nødnummeret (110, 112, 113).
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ========================================== -->
-<!-- 6. BLÅ BANNER                              -->
-<!-- ========================================== -->
-<section style="background-color: #0f2b48;">
-    <div class="container-fluid p-0">
-        <div class="row g-0 align-items-center p-4 p-md-5">
-            <div class="col-lg-8 mb-3 mb-lg-0">
-                <span class="text-uppercase fw-bold d-block mb-2" style="font-size: 0.65rem; letter-spacing: 2px; color: #a4b4c4;">
-                    Bli ressurstilbyder
-                </span>
-                <h2 class="fs-1 serif-title text-white mb-0" style="line-height: 1.15;">
-                    Har du noe som kan hjelpe når <br>det står på?
-                </h2>
-            </div>
-            <div class="col-lg-4 text-lg-end">
-                <a asp-controller="Account" asp-action="Register" class="btn btn-light rounded-0 fw-bold px-4 py-3" style="color: #0f2b48; font-size: 0.725rem; letter-spacing: 2px; text-transform: uppercase;">
-                    Opprett konto <span class="ms-2">&rarr;</span>
+                <ul class="fp-checks">
+                    <li><i class="fa-solid fa-check" aria-hidden="true"></i> Noen kan trenge akkurat det du har.</li>
+                    <li><i class="fa-solid fa-check" aria-hidden="true"></i> Hjelpen kommer raskere fram når den er registrert på forhånd.</li>
+                    <li><i class="fa-solid fa-check" aria-hidden="true"></i> Store og små bidrag teller like mye.</li>
+                </ul>
+                <a class="fp-btn fp-btn-white" asp-controller="Resource" asp-action="Index">
+                    Registrer ressurs <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </a>
             </div>
-        </div>
-    </div>
-</section>
 
-<!-- ========================================== -->
-<!-- KART-SKRIPT OG DYNAMISK LASTING            -->
-<!-- ========================================== -->
-@section Scripts {
-    <script nonce="@Context.CspNonce()">
-        document.addEventListener("DOMContentLoaded", function () {
+            @* Tegnet kart med appens egne ressurssymboler. Ingen kartdata hentes. *@
+            <svg class="fp-illustration" viewBox="0 0 360 290" role="img" aria-label="Tegning av et nabolag med registrerte ressurser som aggregat, traktor, båt og varebil">
+                <rect width="360" height="290" fill="#ebe7df" />
+                <g stroke="#ffffff" stroke-width="1.5">
+                    <path d="M0 30H360M0 60H360M0 90H360M0 120H360M0 150H360M0 180H360M0 210H360M0 240H360" />
+                    <path d="M30 0V290M60 0V290M90 0V290M120 0V290M150 0V290M180 0V290M210 0V290M240 0V290M270 0V290M300 0V290M330 0V290" />
+                </g>
+                <rect x="20" y="70" width="55" height="45" fill="#d5e3c7" />
+                <rect x="150" y="30" width="35" height="28" fill="#d5e3c7" />
+                <rect x="285" y="150" width="75" height="60" fill="#d5e3c7" />
+                <path d="M0 55 C 80 30, 150 20, 220 32 S 330 60, 360 42" fill="none" stroke="#f2dc9a" stroke-width="8" />
+                <path d="M248 0 C 240 60, 262 110, 238 165 S 225 230, 232 262" fill="none" stroke="#a9cbe0" stroke-width="12" />
+                <path d="M0 250 C 60 238, 110 262, 170 250 S 280 232, 360 245 V290 H0 Z" fill="#b7d3e3" />
+                <circle cx="155" cy="135" r="24" fill="#d0d4d8" stroke="#6b7a8c" stroke-width="1.5" stroke-dasharray="4 3" />
 
-            /// FAQ-ikon veksling
-            const faqButtons = document.querySelectorAll('.faq-btn');
-            faqButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const icon = this.querySelector('.faq-icon');
-                    setTimeout(() => {
-                        if (this.classList.contains('collapsed')) icon.textContent = '+';
-                        else icon.textContent = '-';
-                    }, 10);
-                });
-            });
-
-            /// ----------------------------------------------------
-            /// LEAFLET KART (STANDARD OSM-LAG)
-            /// ----------------------------------------------------
-            /// Tom liste i dag: HomeController.FrontPage sender ikke med noen modell.
-            var needs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<Prosjekt.Models.ModelView.NeedViewModel>()));
-
-            /// Topografisk kart fra Kartverket
-            var topoKart = L.tileLayer('https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png', {
-                attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-                noWrap: true
-            });
-
-            var map = L.map('homeMap', {
-                center: [58.1467, 7.9956],
-                zoom: 11,
-                minZoom: 3,
-                maxBounds: [
-                    [-90, -180],
-                    [90, 180]
-                ],
-                maxBoundsViscosity: 1.0,
-                layers: [topoKart],
-                zoomControl: false
-            });
-
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-            function lagDiamantIkon(farge) {
-                var html = `<div class="custom-leaflet-icon shape-diamond" style="background-color: ${farge}; width: 12px; height: 12px;"></div>`;
-                return L.divIcon({
-                    html: html,
-                    className: '',
-                    iconSize: [12, 12],
-                    iconAnchor: [6, 6],
-                    popupAnchor: [0, -8]
-                });
-            }
-
-            var ikonAkutt = lagDiamantIkon('#dc3545');
-            var ikonPlanlagt = lagDiamantIkon('#d4a373');
-
-            var bounds = [];
-
-            needs.forEach(function (n) {
-                var lat = parseFloat(n.Latitude);
-                var lng = parseFloat(n.Longitude);
-
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    /// ImportanceLevel.Acute er 1
-                    var erAkutt = n.Importance === 1;
-                    var ikon = erAkutt ? ikonAkutt : ikonPlanlagt;
-
-                    var marker = L.marker([lat, lng], { icon: ikon }).addTo(map);
-
-                    marker.bindPopup(`
-                        <div style="font-size:0.85rem; color:#1a3048;">
-                            <strong style="text-transform:uppercase; font-size:0.65rem; color:${erAkutt ? '#dc3545' : '#d4a373'}">
-                                ${erAkutt ? 'Akutt behov' : 'Planlagt behov'}
-                            </strong><br>
-                            <b>${n.Name}</b><br>
-                            <span style="color:#5a6572">${n.Description || ''}</span>
-                        </div>
-                    `);
-
-                    bounds.push([lat, lng]);
+                @{
+                    var punkter = new[]
+                    {
+                        (X: 70, Y: 95, Fil: "tool", Tekst: "Aggregat"),
+                        (X: 232, Y: 60, Fil: "vehicle", Tekst: "Varebil"),
+                        (X: 272, Y: 118, Fil: "other", Tekst: "Grendehus"),
+                        (X: 45, Y: 172, Fil: "vehicle", Tekst: "Traktor"),
+                        (X: 220, Y: 180, Fil: "competence", Tekst: "Frivillige"),
+                        (X: 278, Y: 200, Fil: "clothing", Tekst: "Ulltepper"),
+                        (X: 118, Y: 215, Fil: "vehicle", Tekst: "Båt")
+                    };
                 }
-            });
+                @foreach (var p in punkter)
+                {
+                    /// Heltall, så koordinatene ikke får desimalkomma med norsk tallformat
+                    var bredde = p.Tekst.Length * 6 + 12;
+                    <g>
+                        <image href="@Url.Content($"~/images/resources/{p.Fil}.svg")" x="@(p.X - 11)" y="@(p.Y - 11)" width="22" height="22" />
+                        <rect x="@(p.X + 14)" y="@(p.Y - 8)" width="@bredde" height="16" rx="2" fill="#ffffff" stroke="#dde3ea" />
+                        <text x="@(p.X + 20)" y="@(p.Y + 3)" font-size="9" font-weight="700" fill="#04245a">@p.Tekst</text>
+                    </g>
+                }
+            </svg>
+        </div>
+    </section>
 
-            if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-            }
+    <!-- 3. Slik fungerer det -->
+    <section class="fp-steps" id="slik-fungerer-det" aria-labelledby="stegTittel">
+        <div class="fp-inner">
+            <h2 id="stegTittel">Slik fungerer det</h2>
+            <ol class="fp-steps-grid">
+                <li>
+                    <span class="num" aria-hidden="true">1</span>
+                    <h3>Registrer det du har</h3>
+                    <p>Fortell hva det er, og hvor det står.</p>
+                </li>
+                <li>
+                    <span class="num" aria-hidden="true">2</span>
+                    <h3>Beredskapen ser det</h3>
+                    <p>Beredskapskoordinatorer ser hva som finnes i nærheten.</p>
+                </li>
+                <li>
+                    <span class="num" aria-hidden="true">3</span>
+                    <h3>Du blir kontaktet</h3>
+                    <p>Trenger noen det du har, ringer de deg.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
 
-            setTimeout(function () {
-                map.invalidateSize();
-            }, 250);
-        });
-    </script>
-}
+    <!-- 4. Hva kan du bidra med? -->
+    <section class="fp-categories" id="bidra" aria-labelledby="bidraTittel">
+        <div class="fp-inner">
+            <h2 id="bidraTittel">Hva kan du bidra med?</h2>
+            <p class="lead-text mb-0">Velg en kategori for å registrere.</p>
+            <ul class="fp-category-grid">
+                @foreach (var k in kategorier)
+                {
+                    <li>
+                        <a asp-controller="Resource" asp-action="Index" asp-route-kategori="@k.Verdi">
+                            <i class="fa-solid @k.Ikon cat-icon" aria-hidden="true"></i>
+                            <div>
+                                <strong>@k.Navn</strong>
+                                <span>@k.Eksempler</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                }
+                <li>
+                    <a asp-controller="Resource" asp-action="Index">
+                        <i class="fa-solid fa-plus cat-icon" aria-hidden="true"></i>
+                        <div>
+                            <strong>Usikker?</strong>
+                            <span>Start, og velg kategori underveis</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- 5. Egenberedskap -->
+    <section class="fp-prepared" aria-labelledby="forberedtTittel">
+        <div class="fp-inner fp-prepared-inner">
+            <span class="warn" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span>
+            <div>
+                <h2 id="forberedtTittel">Er du forberedt på en krise?</h2>
+                <p>Ha vann og mat nok til å klare deg selv i en uke. Les hva du bør ha hjemme, og finn tilfluktsrom i nærheten.</p>
+            </div>
+            <a class="fp-btn fp-btn-white" asp-controller="Home" asp-action="CrisisInformation">Les kriseinformasjon</a>
+        </div>
+    </section>
+
+    <!-- 6. Spørsmål og svar -->
+    <section class="fp-faq" id="sporsmal" aria-labelledby="sporsmalTittel">
+        <div class="fp-faq-inner">
+            <h2 id="sporsmalTittel">Spørsmål og svar</h2>
+            <div class="fp-faq-list">
+                <div class="fp-faq-item">
+                    <button type="button" data-bs-toggle="collapse" data-bs-target="#svar1" aria-expanded="false" aria-controls="svar1">
+                        Hvem kan registrere ressurser? <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div id="svar1" class="collapse">
+                        <div class="answer">
+                            Alle som lager en bruker: privatpersoner, gårdsbruk, bedrifter og frivillige organisasjoner. Kommunen og
+                            beredskapskoordinatorene får konto av en administrator.
+                        </div>
+                    </div>
+                </div>
+                <div class="fp-faq-item">
+                    <button type="button" data-bs-toggle="collapse" data-bs-target="#svar2" aria-expanded="false" aria-controls="svar2">
+                        Hva skjer når noen trenger ressursen min? <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div id="svar2" class="collapse">
+                        <div class="answer">
+                            En koordinator kobler ressursen din til behovet. Du får et varsel i Beredt, og blir ringt opp på telefonnummeret
+                            du har oppgitt. Du bestemmer selv om du kan stille.
+                        </div>
+                    </div>
+                </div>
+                <div class="fp-faq-item">
+                    <button type="button" data-bs-toggle="collapse" data-bs-target="#svar3" aria-expanded="false" aria-controls="svar3">
+                        Kan jeg endre eller fjerne det jeg har registrert? <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div id="svar3" class="collapse">
+                        <div class="answer">
+                            Ja. Under «Mine ressurser» kan du endre, merke som ikke tilgjengelig eller slette det du har registrert, når som helst.
+                        </div>
+                    </div>
+                </div>
+                <div class="fp-faq-item">
+                    <button type="button" data-bs-toggle="collapse" data-bs-target="#svar4" aria-expanded="false" aria-controls="svar4">
+                        Hva brukes opplysningene mine til? <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div id="svar4" class="collapse">
+                        <div class="answer">
+                            Bare til å finne og kontakte ressurser når det er behov for dem. Det er bare koordinatorer og administratorer som ser
+                            telefonnummeret ditt. Les mer under <a asp-controller="Home" asp-action="Privacy">personvern</a>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
