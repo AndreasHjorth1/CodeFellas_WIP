@@ -37,12 +37,7 @@ namespace Prosjekt.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            var model = new NeedCreatorViewModel
-            {
-                NeedList = new List<NeedViewModel> { new NeedViewModel() }
-            };
-
-            return View(model);
+            return View(new NeedCreatorViewModel());
         }
 
         /// <summary>
@@ -51,8 +46,6 @@ namespace Prosjekt.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(NeedCreatorViewModel model)
         {
-            model.NeedList ??= new List<NeedViewModel> { new NeedViewModel() };
-
             /// <summary>
             /// Radene sender ikke egen tidsfrist, bare den felles fristen.
             /// Derfor fjerner vi valideringen på Deadline for hver rad, ellers vil det alltid feile.
