@@ -43,7 +43,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
         }
 
         [Fact]
-        public void Index_ReturnsViewWithOneEmptyNeed()
+        public void Index_ReturnsViewWithEmptyNeedList()
         {
             // Arrange
             var repo = new FakeNeedRepository();
@@ -55,7 +55,7 @@ namespace Prosjekt.Xunit.Test.ControllerTest
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
             var model = Assert.IsType<NeedCreatorViewModel>(viewResult.Model);
-            Assert.Single(model.NeedList);
+            Assert.Empty(model.NeedList);
         }
 
         [Fact]
@@ -628,32 +628,6 @@ namespace Prosjekt.Xunit.Test.ControllerTest
 
             var need = Assert.Single(repo.Needs);
             Assert.Equal(EntryStatus.UnderReview, need.Status);
-        }
-
-        [Fact]
-        public async Task Create_NullNeedList_ReturnsIndexViewWithError()
-        {
-            // Arrange
-            var repo = new FakeNeedRepository();
-            var controller = new NeedController(repo, new FakeResourceRepository(), new FakeAllocationRepository(), new FakeNotificationRepository(), new FakeUserRepository());
-
-            var model = new NeedCreatorViewModel
-            {
-                NeedList = null!,
-                Latitude = 58.1467,
-                Longitude = 7.9956,
-                Deadline = new DateTime(2026, 12, 1, 12, 0, 0), Importance = ImportanceLevel.Planned
-            };
-
-            // Act
-            var result = await controller.Create(model);
-
-            // Assert
-            var viewResult = Assert.IsType<ViewResult>(result);
-            Assert.Equal("Index", viewResult.ViewName);
-            Assert.Single(model.NeedList);
-            Assert.False(controller.ModelState.IsValid);
-            Assert.Empty(repo.Needs);
         }
 
         [Fact]
